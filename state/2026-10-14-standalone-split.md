@@ -18,6 +18,11 @@ guides' cache instructions were corrected during review 1: design CSS and the
 icon sprite have no per-file URL override. The review and fix cycle is still
 in progress.
 
+Fix 1 (docs/plans/step-1.md): `testStandalone` gained a non-mock loader block
+(3 checks, suite now 93 — pending Joe's confirming run), and `live-deploy.ps1`
+now runs config + template-marker checks before uploading or recycling anything.
+Nothing under `src/` changed.
+
 ## Decisions (user, 2026-10-14)
 
 - projects-standard profile `sp-app`, with the `browser-tests` and

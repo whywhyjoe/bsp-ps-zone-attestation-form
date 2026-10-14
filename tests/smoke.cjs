@@ -565,8 +565,32 @@ async function testStandalone(browser) {
   }, SRC);
   check('thank-you illustration is in design/', files.art);
   await page.addScriptTag({ url: SRC + 'lib/pnp2.bundle.js' });
-  check('lib/pnp2.bundle.js defines window.pnp.sp', await page.evaluate(() => !!(window.pnp && window.pnp.sp && window.pnp.sp.web)));
+  check('lib/pnp2.bundle.js is a working pnp bundle (direct load)', await page.evaluate(() => !!(window.pnp && window.pnp.sp && window.pnp.sp.web)));
   check('no page errors (standalone)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // the real (non-mock) loader: mock-sp.js is blanked so PSZ_MOCK_SP is undefined and the engine
+  // runs its real adapter, which loads pnp itself; /_api/ gets a local 404 (no SharePoint here)
+  ctx = await browser.newContext({ viewport: { width: 1100, height: 1600 } });
+  page = await ctx.newPage();
+  const realUrls = [];
+  page.on('request', r => realUrls.push(r.url()));
+  await page.route('**/dev/mock-sp.js', r => r.fulfill({ contentType: 'application/javascript', body: '/* mock off: real adapter */' }));
+  await page.route('**/_api/**', r => r.fulfill({ status: 404, body: '' }));
+  await page.goto(BASE);
+  await page.waitForSelector('script[data-psz-script="pnp"]', { state: 'attached', timeout: 8000 });
+  await page.waitForFunction(() => !!(window.pnp && window.pnp.sp), null, { timeout: 8000 }).catch(() => {});
+  const pnpTag = await page.evaluate(() => {
+    const s = document.querySelector('script[data-psz-script="pnp"]');
+    return s ? s.src.split('?')[0] : null;
+  });
+  check('real loader requests pnp from src/lib/',
+    pnpTag === SRC + 'lib/pnp2.bundle.js' && realUrls.some(u => u.split('?')[0] === SRC + 'lib/pnp2.bundle.js'), String(pnpTag));
+  check('real loader: window.pnp.sp is defined', await page.evaluate(() => !!(window.pnp && window.pnp.sp)));
+  // same-origin /_api/ URLs are SharePoint REST calls the route answered with 404, not asset loads
+  const realOutside = realUrls.filter(u => !u.startsWith(SRC) && !u.startsWith(harness) && !/^(data|about|blob):/.test(u) &&
+    !(u.startsWith(new URL('/', BASE).href) && u.includes('/_api/')));
+  check('real loader: no asset request leaves src/', realOutside.length === 0, realOutside.join(' '));
   await ctx.close();
 
   // a shared BSP Forms engine already on the page can't swallow this one
