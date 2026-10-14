@@ -63,6 +63,7 @@ is not `xo-handoff` and `.xo-handoffs/`; don't cross-file them.
 | `src/lib/` | Vendored Alpine 3.15.2, pnpjs v2 bundle, intl.js 1.1.4. |
 | `webpart/` | The snippet pasted into the page's Modern Script Editor web part. |
 | `deploy/dcspad-setup-lists.js` | Run in DCSPad: creates both lists and their columns, adds `TEST - ` placeholder rows for four attesters, removes them again (`MODE`). Plain REST, dry run by default, idempotent. Never deployed. Keep its columns in step with `docs/02` and `docs/05`. |
+| `deploy/ps-zone-attestation-list-setup.dcspad.json` | The same script as a DCSPad project file (File → Load project). Its `docs.js` must equal the `.js` byte for byte: after editing the `.js`, rebuild it (`JSON.stringify` of `{app:"dcspad", kind:"project", v:1, name, docs:{html,css,js}, libraries:{enabled:[],dcsUrl:""}, jsAsModule:false}`). |
 | `dev/index.html` + `mock-sp.js` | Harness: the real `src/` folder, SharePoint mocked. |
 | `dev/live/` | Dev-tenant live test (needs the `sp-env` skill). Never run on prod. |
 | `tests/smoke.cjs` | Playwright regression suite. See `tests/README.md`. |

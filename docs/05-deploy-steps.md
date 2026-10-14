@@ -41,7 +41,10 @@ both lists with every column (step 1) and adds **test data** for four test
 attesters (step 3's rows, for testing only). It doesn't set permissions:
 step 2 is still by hand.
 
-1. Open DCSPad on the portal. Paste the whole file into the **JS** pane.
+1. Open DCSPad on the portal. Either **File → Load project** and pick
+   [`deploy/ps-zone-attestation-list-setup.dcspad.json`](../deploy/ps-zone-attestation-list-setup.dcspad.json),
+   or paste the whole `.js` file into the **JS** pane. Both hold the same
+   script. No framework needs to be ticked.
 2. At the top, in `SETTINGS`, put three test accounts' work emails in
    `USERS.B`, `USERS.C` and `USERS.D`. `USERS.A` is `"me"`, the person
    running it.

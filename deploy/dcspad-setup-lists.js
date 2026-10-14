@@ -1,7 +1,8 @@
 /* =====================================================================
    PS Zone Attestation — create the two SharePoint lists and add test data.
 
-   Run it in DCSPad: paste this whole file into the JS pane and press Run.
+   Run it in DCSPad: paste this whole file into the JS pane and press Run
+   (or File > Load project: ps-zone-attestation-list-setup.dcspad.json).
    No framework needs to be ticked; it uses plain SharePoint REST calls with
    your own sign-in. You need to be a site owner on SITE below.
 
