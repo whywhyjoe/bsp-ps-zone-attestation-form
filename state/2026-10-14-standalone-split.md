@@ -1,8 +1,8 @@
 # State — Standalone split from bsp-sp-parts
 
 Last touched: 2026-10-14
-Branch: `main` (local only, no remote). `crew/zone-split-review` is merged
-(`9a416c3`); the branch and its worktree under `~/.xo/rooms/` still exist.
+Branch: `main` (local only, no remote). `crew/zone-split-review` was merged
+(`9a416c3`), then its branch and worktree were deleted.
 State: split done; three review rounds behind it (crew, Codex turn 1, Codex
 re-review turn 2), all fixes committed on main; suite 100/100 green. Dev
 live run not done; **prod untouched**.
@@ -44,7 +44,6 @@ to fail on the breakage it guards.
 
 ## Next
 
-- [ ] Delete `crew/zone-split-review` and its worktree if Joe agrees.
 - [ ] Create the GitHub repo and push, if wanted.
 - [ ] Dev live run: `dev/live/live-deploy.ps1 -Ver 1.0.0` →
       `node dev/live/live-zone.js` (admin) → `--as <profile>` (non-admin).
