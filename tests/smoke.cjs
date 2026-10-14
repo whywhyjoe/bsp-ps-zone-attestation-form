@@ -68,7 +68,6 @@ async function openZone(browser, opts) {
   page.on('pageerror', e => page.__errors.push(e.message));
   await page.route('**/ps-zone-attestation.json', async route => {
     const cfg = await (await route.fetch()).json();
-    if (opts.jobAid !== undefined) cfg.form.vars.jobAidUrl = opts.jobAid;
     if (opts.mutate) opts.mutate(cfg);
     await route.fulfill({ json: cfg });
   });
@@ -117,7 +116,7 @@ const zoneAdds = page => page.evaluate(() => window.__PSZ_MOCK_WRITES__.filter(w
 
 async function testZoneAttestation(browser) {
   console.log('zone attestation (assignments):');
-  let { ctx, page } = await openZone(browser, { jobAid: JOB_AID, query: '&validate' });
+  let { ctx, page } = await openZone(browser, { query: '&validate' });
 
   // load: the user's rows only (case-insensitive email), sorted by area
   const labels = await page.$$eval('.psz-asg__label', els => els.map(e => e.textContent));
@@ -126,10 +125,15 @@ async function testZoneAttestation(browser) {
   check('current user card shows name + email',
     (await page.locator('.psz-who__name').textContent()) === 'Dev Tester' &&
     (await page.locator('.psz-who__mail').textContent()) === 'dev.tester@example.com');
-  const card = page.locator('a.psz-tipcard');
-  check('job aid card opens the configured URL in a new tab',
-    (await card.getAttribute('href')) === JOB_AID && (await card.getAttribute('target')) === '_blank' &&
-    /noopener/.test(await card.getAttribute('rel')));
+  // the job aid moved to the resources panel (1.1.0): no header card, and
+  // the intro takes the whole header width
+  const head = await page.evaluate(() => {
+    const intro = document.querySelector('.psz__intro'), headEl = document.querySelector('.psz__head');
+    return { cards: document.querySelectorAll('[data-psz-form] .psz-tipcard').length, maxW: getComputedStyle(intro).maxWidth,
+      introW: intro.getBoundingClientRect().width, headW: headEl.getBoundingClientRect().width };
+  });
+  check('no job aid card on the form; the intro spans the header',
+    head.cards === 0 && head.maxW === 'none' && head.introW > head.headW * 0.8, JSON.stringify(head));
   await page.waitForFunction(() => document.querySelector('.psz-doctor tbody tr'), null, { timeout: 15000 });
   const doctor = await page.$$eval('.psz-doctor tbody tr', trs => trs.map(tr => [...tr.children].map(td => td.innerText.trim())));
   check('doctor: every target + source column OK', doctor.length >= 12 && doctor.every(r => r[4] === 'OK'),
@@ -294,14 +298,6 @@ async function testZoneAttestation(browser) {
   }));
   check('unknown CurrentZone → no current zone, the dropdown straight away',
     await page.locator('.psz-asg__row .psz-asg__pick').isVisible() && await page.locator('.psz-asg__row .psz-asg__confirm').isHidden());
-  await ctx.close();
-
-  // the job aid card stays hidden while its URL is empty or unsafe
-  ({ ctx, page } = await openZone(browser, { jobAid: '' }));
-  check('no job aid URL → no card', (await page.locator('.psz-tipcard').count()) === 0);
-  await ctx.close();
-  ({ ctx, page } = await openZone(browser, { jobAid: 'javascript:alert(1)' }));
-  check('javascript: job aid URL → no card', (await page.locator('.psz-tipcard').count()) === 0);
   await ctx.close();
 
   // a failure mid-save: saved rows are kept and never saved twice
@@ -522,41 +518,46 @@ async function testZoneAttestation(browser) {
 /* The standalone guarantees: the form runs from its own folder and
    nothing else. SRC is the deploy folder as the harness serves it. */
 const SRC = new URL('../src/', BASE).href;
-// the only non-src/ files a run may load: the harness page and its mock
-const HARNESS_FILES = [new URL(BASE).origin + new URL(BASE).pathname, new URL('mock-sp.js', BASE).href];
+// the whole-page harness: the form and the resources panel, two web parts
+const PAGE = new URL('page.html', BASE).href;
+// the only non-src/ files a run may load: the harness pages and their mock
+const HARNESS_FILES = [new URL(BASE).origin + new URL(BASE).pathname, PAGE, new URL('mock-sp.js', BASE).href];
 const inBounds = u => u.startsWith(SRC) || HARNESS_FILES.includes(u.split(/[?#]/)[0]) || /^(data|about|blob):/.test(u);
 const FIXTURE = new URL('../tests/fixtures/bsp-forms-0.5.1/', BASE).href;
 async function testStandalone(browser) {
   console.log('standalone:');
-  // everything it loads comes from src/ (or the harness page itself);
-  // French + a job aid URL, so intl.js and the card icon load too
+  // everything the whole page (form + resources panel) loads comes from
+  // src/ or the harness; French + a job aid URL, so intl.js and the card
+  // icon load too
   let { ctx, page } = await (async () => {
-    const c = await browser.newContext({ viewport: { width: 1100, height: 1600 } });
+    const c = await browser.newContext({ viewport: { width: 1400, height: 1600 } });
     const p = await c.newPage();
     p.__errors = [];
     p.on('pageerror', e => p.__errors.push(e.message));
     p.__urls = [];
     p.on('request', r => p.__urls.push(r.url()));
-    await p.route('**/ps-zone-attestation.json', async route => {
+    await p.route('**/ps-zone-attestation.resources.json', async route => {
       const cfg = await (await route.fetch()).json();
-      cfg.form.vars.jobAidUrl = JOB_AID;
+      cfg.sections[0].items[0].url = JOB_AID;
       await route.fulfill({ json: cfg });
     });
-    await p.goto(BASE + '?lang=fr&validate');
+    await p.goto(PAGE + '?lang=fr');
     await p.waitForSelector('.psz-asg__row', { timeout: 8000 });
+    await p.waitForSelector('[data-psz-resources][data-psz-state="ready"]', { timeout: 8000 });
     await p.waitForTimeout(600);
     return { ctx: c, page: p };
   })();
   const outside = page.__urls.filter(u => !inBounds(u));
   check('every request stays inside src/ (beyond the harness page + mock)', outside.length === 0, outside.join(' '));
   const loaded = new Set(page.__urls.filter(u => u.startsWith(SRC)).map(u => u.slice(SRC.length).split('?')[0]));
-  const expected = ['ps-zone-attestation.js', 'ps-zone-attestation.css', 'ps-zone-attestation.json', 'design/colors_and_type.css',
+  const expected = ['ps-zone-attestation.js', 'ps-zone-attestation.css', 'ps-zone-attestation.json',
+    'ps-zone-attestation.resources.json', 'design/colors_and_type.css',
     'design/components.css', 'design/fluent-basic-icons.svg', 'design/abacus-icons/light-bulb-48.svg', 'lib/alpine.js', 'lib/intl.js'];
   check('loads its own engine, layer, config, design subset, Alpine and intl.js',
     expected.every(p => loaded.has(p)), expected.filter(p => !loaded.has(p)).join(', '));
   const look = await page.evaluate(() => {
-    const uses = [...document.querySelectorAll('.psz use')].map(u => (u.getAttribute('href') || u.getAttribute('xlink:href') || '').slice(1));
-    const icon = document.querySelector('.psz-tipcard img');
+    const uses = [...document.querySelectorAll('.psz use, .psz-res use')].map(u => (u.getAttribute('href') || u.getAttribute('xlink:href') || '').slice(1));
+    const icon = document.querySelector('.psz-res .psz-tipcard img');
     return {
       uses: uses.length, missing: uses.filter(id => !document.getElementById(id)),
       container: getComputedStyle(document.querySelector('.psz')).containerName,
@@ -581,8 +582,11 @@ async function testStandalone(browser) {
   // resolved against design/ exactly as the engine does, it stays inside.
   const assetPaths = await page.evaluate(async src => {
     const c = await (await fetch(src + 'ps-zone-attestation.json')).json();
+    const r = await (await fetch(src + 'ps-zone-attestation.resources.json')).json();
+    // resources icons: only asset paths (a sprite name like "document" isn't a file)
+    const resIcons = r.sections.flatMap(s => s.items).map(i => i.icon).filter(i => i && /[./]/.test(i));
     return [c.form.headerCard && c.form.headerCard.icon, c.form.appearance && c.form.appearance.icon,
-      c.confirmation && c.confirmation.illustration].filter(Boolean);
+      c.confirmation && c.confirmation.illustration, ...resIcons].filter(Boolean);
   }, SRC);
   const assetOut = assetPaths.filter(p => /^(\/|[a-z][\w+.-]*:)/i.test(p) ||
     !new URL(p, SRC + 'design/').href.startsWith(SRC + 'design/'));
@@ -754,12 +758,127 @@ async function testCoexistence(browser) {
   await ctx.close();
 }
 
+/* The resources panel ([data-psz-resources], dev/page.html): the side-column
+   web part beside the form. Mutations go through its config route. */
+async function openPage(browser, opts) {
+  opts = opts || {};
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 1600 } });
+  const page = await ctx.newPage();
+  page.__errors = [];
+  page.on('pageerror', e => page.__errors.push(e.message));
+  await page.route('**/ps-zone-attestation.resources.json', async route => {
+    const cfg = await (await route.fetch()).json();
+    if (opts.mutate) opts.mutate(cfg);
+    await route.fulfill({ json: cfg });
+  });
+  await page.goto(PAGE + (opts.query || ''));
+  if (!opts.noWait) {
+    await page.waitForFunction(() => {
+      const m = document.querySelector('[data-psz-resources]');
+      return m && /ready|error/.test(m.getAttribute('data-psz-state') || '');
+    }, null, { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(300);
+  }
+  return { ctx, page };
+}
+async function testResources(browser) {
+  console.log('resources panel:');
+  const res = page => page.evaluate(() => {
+    const r = document.querySelector('.psz-res');
+    if (!r) return null;
+    const items = [...r.querySelectorAll('.psz-res__item')];
+    return {
+      lang: r.getAttribute('lang'), keep: r.classList.contains('lang-keep'),
+      headings: [...r.querySelectorAll('.psz-res__heading')].map(h => h.textContent),
+      types: items.map(i => [...i.classList].find(c => c.startsWith('psz-res__item--')).replace('psz-res__item--', '')),
+      links: [...r.querySelectorAll('a.psz-tipcard, a.psz-res__link')].map(a => [a.textContent.trim().split('\n')[0], a.getAttribute('href'), a.target, a.rel]),
+      unlinked: r.querySelectorAll('.is-unlinked').length,
+      descs: r.querySelectorAll('.psz-res__desc').length,
+      subheads: [...r.querySelectorAll('.psz-res__subhead')].map(h => h.textContent),
+      texts: r.querySelectorAll('.psz-res__text').length,
+      avatar: (r.querySelector('.psz-res__contact .avatar') || {}).textContent,
+      contact: (r.querySelector('.psz-res__contact-name') || {}).textContent,
+      mail: (r.querySelector('.psz-res__contact-mail') || { getAttribute: () => null }).getAttribute('href'),
+      featureLooksLikeJobAid: !!r.querySelector('.psz-res__item--feature .psz-tipcard .psz-tipcard__icon img')
+    };
+  });
+
+  // as shipped: placeholders, no urls yet
+  let { ctx, page } = await openPage(browser);
+  await page.waitForSelector('.psz-asg__row', { timeout: 15000 });
+  let r = await res(page);
+  check('panel renders both groups beside the form',
+    r && JSON.stringify(r.headings) === '["Resources and guides","Information"]' &&
+    (await page.locator('.psz-asg__row').count()) === 3, JSON.stringify(r && r.headings));
+  check('resources: job aid card (as on the form), two document links; information: two texts, a contact',
+    JSON.stringify(r.types) === '["feature","link","link","text","text","contact"]' && r.featureLooksLikeJobAid &&
+    r.descs === 3 && r.texts === 2, JSON.stringify(r.types));
+  check('empty urls → placeholders shown, not linked', r.unlinked === 3 && r.links.length === 0, JSON.stringify(r));
+  check('contact card: initials skip the [Placeholder] tag, email is a mailto link',
+    r.avatar === 'CN' && /Contact Name$/.test(r.contact) && r.mail === 'mailto:contact.name@example.com', JSON.stringify([r.avatar, r.mail]));
+  check('no page errors (resources)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // real urls link out in a new tab; an unsafe one stays unlinked; a bad email isn't a mailto
+  ({ ctx, page } = await openPage(browser, { mutate: cfg => {
+    cfg.sections[0].items[0].url = JOB_AID;
+    cfg.sections[0].items[1].url = '/sites/FCUPortal/Shared Documents/standards.pdf';
+    cfg.sections[0].items[2].url = 'javascript:alert(1)';
+    cfg.sections[1].items[2].email = 'not an email';
+  } }));
+  r = await res(page);
+  check('job aid + document link open in a new tab (noopener); spaces in a path are encoded',
+    r.links.length === 2 && r.links[0][1] === JOB_AID && r.links[1][1] === '/sites/FCUPortal/Shared%20Documents/standards.pdf' &&
+    r.links.every(l => l[2] === '_blank' && /noopener/.test(l[3])), JSON.stringify(r.links));
+  check('javascript: url → not linked', r.unlinked === 1 && !(await page.evaluate(() => /javascript:/i.test(document.querySelector('.psz-res').innerHTML))));
+  check('invalid contact email → shown without a mailto link', r.mail === null, String(r.mail));
+  await ctx.close();
+
+  // bilingual: ?lang=fr, then a switch re-renders in place
+  ({ ctx, page } = await openPage(browser, { query: '?lang=fr' }));
+  r = await res(page);
+  check('?lang=fr → French panel, lang="fr" + lang-keep',
+    r.lang === 'fr' && r.keep && r.headings[0] === 'Ressources et guides' && r.subheads.includes('Des questions?'), JSON.stringify(r.headings));
+  await page.evaluate(() => window.intl.setLang('en'));
+  await page.waitForTimeout(400);
+  r = await res(page);
+  check('intl.setLang("en") → panel and form both switch back',
+    r.lang === 'en' && r.headings[0] === 'Resources and guides' &&
+    (await page.locator('.psz__title').textContent()) === 'Physical Security Zones Attestation', JSON.stringify(r.headings));
+  check('no page errors (resources, FR/EN)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // edit mode: both web parts show their placeholder, nothing renders
+  ({ ctx, page } = await openPage(browser, { query: '?Mode=Edit', noWait: true }));
+  await page.waitForTimeout(800);
+  const edit = await page.evaluate(() => ({
+    notes: [...document.querySelectorAll('.psz-editnote')].filter(n => n.offsetParent !== null).length,
+    res: document.querySelectorAll('.psz-res').length, form: document.querySelectorAll('.psz').length
+  }));
+  check('edit mode: both web parts show their placeholder, neither renders', edit.notes === 2 && edit.res === 0 && edit.form === 0, JSON.stringify(edit));
+  await ctx.close();
+
+  // a broken resources config: its own error card; the form is unaffected
+  for (const [name, mutate] of [
+    ['unknown item type → error card', cfg => { cfg.sections[0].items[0].type = 'banner'; }],
+    ['link without a title → error card', cfg => { delete cfg.sections[0].items[1].title; }],
+    ['no sections → error card', cfg => { cfg.sections = []; }]
+  ]) {
+    ({ ctx, page } = await openPage(browser, { mutate }));
+    const st = await page.evaluate(() => [document.querySelector('[data-psz-resources]').getAttribute('data-psz-state'),
+      !!document.querySelector('[data-psz-resources] [data-psz-fatal]'), document.querySelector('[data-psz-form]').getAttribute('data-psz-state')]);
+    check('resources: ' + name + ', the form still loads', st[0] === 'error' && st[1] && st[2] === 'ready', JSON.stringify(st));
+    await ctx.close();
+  }
+}
+
 (async () => {
   const browser = await launch();
   try {
     await testEditMode(browser);
     await testZoneAttestation(browser);
     await testStandalone(browser);
+    await testResources(browser);
   } finally {
     await browser.close();
   }

@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.0.0 · ps-zone-attestation.css */
+/*! PS Zone Attestation · v1.1.0 · ps-zone-attestation.css */
 /* =====================================================================
    PS Zone Attestation — additive component layer for the form engine.
    A renamed fork of bsp-forms.css (BSP Forms 0.5.1, .bspf-* → .psz-*);
@@ -59,6 +59,9 @@
 .psz__head-icon { width: 48px; height: 48px; flex: none; }
 .psz__title { font: var(--type-title3); font-weight: var(--weight-regular); color: var(--fg-primary); margin: 0; }
 .psz__intro { font: var(--type-body1); color: var(--fg-secondary); margin: 0; max-width: 64ch; }
+/* no header card: the intro takes the card's space too */
+.psz__head:not(.psz__head--hascard) .psz__head-copy { flex: 1 1 auto; }
+.psz__head:not(.psz__head--hascard) .psz__intro { max-width: none; }
 /* Band header — a low-saturation tint strip (engagement-layer grounds). */
 .psz__head--band {
   margin: 0;
@@ -360,6 +363,8 @@
 .psz-editnote code { font-family: var(--font-family-mono); font-size: 12px; background: none; padding: 0; }
 [data-psz-form].is-suspended .psz { display: none; }
 [data-psz-form]:not(.is-suspended) > .psz-editnote { display: none; }
+[data-psz-resources].is-suspended .psz-res { display: none; }
+[data-psz-resources]:not(.is-suspended) > .psz-editnote { display: none; }
 
 /* Doctor (config validation) report */
 .psz-doctor { margin-bottom: var(--space-240); display: flex; flex-direction: column; gap: var(--space-120); }
@@ -409,8 +414,69 @@
 }
 .psz-tipcard:hover .psz-tipcard__go { color: var(--accent-rest); transform: translate(2px, -2px); }
 @media (prefers-reduced-motion: reduce) {
-  .psz .psz-tipcard.lift:hover, .psz-tipcard:hover .psz-tipcard__go { transform: none; }
+  .psz .psz-tipcard.lift:hover, .psz-res .lift:hover, .psz-tipcard:hover .psz-tipcard__go,
+  .psz-res__link:hover .psz-tipcard__go { transform: none; }
 }
+
+/* ---------------------------------------------------------------------
+   Resources panel ([data-psz-resources]) — the side-column web part:
+   groups of link cards, information text and a contact card. Built for a
+   narrow column, so everything stacks. The featured card reuses the
+   header card (.psz-tipcard) exactly; document links are a smaller row.
+   --------------------------------------------------------------------- */
+.psz-res {
+  width: 100%; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: var(--space-320);
+  font: var(--type-body1); color: var(--fg-primary);
+}
+.psz-res *, .psz-res *::before, .psz-res *::after { box-sizing: border-box; }
+.psz-res__group { display: flex; flex-direction: column; gap: var(--space-160); }
+.psz-res__heading {
+  font: var(--type-subtitle1); color: var(--fg-primary); margin: 0;
+  padding-bottom: var(--space-80); border-bottom: var(--stroke-thin) solid var(--stroke-divider);
+}
+.psz-res__item { display: flex; flex-direction: column; gap: var(--space-60); }
+.psz-res .psz-tipcard { flex: none; width: 100%; }
+.psz-res__desc { font: var(--type-caption1); color: var(--fg-secondary); margin: 0; }
+.psz-res__desc a, .psz-res__text a { font-weight: var(--weight-semibold); }
+/* a document link: one compact row */
+.psz-res__link {
+  position: relative;
+  display: flex; align-items: center; gap: var(--space-100);
+  padding: var(--space-80) var(--space-120);
+  background: var(--surface-raised);
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-medium);
+  color: var(--fg-primary); text-decoration: none;
+}
+.psz-res__link:hover, .psz-res__link:focus-visible { color: var(--fg-primary); text-decoration: none; border-color: var(--stroke-control); }
+.psz-res__link-icon {
+  width: 32px; height: 32px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-medium);
+  background: var(--surface-tint-blue); color: var(--accent-rest);
+}
+.psz-res__link-icon img { width: 22px; height: 22px; }
+.psz-res__link-title { flex: 1; min-width: 0; font: var(--type-body1-strong); color: var(--accent-rest); }
+.psz-res__link .psz-tipcard__go { align-self: center; }
+.psz-res__link:hover .psz-tipcard__go { color: var(--accent-rest); transform: translate(2px, -2px); }
+/* a placeholder with no url yet: same shape, not clickable */
+.psz-res .is-unlinked { box-shadow: none; }
+.psz-res .is-unlinked .psz-tipcard__title, .psz-res .is-unlinked .psz-res__link-title { color: var(--fg-primary); }
+/* information text */
+.psz-res__subhead { font: var(--type-body1-strong); color: var(--fg-primary); margin: 0; }
+.psz-res__text { font: var(--type-body1); color: var(--fg-secondary); margin: 0; }
+/* contact card */
+.psz-res__contact {
+  display: flex; align-items: center; gap: var(--space-120);
+  padding: var(--space-120);
+  background: var(--surface-subtle);
+  border-radius: var(--radius-large);
+}
+.psz-res__contact .avatar { flex: none; }
+.psz-res__contact-id { display: flex; flex-direction: column; gap: var(--space-20); min-width: 0; }
+.psz-res__contact-name { font: var(--type-body1-strong); color: var(--fg-primary); }
+.psz-res__contact-mail { font: var(--type-caption1); overflow-wrap: anywhere; }
 
 /* Tinted section (section.tint) — a soft panel that sets one section apart,
    e.g. the attestation checkbox. Replaces the hairline between sections. */

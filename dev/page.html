@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PS Zone Attestation · page harness</title>
+  <!-- =================================================================
+    The whole attestation page as it's laid out in SharePoint: the form in
+    a ¾ column and the resources panel in a ¼ column, two web parts on
+    one engine. Same rules as index.html: the real src/ folder, SharePoint
+    mocked, served over HTTP from the repo root:
+
+        python -m http.server 8646
+        → http://localhost:8646/dev/page.html     (?lang=fr, ?Mode=Edit)
+
+    The column split is the SharePoint page's own section layout, imitated
+    here; the engine doesn't set it. index.html stays the form-only harness
+    the suite uses.
+  ================================================================== -->
+  <style>
+    /* Harness chrome only — the page around the two web parts. */
+    body { margin: 0; background: #f5f6f7; }
+    .harness-bar {
+      padding: 10px 24px; background: #001928; color: #fff;
+      font: 600 13px/1.4 "Segoe UI", sans-serif; letter-spacing: .02em;
+    }
+    .harness-bar small { font-weight: 400; opacity: .7; }
+    .harness-bar button { margin-left: 8px; font: inherit; padding: 1px 8px; cursor: pointer; }
+    .harness-page { max-width: 1280px; margin: 24px auto; display: grid; grid-template-columns: 3fr 1fr; gap: 24px; padding: 0 24px; }
+    .harness-col { background: #fff; border-radius: 8px; padding: 24px; min-width: 0; }
+    @media (max-width: 900px) { .harness-page { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="harness-bar">PS Zone Attestation · page harness <small>— form + resources panel, mock SharePoint</small>
+    <button type="button" onclick="window.intl && intl.setLang('en')">EN</button><button type="button" onclick="window.intl && intl.setLang('fr')">FR</button></div>
+
+  <script src="mock-sp.js"></script>
+  <script>
+    window.PSZ_FORM_SETTINGS = { mockSp: window.PSZ_MOCK_SP };
+  </script>
+  <div class="harness-page">
+    <!-- web part 1: the form (¾ column) -->
+    <div class="harness-col">
+      <div data-psz-form data-config="../src/ps-zone-attestation.json"></div>
+      <script src="../src/ps-zone-attestation.js?v=dev"></script>
+    </div>
+    <!-- web part 2: the resources panel (¼ column) -->
+    <div class="harness-col">
+      <div data-psz-resources data-config="../src/ps-zone-attestation.resources.json"></div>
+      <script src="../src/ps-zone-attestation.js?v=dev"></script>
+    </div>
+  </div>
+</body>
+</html>

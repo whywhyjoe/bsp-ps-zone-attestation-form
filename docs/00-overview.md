@@ -11,6 +11,13 @@ zone, whether it changed, who answered and when. It runs in English and
 French. An area already answered drops out. When every area is done, the
 form says the attestation is already submitted.
 
+Beside the form, in the page's narrow right column, a **resources panel**
+(engine 1.1.0) lists the job aid and other guides, some information text and
+a contact. It's a second web part mounted by the same engine
+(`data-psz-resources`), from its own config
+(`ps-zone-attestation.resources.json`), and it switches language with the
+form.
+
 It began as one config (`forms/ps-zone-attestation.json`) of the shared BSP
 Forms engine in `bsp-sp-parts`. It was split out on 2026-10-14 because it's
 critical: a change to the shared engine, design system or libraries made for
@@ -39,7 +46,7 @@ some other form must not be able to break it.
 
 ```
 page web part:  <div data-psz-form data-config=".../ps-zone-attestation.json">
-                <script src=".../ps-zone-attestation.js?v=1.0.0">
+                <script src=".../ps-zone-attestation.js?v=1.1.0">
                         │
 ps-zone-attestation.js ─┼─ injects design/colors_and_type.css, design/components.css,
                         │  ps-zone-attestation.css (?v=) and the design/ sprite
@@ -49,6 +56,11 @@ ps-zone-attestation.js ─┼─ injects design/colors_and_type.css, design/comp
                         ├─ resolves the page web + current user over REST
                         ├─ reads the user's Assignments rows and earlier Responses keys
                         └─ renders cards → validates → confirm dialog → one addItem per row
+
+second web part: <div data-psz-resources data-config=".../ps-zone-attestation.resources.json">
+                 (same script; it runs once and mounts both)
+                        └─ fetches its config, localize() → normalizeResources() → static
+                           markup (no Alpine, no lists); re-rendered on a language switch
 ```
 
 The engine is the whole BSP Forms engine: it still supports field types and

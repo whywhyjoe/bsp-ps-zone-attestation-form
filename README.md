@@ -15,9 +15,14 @@ src/                              → deployed whole to …/Code/ps-zone-attesta
 ├─ ps-zone-attestation.js         the engine (a renamed fork of BSP Forms 0.5.1)
 ├─ ps-zone-attestation.css        its layer
 ├─ ps-zone-attestation.json       the form: lists, zones, wording (EN/FR)
+├─ ps-zone-attestation.resources.json   the side panel: guides, info, contact
 ├─ design/                        the BSP design-system files it needs, nothing more
 └─ lib/                           alpine.js · pnp2.bundle.js · intl.js
 ```
+
+The page has two web parts on the one engine: the form (left, ⅔) and a
+resources panel (right, ⅓) with the job aid, document links, information
+and a contact.
 
 ## Running it
 
@@ -25,15 +30,16 @@ src/                              → deployed whole to …/Code/ps-zone-attesta
 python -m http.server 8646
 ```
 
-Then open `http://localhost:8646/dev/index.html`. It's the real `src/`
-folder with SharePoint mocked. Add `?validate` for the column check,
-`?lang=fr` for French or `?Mode=Edit` for the edit-mode placeholder.
+Then open `http://localhost:8646/dev/page.html` for the whole page (form +
+side panel), or `dev/index.html` for the form alone. It's the real `src/`
+folder with SharePoint mocked. Add `?validate` for the column check (form
+only), `?lang=fr` for French or `?Mode=Edit` for the edit-mode placeholder.
 
 ```bash
 node tests/smoke.cjs
 ```
 
-This runs the regression suite (100 checks, Playwright). See
+This runs the regression suite (113 checks, Playwright). See
 [`tests/README.md`](tests/README.md).
 
 ## Deploying
@@ -41,7 +47,7 @@ This runs the regression suite (100 checks, Playwright). See
 **Follow [`docs/05-deploy-steps.md`](docs/05-deploy-steps.md).** It's step
 by step, for someone new to the project, with a check after each step. In
 short: create two lists, upload the contents of `src/` to
-`/sites/FCUPortal/Code/ps-zone-attestation/`, add one web part to a page of
+`/sites/FCUPortal/Code/ps-zone-attestation/`, add two web parts to a page of
 its own, and check it. No build and no install.
 
 Using Copilot? It picks up

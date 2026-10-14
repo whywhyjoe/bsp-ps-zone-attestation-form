@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.0.0 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.1.0 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -11,13 +11,18 @@
        ps-zone-attestation.js        this engine
        ps-zone-attestation.css       its layer
        ps-zone-attestation.json      the form config
+       ps-zone-attestation.resources.json   the side panel's config
        design/                       vendored BSP subset (css, sprite, art)
        lib/                          alpine.js · pnp2.bundle.js · intl.js
 
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.0.0"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.1.0"></script>
+
+   The same engine also mounts the resources side panel (1.1.0), a second
+   web part with `data-psz-resources` in place of `data-psz-form` and the
+   resources config (webpart/ps-zone-attestation-resources.webpart.html).
 
    Every global, attribute, class and storage key is renamed (PSZoneForm,
    PSZ_FORM_SETTINGS, data-psz-*, .psz-*), so the shared BSP Forms engine
@@ -49,7 +54,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -541,6 +546,7 @@
     intlWired = true;
     window.intl.onChange(function () {
       Object.keys(NS._defs).forEach(function (uid) { relocalize(NS._defs[uid]); });
+      Object.keys(NS._res).forEach(function (uid) { relocalizeResources(NS._res[uid]); });
     });
   }
 
@@ -3270,10 +3276,168 @@
   };
 
   /* ------------------------------------------------------------------
+     Resources side panel ([data-psz-resources]) — a companion web part
+     for the page's side column: link cards, information text and a
+     contact card, from its own JSON config (see
+     ps-zone-attestation.resources.json and docs/03-config.md). Static
+     markup: no Alpine, no list calls. Shares the form's languages,
+     edit-mode placeholder, sprite, safe links and error card, and
+     re-renders on an intl.js language switch like the form does.
+     ------------------------------------------------------------------ */
+  NS._res = {};
+  var RES_TYPES = ['feature', 'link', 'text', 'contact'];
+  function resLangs(raw) {
+    return raw && Array.isArray(raw.languages) && raw.languages.length ? raw.languages : null;
+  }
+  // the form's language helpers read raw.form.languages
+  function resLangCfg(raw) { return { form: { languages: resLangs(raw) } }; }
+  function resStrings(lang) { return Object.assign({}, DEFAULT_STRINGS, lang === 'fr' ? DEFAULT_STRINGS_FR : {}); }
+  function normalizeResources(raw, lang) {
+    var errors = [];
+    var cfg = localize(raw || {}, lang);
+    (resLangs(raw) || []).forEach(function (l) {
+      if (LANGS.indexOf(l) < 0) errors.push('languages: "' + l + '" isn\'t supported (use ' + LANGS.join(', ') + ')');
+    });
+    if (!Array.isArray(cfg.sections) || !cfg.sections.length) errors.push('sections: needs at least one section');
+    (Array.isArray(cfg.sections) ? cfg.sections : []).forEach(function (s, i) {
+      if (!s || !Array.isArray(s.items)) { errors.push('sections[' + i + '].items: needs a list of items'); return; }
+      s.items.forEach(function (it, j) {
+        var at = 'sections[' + i + '].items[' + j + ']';
+        if (!it || RES_TYPES.indexOf(it.type) < 0) errors.push(at + '.type: use one of ' + RES_TYPES.join(', '));
+        else if (it.type === 'contact' ? !it.name : !it.title) errors.push(at + ': needs a ' + (it.type === 'contact' ? 'name' : 'title'));
+      });
+    });
+    cfg._lang = lang;
+    cfg._S = resStrings(lang);
+    return { cfg: cfg, errors: errors };
+  }
+  function resInitials(name) {
+    // words that start with a letter only, so "[Placeholder] Ana Diaz" → "AD"
+    var parts = String(name || '').trim().split(/\s+/).filter(function (w) { return /^[A-Za-zÀ-ÖØ-öø-ÿ]/.test(w); });
+    var a = parts[0] ? parts[0][0] : '', b = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (a + b).toUpperCase() || '?';
+  }
+  // an item's icon: an asset path under design/ (abacus-icons/x.svg) or a sprite name (document)
+  function resIcon(name, fallback, size) {
+    var n = name || fallback;
+    return /[./]/.test(n) ? '<img src="' + esc(resolveAsset(n)) + '" alt="">' : icon('ic-fluent-' + esc(n) + '-24-regular', size);
+  }
+  // a link when its url is safe; a plain (unlinked) card while it's empty,
+  // so placeholders still show; an unsafe url is never linked
+  function resCard(it, cls, inner, S) {
+    // SharePoint document paths often carry spaces ("Shared Documents");
+    // encode them rather than refuse the link
+    var href = safeHref(String(it.url == null ? '' : it.url).trim().replace(/ /g, '%20'));
+    if (it.url && !href) console.warn('[PS Zone Form] resources: "' + it.title + '" isn\'t linked: its url isn\'t http(s) or server-relative');
+    if (!href) return '<div class="' + cls + ' is-unlinked">' + inner + '</div>';
+    return '<a class="' + cls + ' lift" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + inner +
+      icon('ic-fluent-open-24-regular', 16).replace('class="icon', 'class="psz-tipcard__go icon') +
+      '<span class="psz-sr">' + esc(S.opensNewTab) + '</span></a>';
+  }
+  function renderResources(uid, cfg) {
+    var S = cfg._S;
+    var h = '<div class="psz-res lang-keep" lang="' + esc(cfg._lang) + '" data-psz-res-uid="' + esc(uid) + '">';
+    cfg.sections.forEach(function (s) {
+      h += '<section class="psz-res__group">';
+      if (s.heading) h += '<h2 class="psz-res__heading">' + esc(s.heading) + '</h2>';
+      s.items.forEach(function (it) {
+        h += '<div class="psz-res__item psz-res__item--' + esc(it.type) + '">';
+        if (it.type === 'feature') {
+          h += resCard(it, 'psz-tipcard psz-res__feature',
+            '<span class="psz-tipcard__icon">' + resIcon(it.icon, 'info', 24) + '</span>' +
+            '<span class="psz-tipcard__copy"><span class="psz-tipcard__title">' + esc(it.title) + '</span>' +
+            (it.text ? '<span class="psz-tipcard__text">' + esc(it.text) + '</span>' : '') + '</span>', S);
+        } else if (it.type === 'link') {
+          h += resCard(it, 'psz-res__link',
+            '<span class="psz-res__link-icon">' + resIcon(it.icon, 'document', 20) + '</span>' +
+            '<span class="psz-res__link-title">' + esc(it.title) + '</span>', S);
+        } else if (it.type === 'text') {
+          h += '<h3 class="psz-res__subhead">' + esc(it.title) + '</h3>';
+          if (it.text) h += '<p class="psz-res__text">' + prose(it.text) + '</p>';
+        } else if (it.type === 'contact') {
+          var mail = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(String(it.email || '')) ? it.email : '';
+          if (it.email && !mail) console.warn('[PS Zone Form] resources: contact "' + it.name + '" email isn\'t an address');
+          if (it.title) h += '<h3 class="psz-res__subhead">' + esc(it.title) + '</h3>';
+          h += '<div class="psz-res__contact"><span class="avatar avatar--40" aria-hidden="true">' + esc(resInitials(it.name)) + '</span>' +
+            '<span class="psz-res__contact-id"><span class="psz-res__contact-name">' + esc(it.name) + '</span>' +
+            (mail ? '<a class="psz-res__contact-mail" href="mailto:' + esc(mail) + '">' + esc(mail) + '</a>'
+              : it.email ? '<span class="psz-res__contact-mail">' + esc(it.email) + '</span>' : '') + '</span></div>';
+        }
+        if (it.description && it.type !== 'text') h += '<p class="psz-res__desc">' + prose(it.description) + '</p>';
+        h += '</div>';
+      });
+      h += '</section>';
+    });
+    return h + '</div>';
+  }
+  function initResources(mount) {
+    ensureStyles();
+    installNavWatcher();
+    var configUrl = mount.getAttribute('data-config') || '';
+    if (inEditMode()) {
+      // same placeholder rule as the form: .is-suspended stays on for the whole edit session
+      mount.__pszDeferred = true;
+      mount.classList.add('is-suspended', 'is-edit-deferred');
+      if (!mount.querySelector('.psz-editnote')) mount.appendChild(editNote(configUrl, DEFAULT_STRINGS));
+      return;
+    }
+    mount.classList.remove('is-suspended', 'is-edit-deferred');
+    mount.querySelectorAll('[data-psz-fatal]').forEach(function (n) { n.remove(); });
+    mount.setAttribute('data-psz-state', 'initializing');
+    var spriteReady = ensureSprite();
+    var raw = null;
+    loadConfig(mount).then(function (r) {
+      raw = r;
+      return whenIntl(resLangCfg(r));
+    }).then(function () {
+      var norm = normalizeResources(raw, activeLang(resLangCfg(raw)));
+      if (norm.errors.length) {
+        console.error('[PS Zone Form] resources config errors:', norm.errors);
+        throw new Error(norm.errors.join('; '));
+      }
+      var uid = nextUid();
+      var def = NS._res[uid] = { uid: uid, raw: raw, mount: mount, cfg: norm.cfg, root: null,
+        multiLang: (resLangs(raw) || []).length > 1 };
+      if (def.multiLang) wireIntl();
+      return spriteReady.then(function () {
+        if (!mount.querySelector('.psz-editnote')) mount.appendChild(editNote(configUrl, def.cfg._S));
+        var host = document.createElement('div');
+        host.innerHTML = renderResources(uid, def.cfg);
+        def.root = host.firstChild;
+        mount.appendChild(def.root);
+        mount.setAttribute('data-psz-state', 'ready');
+      });
+    }).catch(function (e) {
+      console.error('[PS Zone Form] resources init failed:', e);
+      mount.__pszInit = false;
+      mount.setAttribute('data-psz-state', 'error');
+      fatalCard(mount, DEFAULT_STRINGS, e && e.message);
+    });
+  }
+  function relocalizeResources(def) {
+    if (!def.multiLang || !def.root || !def.root.isConnected) return;
+    var lang = activeLang(resLangCfg(def.raw));
+    if (lang === def.cfg._lang) return;
+    var norm = normalizeResources(def.raw, lang);
+    if (norm.errors.length) { console.error('[PS Zone Form] resources config errors (' + lang + '):', norm.errors); return; }
+    def.cfg = norm.cfg;
+    var host = document.createElement('div');
+    host.innerHTML = renderResources(def.uid, def.cfg);
+    var root = host.firstChild;
+    def.root.parentNode.replaceChild(root, def.root);
+    def.root = root;
+  }
+
+  /* ------------------------------------------------------------------
      Edit mode + boot
      ------------------------------------------------------------------ */
   function inEditMode() {
     return /[?&]Mode=Edit\b/i.test(location.search) || location.pathname.indexOf('/_layouts/') > -1;
+  }
+  // the two web parts this engine mounts: the form and its resources panel
+  var MOUNTS = '[data-psz-form], [data-psz-resources]';
+  function initAny(m) {
+    if (m.hasAttribute('data-psz-resources')) initResources(m); else initMount(m);
   }
   function editNote(configUrl, S) {
     var note = el('div', 'psz-editnote');
@@ -3294,10 +3458,10 @@
   }
   function applyEditState() {
     var edit = inEditMode();
-    document.querySelectorAll('[data-psz-form]').forEach(function (m) {
+    document.querySelectorAll(MOUNTS).forEach(function (m) {
       if (m.__pszDeferred) {
         // still deferred: keep the placeholder up until edit mode ends
-        if (!edit) { m.__pszDeferred = false; initMount(m); }
+        if (!edit) { m.__pszDeferred = false; initAny(m); }
         return;
       }
       m.classList.toggle('is-suspended', edit);
@@ -3449,10 +3613,10 @@
   }
 
   NS.scan = function () {
-    document.querySelectorAll('[data-psz-form]').forEach(function (m) {
+    document.querySelectorAll(MOUNTS).forEach(function (m) {
       if (m.__pszInit) return;
       m.__pszInit = true;
-      try { initMount(m); }
+      try { initAny(m); }
       catch (e) {
         console.error('[PS Zone Form] init threw:', e);
         m.__pszInit = false;

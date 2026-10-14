@@ -7,6 +7,19 @@ Newest first.
 
 ---
 
+## 2026-10-14 — engine 1.1.0: resources side panel; job aid off the form
+
+The job aid card is gone from the form's header, and the intro now spans
+the header. A second web part, the **resources panel**
+(`data-psz-resources`, `src/ps-zone-attestation.resources.json`,
+`webpart/ps-zone-attestation-resources.webpart.html`), is mounted by the
+same engine for the page's ⅓ column. It shows resources and guides (the job
+aid card as it looked on the form, compact document links), information
+text and a contact card, all placeholders for now. It's static, bilingual
+with the form, has its own edit-mode placeholder and error card, and
+encodes spaces in document paths. `dev/page.html` shows both side by side.
+Suite 113/113. `?v=1.1.0`.
+
 ## 2026-10-14 — Codex review fixes (xo turns 1–2)
 
 Codex reviewed main (turn 1) and the fixes (turn 2). Test and doc changes

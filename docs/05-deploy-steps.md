@@ -138,14 +138,22 @@ One row per person × area in `PS_Zone-Attestation-Assignments`:
 
 Add a row for yourself too, so you can test in step 7.
 
-## Step 4 — Set the job aid link (optional)
+## Step 4 — Fill in the side panel's links and text (optional)
 
-In `src/ps-zone-attestation.json`, find `"jobAidUrl": ""` and put the job
-aid's address between the quotes. While it's empty, the job aid card is
-hidden. You can also do this later, in the uploaded copy.
+The page's right-hand column shows a **resources panel**: the job aid,
+document links, some information text and a contact. Its content is in
+`src/ps-zone-attestation.resources.json`, and it ships with placeholders.
 
-Change nothing else in that file unless the project owner asks. In
-particular, never change a zone's `"value"`.
+- For each link, put its address between the quotes of its `"url": ""`.
+  While a `url` is empty the item still shows, just not as a link.
+- Replace the `[Placeholder]` texts and the contact's `name` and `email`.
+
+You can also do this later, in the uploaded copy. `docs/03-config.md`
+(*The resources panel*) describes every key.
+
+In the form's own file, `src/ps-zone-attestation.json`, change nothing
+unless the project owner asks. In particular, never change a zone's
+`"value"`.
 
 ## Step 5 — Upload the form's files
 
@@ -154,13 +162,14 @@ Upload the **contents** of `src/` (not the `src` folder itself) to
 Create the folder if needed. Browser upload (drag the files and the two
 folders in) or the library's OneDrive-synced folder both work.
 
-The folder must end up exactly like this, 11 files:
+The folder must end up exactly like this, 12 files:
 
 ```
 ps-zone-attestation/
 ├─ ps-zone-attestation.js
 ├─ ps-zone-attestation.css
 ├─ ps-zone-attestation.json
+├─ ps-zone-attestation.resources.json
 ├─ design/
 │  ├─ colors_and_type.css
 │  ├─ components.css
@@ -175,28 +184,40 @@ ps-zone-attestation/
 
 Upload nothing from outside `src/`.
 
-✅ **Check:** the folder holds those 11 files in those places.
+✅ **Check:** the folder holds those 12 files in those places.
 
 ## Step 6 — Create the page
 
 1. On `/sites/FCUPortal`, create a new page for the attestation. Use **a page
-   of its own**: no other script web parts on it.
-2. Add a **Modern Script Editor** web part (the one already used on the
-   portal).
-3. Paste this, with `TENANT` replaced by your tenant host:
+   of its own**: no script web parts on it other than these two.
+2. Give it a section with **two columns, two-thirds left and one-third
+   right** (*Add section* → the ⅔ + ⅓ layout; ¾ + ¼ also works).
+3. **Left column, the form:** add a **Modern Script Editor** web part (the
+   one already used on the portal) and paste this, with `TENANT` replaced by
+   your tenant host:
 
    ```html
    <div data-psz-form data-validate data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.0.0"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.1.0"></script>
    ```
 
    It's the snippet in `webpart/ps-zone-attestation.webpart.html`, plus
    `data-validate`, which turns on a setup check for step 7.
-4. Publish.
+4. **Right column, the resources panel:** add a second Modern Script Editor
+   web part and paste this (same `TENANT`, same `?v=`):
 
-While you edit the page, the web part shows a grey note ("PS Zone
-Attestation — renders in view mode"). That's expected. The form appears
-once the page is published or you leave edit mode.
+   ```html
+   <div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.1.0"></script>
+   ```
+
+   It's `webpart/ps-zone-attestation-resources.webpart.html`. Both web parts
+   load the same script, but it only runs once.
+5. Publish.
+
+While you edit the page, both web parts show a grey note ("PS Zone
+Attestation — renders in view mode"). That's expected. The form and the
+panel appear once the page is published or you leave edit mode.
 
 ## Step 7 — Check it works
 
@@ -215,8 +236,10 @@ Open the published page.
    then *Confirm*. Check the Responses list: one new item per area, with
    `ZoneSelection`, `Attestation = Confirmed` and the time.
 5. Reload the page: it says the attestation was already submitted.
-6. Add `?lang=fr` to the page URL: the form is in French.
-7. Delete your test responses from the Responses list (otherwise those areas
+6. Add `?lang=fr` to the page URL: the form and the side panel are in
+   French.
+7. **Side panel:** each link you filled in (step 4) opens in a new tab.
+8. Delete your test responses from the Responses list (otherwise those areas
    count as done). If you used the setup script, its `remove-test-data` mode
    does this and removes the test assignments too.
 
@@ -225,13 +248,14 @@ the date and `?v=` you deployed in `STATE.md`.
 
 ## Later changes
 
-- **Wording, zones, job aid link:** edit the uploaded
-  `ps-zone-attestation.json` and make the same edit in this repo. It takes
-  effect on the next page load; nothing else to do.
+- **Wording or zones:** edit the uploaded `ps-zone-attestation.json`.
+  **Side panel links, text or contact:** edit the uploaded
+  `ps-zone-attestation.resources.json`. Make the same edit in this repo.
+  It takes effect on the next page load; nothing else to do.
 - **A new version of the form's code** (`ps-zone-attestation.js` or `.css`):
   1. Download the two deployed files first (for rollback).
   2. Upload the new ones over them.
-  3. In the page's web part, change `?v=1.0.0` to the new version (the
+  3. In **both** web parts, change `?v=1.1.0` to the new version (the
      `VERSION` line near the top of `ps-zone-attestation.js`). Without this,
      browsers may keep the old code.
   4. Repeat step 7's checks 2, 4 and 5.
@@ -251,7 +275,9 @@ the date and `?v=` you deployed in `STATE.md`.
 | "Your assigned areas couldn't be loaded" | No read access to the Assignments list | Step 2 |
 | Submit fails with an error | No add access to the Responses list | Step 2 |
 | Broken image for the job aid icon or thank-you art | A `design/` file is missing | Re-upload `design/` (step 5) |
-| Old behaviour after uploading new code | Browser cache | Bump `?v=` in the web part |
+| Old behaviour after uploading new code | Browser cache | Bump `?v=` in both web parts |
+| "This form couldn't be loaded" in the **side panel** only | Its `data-config` path is wrong, or the resources JSON is broken | Check the path; undo your last edit of `ps-zone-attestation.resources.json` |
+| A side panel item that isn't clickable | Its `url` is empty, or isn't an `https://…` or `/sites/…` address | Fix the `url` (step 4) |
 
 Still stuck: don't change the code. Note what you see (screenshot, Console
 errors) and contact the project owner.
@@ -262,5 +288,6 @@ errors) and contact the project owner.
 - Don't edit files in `design/` or `lib/`.
 - Don't point the form at the shared `Code/bsp-design`, `Code/lib` or
   `Code/bsp-forms` folders.
-- Don't put the form on a page with other script web parts.
+- Don't put the form on a page with other script web parts (the side
+  panel is the one exception: it's the same engine).
 - Don't change a zone's `"value"` in the JSON (labels are fine).

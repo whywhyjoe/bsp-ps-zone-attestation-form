@@ -173,8 +173,12 @@ async function submitAndConfirm(page, confirmText) {
   check("nobody else's rows shown", others.length > 0 && !labels.some(l => others.includes(l)));
   check('Attestation by: my name + email', (await page.locator('.psz-who__name').textContent()) === me.Title &&
     (await page.locator('.psz-who__mail').textContent()).toLowerCase() === me.Email.toLowerCase());
-  check('job aid card → configured URL, new tab', (await page.locator('a.psz-tipcard').getAttribute('href')) === SITE &&
-    (await page.locator('a.psz-tipcard').getAttribute('target')) === '_blank');
+  check('no job aid card on the form (it lives in the resources panel)', (await page.locator('[data-psz-form] .psz-tipcard').count()) === 0);
+  await page.waitForSelector('[data-psz-resources][data-psz-state="ready"]', { timeout: 30000 });
+  check('resources panel: job aid card → configured URL, new tab',
+    (await page.locator('.psz-res a.psz-tipcard').getAttribute('href')) === SITE &&
+    (await page.locator('.psz-res a.psz-tipcard').getAttribute('target')) === '_blank');
+  await page.locator('.psz-res').screenshot({ path: path.join(OUT, 'zone-resources.png') });
   await page.locator('.psz').screenshot({ path: path.join(OUT, 'zone-form-empty.png') });
   check('row 1: its current zone with confirm + Change', (await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__zone:visible').textContent()) === 'High Security' &&
     await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__confirm input').isVisible());

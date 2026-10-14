@@ -32,7 +32,7 @@ sets were left out.
 
 | File | Source | Changes |
 | --- | --- | --- |
-| `ps-zone-attestation.js` | `bsp-sp-parts/bsp-forms/bsp-forms.js` @ `fe5c040` (engine 0.5.1) | `BSPForms`→`PSZoneForm`, `BSP_FORMS_SETTINGS`→`PSZ_FORM_SETTINGS`, `data-bsp-form`→`data-psz-form`, `bspf`→`psz` everywhere (classes, data attributes, container name, init flags), `[BSP Forms]`→`[PS Zone Form]` in logs, brand words in two user-facing strings per language; default `designBase`/`libBase` moved from `../bsp-design/` and `../lib/` to `design/` and `lib/` beside the engine; its CSS file name; `VERSION` 1.0.0. |
+| `ps-zone-attestation.js` | `bsp-sp-parts/bsp-forms/bsp-forms.js` @ `fe5c040` (engine 0.5.1) | `BSPForms`→`PSZoneForm`, `BSP_FORMS_SETTINGS`→`PSZ_FORM_SETTINGS`, `data-bsp-form`→`data-psz-form`, `bspf`→`psz` everywhere (classes, data attributes, container name, init flags), `[BSP Forms]`→`[PS Zone Form]` in logs, brand words in two user-facing strings per language; default `designBase`/`libBase` moved from `../bsp-design/` and `../lib/` to `design/` and `lib/` beside the engine; its CSS file name; `VERSION` 1.0.0. Since then owned here: 1.1.0 adds the resources panel (`data-psz-resources`), not in upstream. |
 | `ps-zone-attestation.css` | `bsp-forms/bsp-forms.css` @ `fe5c040` | `bspf`→`psz`, `data-bsp-form`→`data-psz-form`, header. |
 | `ps-zone-attestation.json` | `bsp-forms/forms/ps-zone-attestation.json` @ `fe5c040` | none (byte copy at the split). |
 | `dev/mock-sp.js` | `bsp-forms/dev/mock-sp.js` | renamed globals (`PSZ_MOCK_*`), trimmed to the zone form's lists. |

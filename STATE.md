@@ -25,7 +25,9 @@ dev before prod.
 - [ ] Non-admin dev run green (above).
 - [ ] Real zone descriptions and the official French zone names (form JSON
       only; today they're `[Placeholder]` drafts).
-- [ ] The job aid's URL for `form.vars.jobAidUrl` (the card hides until set).
+- [ ] Resources panel content (`src/ps-zone-attestation.resources.json`): the
+      job aid and standards document URLs, the information text, the contact.
+      All placeholders today.
 
 ## Manual gates
 

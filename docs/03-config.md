@@ -1,14 +1,20 @@
-# The form config — `src/ps-zone-attestation.json`
+# The configs — `src/ps-zone-attestation.json` and `.resources.json`
 
-Everything a business owner might ask to change lives in this one JSON file:
-wording in both languages, the five zones and their descriptions, the job aid
-link and the list names. It's fetched uncached (`cache: 'no-cache'`), so an
-edit to the **deployed** copy is live on the next page load, with no `?v=`
-bump.
+Everything a business owner might ask to change lives in two JSON files:
 
-**Keep the hand formatting.** `dev/live/live-deploy.ps1` finds exact lines in
-it (`"siteUrl": "/teams/FCUWebDatastores"` twice, `"jobAidUrl": ""`). Edit
-it as text, never round-trip it through a JSON serializer.
+- `ps-zone-attestation.json`, **the form**: wording in both languages, the
+  five zones and their descriptions, the list names.
+- `ps-zone-attestation.resources.json`, **the side panel**: the job aid and
+  document links, the information text and the contact (see *The resources
+  panel* at the end).
+
+Both are fetched uncached (`cache: 'no-cache'`), so an edit to the
+**deployed** copy is live on the next page load, with no `?v=` bump.
+
+**Keep the hand formatting.** `dev/live/live-deploy.ps1` finds exact text in
+them: `"siteUrl": "/teams/FCUWebDatastores"` twice in the form config, and the
+first `"url": ""` in the resources config. Edit them as text, never
+round-trip them through a JSON serializer.
 
 This page covers the keys this form uses. The engine accepts more (other
 field types, attachments, business time…), inherited from BSP Forms 0.5.1,
@@ -36,11 +42,16 @@ hold values spelled exactly as in `choices`.
 | --- | --- | --- |
 | `title`, `intro` | EN/FR pairs | `intro` takes `[text](url)` links (http(s), mailto, `/…`, `#…`; anything else stays literal). |
 | `appearance` | card · band · sky | Frame, header band, band tint (`sky` `blue` `neutral`). |
-| `vars.jobAidUrl` | `""` | The job aid's address. While empty, or not http(s)/server-relative, the job aid card is hidden. |
-| `headerCard` | job aid tile | `{ title, text, url, icon }`; `url` is `{var:jobAidUrl}`; opens in a new tab. `icon` is a path under `design/` (`abacus-icons/light-bulb-48.svg`). A new icon file must be vendored into `src/design/` first (`04-vendoring.md`). |
 
-**Asset paths stay inside `design/`.** `headerCard.icon`, `appearance.icon`
-and `confirmation.illustration` are resolved against `design/`. The engine
+Since 1.1.0 the form has **no header card**: the job aid moved to the
+resources panel, and the intro uses the full header width. The engine still
+supports `form.headerCard` (`{ title, text, url, icon }` beside the intro),
+but this form doesn't use it.
+
+**Asset paths stay inside `design/`.** `appearance.icon`,
+`confirmation.illustration` and the resources panel's item `icon`s are
+resolved against `design/`. A new icon file must be vendored into
+`src/design/` first (`04-vendoring.md`). The engine
 passes an absolute URL or a server-relative path (`/sites/…`) through
 untouched, and a relative path can climb out with `../`
 (`../../bsp-design/…` lands in the shared `Code/bsp-design/`). Either way a
@@ -119,3 +130,43 @@ row's item. Its section has `tint: "blue"`.
 Two tabs submitting at the same instant could still save a row twice. Only a
 uniqueness rule on the list would stop that, and it would also block the next
 attestation round.
+
+## The resources panel — `src/ps-zone-attestation.resources.json`
+
+A second web part for the page's narrow (right) column, mounted by the same
+engine: `<div data-psz-resources data-config="…/ps-zone-attestation.resources.json">`
+(snippet: `webpart/ps-zone-attestation-resources.webpart.html`). It's static:
+no lists, no Alpine. It follows the same language as the form, and switches
+with it.
+
+```json
+{
+  "languages": ["en", "fr"],
+  "sections": [
+    { "heading": "Resources and guides", "items": [ { "type": "feature", … }, { "type": "link", … } ] },
+    { "heading": "Information", "items": [ { "type": "text", … }, { "type": "contact", … } ] }
+  ]
+}
+```
+
+| Item `type` | Keys | Shows |
+| --- | --- | --- |
+| `feature` | `title`, `text`, `url`, `icon`, `description` | The large card the job aid used to have on the form (icon tile, title, text), then the description below it. |
+| `link` | `title`, `url`, `icon`, `description` | A compact one-line document link, then its description. `icon` defaults to `document`; `document-pdf` suits a PDF. |
+| `text` | `title`, `text` | A small heading and one paragraph. `text` takes `[text](url)` links. |
+| `contact` | `name`, `email`, `title` | An optional small heading (e.g. "Questions?"), then a card with initials, the name and a mailto link. |
+
+- **Links:** `url` empty → the item still shows, unlinked (that's how the
+  placeholders appear). An http(s) or server-relative address → it opens in
+  a new tab. Spaces in a path are encoded (`Shared Documents` works). Any
+  other scheme (`javascript:` …) is never linked.
+- **Icons:** a path under `design/` (`abacus-icons/light-bulb-48.svg`) or a
+  sprite name (`document`, `document-pdf`, `shield`, `info`, `folder` …,
+  the `fluent-basic-icons.svg` set).
+- `description` (on `feature`, `link`, `contact`) takes `[text](url)` links.
+  Every text can be an `{ "en", "fr" }` pair.
+- The validator refuses (an error card in the panel, the form unaffected):
+  no sections, a section without `items`, an unknown `type`, a
+  `feature`/`link`/`text` without `title`, a `contact` without `name`, a
+  language other than `en`/`fr`. A contact `email` that isn't an address is
+  shown without a mailto link.

@@ -1,0 +1,72 @@
+{
+  "$comment": "Resources panel for the side column of the zone attestation page (a second web part: <div data-psz-resources data-config=\".../ps-zone-attestation.resources.json\">). Item types: feature (the large job aid card), link (a compact document link), text (a small heading + one paragraph), contact (name + email). An empty url shows the item unlinked, so placeholders still show; set it to an http(s) or server-relative address to make it a link. Icons: a path under design/ or a sprite name (document, document-pdf, shield, info...). Every text can be an { en, fr } pair. Everything below is placeholder text, to be replaced.",
+  "languages": ["en", "fr"],
+  "sections": [
+    {
+      "heading": { "en": "Resources and guides", "fr": "Ressources et guides" },
+      "items": [
+        {
+          "type": "feature",
+          "title": { "en": "Security Zone Job Aid", "fr": "Aide-mémoire sur les zones de sécurité" },
+          "text": {
+            "en": "Click to view a job aid and classification tool to help you make the right choices.",
+            "fr": "Cliquez pour consulter un aide-mémoire et un outil de classification qui vous aideront à faire les bons choix."
+          },
+          "url": "",
+          "icon": "abacus-icons/light-bulb-48.svg",
+          "description": {
+            "en": "[Placeholder] What the job aid covers and when to use it.",
+            "fr": "[Texte provisoire] Le contenu de l'aide-mémoire et quand l'utiliser."
+          }
+        },
+        {
+          "type": "link",
+          "title": { "en": "Physical Security Standards", "fr": "Normes de sécurité physique" },
+          "url": "",
+          "icon": "document-pdf",
+          "description": {
+            "en": "[Placeholder] The standards each zone must meet.",
+            "fr": "[Texte provisoire] Les normes que chaque zone doit respecter."
+          }
+        },
+        {
+          "type": "link",
+          "title": { "en": "[Placeholder] Another guide", "fr": "[Texte provisoire] Un autre guide" },
+          "url": "",
+          "icon": "document",
+          "description": {
+            "en": "[Placeholder] A short description of this document.",
+            "fr": "[Texte provisoire] Une brève description de ce document."
+          }
+        }
+      ]
+    },
+    {
+      "heading": { "en": "Information", "fr": "Renseignements" },
+      "items": [
+        {
+          "type": "text",
+          "title": { "en": "[Placeholder] Why we attest", "fr": "[Texte provisoire] Pourquoi cette attestation" },
+          "text": {
+            "en": "[Placeholder] A paragraph explaining why the attestation matters and who has to complete it.",
+            "fr": "[Texte provisoire] Un paragraphe qui explique l'importance de l'attestation et qui doit la remplir."
+          }
+        },
+        {
+          "type": "text",
+          "title": { "en": "[Placeholder] Deadlines", "fr": "[Texte provisoire] Échéances" },
+          "text": {
+            "en": "[Placeholder] A paragraph about when the attestation is due and what happens next.",
+            "fr": "[Texte provisoire] Un paragraphe sur la date limite et la suite des choses."
+          }
+        },
+        {
+          "type": "contact",
+          "title": { "en": "Questions?", "fr": "Des questions?" },
+          "name": "[Placeholder] Contact Name",
+          "email": "contact.name@example.com"
+        }
+      ]
+    }
+  ]
+}

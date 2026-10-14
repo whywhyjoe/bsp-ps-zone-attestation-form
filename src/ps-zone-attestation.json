@@ -1,5 +1,5 @@
 {
-  "$comment": "Physical Security Zones Attestation. Rows come from PS_Zone-Attestation-Assignments (filtered to the signed-in user's email). Each row shows the area's current zone (CurrentZone) to confirm, or to change through the dropdown, and saves one item to PS_Zone-Attestation-Responses: ZoneSelection = the answer, PreviousZone = the current zone, ZoneChanged = whether they differ. An area with no CurrentZone gets the dropdown straight away. Both lists live on /teams/FCUWebDatastores (target.siteUrl and source.siteUrl); the page runs on /sites/FCUPortal. Users need read on the Assignments list and Add + View (own items only) on Responses. Set form.vars.jobAidUrl to show the job aid card. Bilingual: every { en, fr } pair follows the language from bilingual/intl.js. Zone VALUES (Public, Public Plus, Standards, Secure Restricted, High Security) are saved in English whatever the language, and CurrentZone must hold them spelled exactly so; only the labels are translated. The French zone names and all the zone descriptions are drafts, to be replaced.",
+  "$comment": "Physical Security Zones Attestation. Rows come from PS_Zone-Attestation-Assignments (filtered to the signed-in user's email). Each row shows the area's current zone (CurrentZone) to confirm, or to change through the dropdown, and saves one item to PS_Zone-Attestation-Responses: ZoneSelection = the answer, PreviousZone = the current zone, ZoneChanged = whether they differ. An area with no CurrentZone gets the dropdown straight away. Both lists live on /teams/FCUWebDatastores (target.siteUrl and source.siteUrl); the page runs on /sites/FCUPortal. Users need read on the Assignments list and Add + View (own items only) on Responses. The job aid and other links live in the resources panel (ps-zone-attestation.resources.json), not here. Bilingual: every { en, fr } pair follows the language from bilingual/intl.js. Zone VALUES (Public, Public Plus, Standards, Secure Restricted, High Security) are saved in English whatever the language, and CurrentZone must hold them spelled exactly so; only the labels are translated. The French zone names and all the zone descriptions are drafts, to be replaced.",
   "form": {
     "title": { "en": "Physical Security Zones Attestation", "fr": "Attestation des zones de sécurité physique" },
     "intro": {
@@ -7,17 +7,7 @@
       "fr": "[Texte provisoire] Une brève description de cette attestation : de quoi il s'agit, pourquoi c'est important et la date limite."
     },
     "languages": ["en", "fr"],
-    "appearance": { "frame": "card", "header": "band", "tint": "sky" },
-    "vars": { "jobAidUrl": "" },
-    "headerCard": {
-      "title": { "en": "Security Zone Job Aid", "fr": "Aide-mémoire sur les zones de sécurité" },
-      "text": {
-        "en": "Click to view a job aid and classification tool to help you make the right choices.",
-        "fr": "Cliquez pour consulter un aide-mémoire et un outil de classification qui vous aideront à faire les bons choix."
-      },
-      "url": "{var:jobAidUrl}",
-      "icon": "abacus-icons/light-bulb-48.svg"
-    }
+    "appearance": { "frame": "card", "header": "band", "tint": "sky" }
   },
   "target": {
     "siteUrl": "/teams/FCUWebDatastores",

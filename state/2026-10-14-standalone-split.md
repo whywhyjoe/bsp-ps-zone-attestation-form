@@ -60,7 +60,8 @@ Verified against an in-memory REST mock (dry run, setup, rerun, removal),
       `Code/ps-zone-attestation/` and none from the shared folders; no
       `BSPForms` on the page.
 - [ ] Non-admin live run: `node dev/live/live-zone.js --as <profile>`.
-- [ ] Content: real zone descriptions, official French names, job aid URL.
+- [ ] Content: real zone descriptions, official French names, and the
+      resources panel's links, information text and contact.
 - [ ] Prod install (`docs/01-hosting-and-deploy.md`).
 
 ## Landmines

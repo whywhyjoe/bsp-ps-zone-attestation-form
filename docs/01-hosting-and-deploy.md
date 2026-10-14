@@ -6,7 +6,7 @@ One folder in the portal's `Code` library:
 
 ```
 /sites/FCUPortal/Code/ps-zone-attestation/     ← the contents of src/, as is
-├─ ps-zone-attestation.js · .css · .json
+├─ ps-zone-attestation.js · .css · .json · .resources.json
 ├─ design/  (colors_and_type.css, components.css, fluent-basic-icons.svg,
 │            abacus-icons/light-bulb-48.svg, spot-illustrations/shield-checkmark-xs.svg)
 └─ lib/     (alpine.js, pnp2.bundle.js, intl.js)

@@ -1,0 +1,16 @@
+<!-- =====================================================================
+  Physical Security Zones Attestation — resources panel web part snippet
+  ---------------------------------------------------------------------
+  The side-column companion to the form: resources and guides (job aid,
+  document links), information text and a contact card. Paste into a
+  Modern Script Editor web part in the page's narrow (right) column, on
+  the same page as the form. TENANT is the tenant host.
+
+  It uses the same engine script as the form, with the same ?v=. The
+  script loads once even with both web parts on the page. Edit the
+  wording and links in ps-zone-attestation.resources.json (fetched
+  uncached: live on the next page load, no ?v= bump).
+  ===================================================================== -->
+
+<div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
+<script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.1.0"></script>
