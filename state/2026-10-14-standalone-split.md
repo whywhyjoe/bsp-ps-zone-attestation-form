@@ -1,7 +1,8 @@
 # State — Standalone split from bsp-sp-parts
 
 Last touched: 2026-10-14
-Branch: `main` (local only, no remote). `crew/zone-split-review` was merged
+Branch: `main`, pushed to private GitHub repo
+`whywhyjoe/bsp-ps-zone-attestation-form`. `crew/zone-split-review` was merged
 (`9a416c3`), then its branch and worktree were deleted.
 State: split done; three review rounds behind it (crew, Codex turn 1, Codex
 re-review turn 2), all fixes committed on main; suite 100/100 green. Dev
@@ -29,6 +30,14 @@ property and can't match two empty forms; the overview admits the shared
 assigning `window.PSZoneForm`) is now checked too. Each new check was shown
 to fail on the breakage it guards.
 
+Deploy handoff: `docs/05-deploy-steps.md` is a step-by-step prod guide for a
+developer new to the project (checks after every step, troubleshooting
+table), and `.github/copilot-instructions.md` points Copilot at it.
+`deploy/dcspad-setup-lists.js` creates both lists and seeds `TEST - ` rows
+for four attesters (incl. no-zone cases), with a `remove-test-data` mode.
+Verified against an in-memory REST mock (dry run, setup, rerun, removal),
+**not yet run on a real tenant**.
+
 ## Decisions (user, 2026-10-14)
 
 - projects-standard profile `sp-app`, with the `browser-tests` and
@@ -44,7 +53,8 @@ to fail on the breakage it guards.
 
 ## Next
 
-- [ ] Create the GitHub repo and push, if wanted.
+- [ ] Try `deploy/dcspad-setup-lists.js` on the dev tenant (dry run, setup,
+      remove-test-data) before prod.
 - [ ] Dev live run: `dev/live/live-deploy.ps1 -Ver 1.0.0` →
       `node dev/live/live-zone.js` (admin) → `--as <profile>` (non-admin).
 - [ ] Content: real zone descriptions, official French names, job aid URL.

@@ -62,11 +62,13 @@ is not `xo-handoff` and `.xo-handoffs/`; don't cross-file them.
 | `src/design/` | Vendored BSP subset: tokens, components, sprite, one icon, one illustration. |
 | `src/lib/` | Vendored Alpine 3.15.2, pnpjs v2 bundle, intl.js 1.1.4. |
 | `webpart/` | The snippet pasted into the page's Modern Script Editor web part. |
+| `deploy/dcspad-setup-lists.js` | Run in DCSPad: creates both lists and their columns, adds `TEST - ` placeholder rows for four attesters, removes them again (`MODE`). Plain REST, dry run by default, idempotent. Never deployed. Keep its columns in step with `docs/02` and `docs/05`. |
 | `dev/index.html` + `mock-sp.js` | Harness: the real `src/` folder, SharePoint mocked. |
 | `dev/live/` | Dev-tenant live test (needs the `sp-env` skill). Never run on prod. |
 | `tests/smoke.cjs` | Playwright regression suite. See `tests/README.md`. |
 | `tests/fixtures/bsp-forms-0.5.1/` | The real shared BSP Forms engine + CSS, for the coexistence checks only. Never deployed, never edited. |
-| `docs/` | Durable reference. Start at `docs/README.md`. |
+| `docs/` | Durable reference. Start at `docs/README.md`. `docs/05-deploy-steps.md` is the only copy of the deploy steps. |
+| `.github/copilot-instructions.md` | Stub for Copilot: points at this file and the deploy guide. Never a second copy of these rules. |
 
 ## Where things go
 

@@ -8,6 +8,12 @@ in the engine (pnpjs v2, `lib/pnp2.bundle.js`). The mock twin is
 
 ## The lists
 
+This section says what each column means. To create the lists and set
+permissions, follow [`05-deploy-steps.md`](05-deploy-steps.md) steps 1–2.
+That page repeats the names and types as a setup checklist, and
+`deploy/dcspad-setup-lists.js` creates them, so change all three if a column
+changes.
+
 Create each column with **exactly** this name first. The name you type
 becomes the internal name the form uses, and the display name can change
 afterwards.

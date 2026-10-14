@@ -38,11 +38,15 @@ This runs the regression suite (100 checks, Playwright). See
 
 ## Deploying
 
-Upload `src/` to the portal's `Code` library as `ps-zone-attestation/`,
-create the two lists, and paste the snippet from
-[`webpart/ps-zone-attestation.webpart.html`](webpart/ps-zone-attestation.webpart.html)
-into a Modern Script Editor web part on the attestation's own page. Steps and
-checks: [`docs/01-hosting-and-deploy.md`](docs/01-hosting-and-deploy.md).
+**Follow [`docs/05-deploy-steps.md`](docs/05-deploy-steps.md).** It's step
+by step, for someone new to the project, with a check after each step. In
+short: create two lists, upload the contents of `src/` to
+`/sites/FCUPortal/Code/ps-zone-attestation/`, add one web part to a page of
+its own, and check it. No build and no install.
+
+Using Copilot? It picks up
+[`.github/copilot-instructions.md`](.github/copilot-instructions.md), which
+points it at the same guide.
 
 ## Where to look
 

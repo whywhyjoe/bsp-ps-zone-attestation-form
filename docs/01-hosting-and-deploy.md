@@ -52,55 +52,16 @@ per-file URL override.
 
 ## Deploy
 
-Done by hand on the prod machine: `git pull`, then copy files into the `Code`
-library (browser upload or the OneDrive-synced folder). Nothing outside
-`src/` is ever deployed.
+The procedure (first install, updates, rollback, troubleshooting) is
+[`05-deploy-steps.md`](05-deploy-steps.md). It's written for someone new to
+the project, so keep it the only copy of the steps. It's done by hand on
+the prod machine: `git pull`, then copy the contents of `src/` into the `Code`
+library. Nothing outside `src/` is ever deployed.
 
-### First install
-
-1. **Lists and permissions** on `/teams/FCUWebDatastores`: see
-   `02-sharepoint-data.md`. Fill `CurrentZone` for each assignment.
-2. **Config:** in `src/ps-zone-attestation.json` set `form.vars.jobAidUrl`
-   once the job aid exists (the card stays hidden while it's empty). It can
-   also be set later in the deployed copy.
-3. **Upload** the contents of `src/` to `Code/ps-zone-attestation/`, keeping
-   `design/` and `lib/` as subfolders (11 files in all).
-4. **Page** on `/sites/FCUPortal`: add a Modern Script Editor web part and
-   paste `webpart/ps-zone-attestation.webpart.html` with `TENANT` replaced,
-   keeping `data-validate` on the div for now. Publish.
-5. **Check** (this is the verification step, and the deploy isn't done
-   without it):
-   1. Load the page. The *Form configuration check* table above the form
-      shows every row **OK**: Responses columns, `target.set`, row columns,
-      and the Assignments (source) columns. A **Problem** row names the
-      column to fix.
-   2. In devtools → Network, every form asset request goes to
-      `…/Code/ps-zone-attestation/…`; SharePoint list and user REST calls
-      go to the configured sites. No asset request goes to `Code/bsp-design`,
-      `Code/lib` or `Code/bsp-forms`. Console: no `[PS Zone Form]` errors.
-   3. Remove `data-validate`, republish.
-   4. As an ordinary attester with assignment rows: submit. One Responses
-      item per area, with `ZoneSelection`, `PreviousZone`, `ZoneChanged`,
-      `Attestation = Confirmed` and the time. Reload → "already submitted".
-   5. `?lang=fr` on the page URL → French. (Real language detection is still
-      an intl.js placeholder.)
-
-### Updating the engine or CSS
-
-1. Keep copies of the deployed `ps-zone-attestation.js` and `.css`.
-2. Upload the new pair over them.
-3. Bump `?v=` in the page's web part to the new `VERSION`.
-4. Load the page: renders, no console errors, one test submit if the change
-   touched saving.
-
-**Rollback:** restore the saved pair and the old `?v=`.
-
-### Changing wording, zones or the job aid
-
-Edit the **deployed** JSON (and commit the same edit here). It's live on
-refresh. Keep each zone's `value` in English. A new attestation round means
-clearing or archiving the Responses list: an area with a response from that
-user counts as done.
+Its verification step is what makes a deploy count as done. The
+*Form configuration check* (`data-validate`) is all **OK**, no form asset
+request leaves `Code/ps-zone-attestation/`, and a test submit saves one
+Responses item per area.
 
 ## Dev tenant
 
