@@ -2,8 +2,9 @@
 
 Last touched: 2026-10-14
 Branch: `crew/zone-split-review` (review branch; Joe decides whether to merge)
-State: Fix 1 and Fix 2 (test-only) committed. Brume ran 93/93; Fix 2's
-double-run confirmation is pending. Dev live run not done; **prod untouched**.
+State: Fix 1 and Fix 2 (test-only) committed. Fix 2 passed four local 93-check
+runs (two sequential, then two concurrent); final reviewer sign-off is pending.
+Dev live run not done; **prod untouched**.
 
 ## What was done
 
@@ -15,8 +16,7 @@ for what was copied from where.
 
 On the separate `crew/zone-split-review` branch, the hosting and vendoring
 guides' cache instructions were corrected during review 1: design CSS and the
-icon sprite have no per-file URL override. The review and fix cycle is still
-in progress.
+icon sprite have no per-file URL override. The final review is pending.
 
 The overview and hosting guide now distinguish asset requests from SharePoint
 REST calls when describing the standalone check and deploy verification.
@@ -34,7 +34,9 @@ the checks read the DOM once, without retrying, before the assignments load
 had settled; likely two suite runs overlapped. Fix 2 (docs/plans/step-2.md,
 tests only): `openZone` now waits for `asg.state` to leave idle/loading
 (tolerant, 15 s) plus a 100 ms paint tick, and every 5000 ms wait is 15000.
-Confirming runs (two in a row, two at once) are pending Joe or Brume.
+On `a49c072`, Rook ran the 93-check suite twice in sequence, then two copies
+concurrently; all four exited 0 with ALL CHECKS PASSED. These are local mock
+and loader checks, not a live SharePoint run.
 
 ## Decisions (user, 2026-10-14)
 
