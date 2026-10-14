@@ -1,9 +1,10 @@
 # State — Standalone split from bsp-sp-parts
 
 Last touched: 2026-10-14
-Branch: `main` (new repo, committed locally, no remote yet)
-State: repo scaffolded and populated; harness suite 90/90 green; dev live
-run not done; **prod untouched**.
+Branch: `crew/zone-split-review` (review branch; Joe decides whether to merge)
+State: Fix 1 and Fix 2 (test-only) committed. Fix 2 passed four local 93-check
+runs (two sequential, then two concurrent); final reviewer sign-off is pending.
+Dev live run not done; **prod untouched**.
 
 ## What was done
 
@@ -12,6 +13,30 @@ The zone attestation was a config of the shared BSP Forms engine in
 this repo so nothing shared can break it (2026-10-14). Everything it loads
 now sits in `src/`, which deploys as one folder. See `docs/04-vendoring.md`
 for what was copied from where.
+
+On the separate `crew/zone-split-review` branch, the hosting and vendoring
+guides' cache instructions were corrected during review 1: design CSS and the
+icon sprite have no per-file URL override. The final review is pending.
+
+The overview and hosting guide now distinguish asset requests from SharePoint
+REST calls when describing the standalone check and deploy verification.
+
+Fix 1 (docs/plans/step-1.md): `testStandalone` gained a non-mock loader block
+(3 checks, suite now 93), and `live-deploy.ps1`
+now runs config + template-marker checks before uploading or recycling anything.
+Nothing under `src/` changed.
+
+Rook's local suite runs on the review branch disagreed with Brume's 93/93:
+one stopped at the done screen after Confirm (`tests/smoke.cjs:175`), another
+failed three zone checks (one row already submitted, everything submitted,
+earlier-responses read cut off). Cause: `openZone` slept a fixed 1200 ms and
+the checks read the DOM once, without retrying, before the assignments load
+had settled; likely two suite runs overlapped. Fix 2 (docs/plans/step-2.md,
+tests only): `openZone` now waits for `asg.state` to leave idle/loading
+(tolerant, 15 s) plus a 100 ms paint tick, and every 5000 ms wait is 15000.
+On `a49c072`, Rook ran the 93-check suite twice in sequence, then two copies
+concurrently; all four exited 0 with ALL CHECKS PASSED. These are local mock
+and loader checks, not a live SharePoint run.
 
 ## Decisions (user, 2026-10-14)
 

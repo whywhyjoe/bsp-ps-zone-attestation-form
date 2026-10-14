@@ -22,8 +22,9 @@ some other form must not be able to break it.
   one folder. The engine finds `design/` and `lib/` beside itself
   (`engineBase + 'design/'`, `engineBase + 'lib/'`), derived from its own
   `<script src>`. If anything points back at the shared `Code/` folders, the
-  split is undone without anyone noticing. The suite's "every request stays
-  inside src/" check is what notices.
+  split is undone without anyone noticing. The suite checks that form asset
+  requests stay inside `src/`; SharePoint REST calls and the local harness
+  are separate requests.
 - **Renamed identity.** The shared engine is still deployed on the portal and
   may share a page with this one. Both used `window.BSPForms` with an
   "already loaded" guard, mounted every `[data-bsp-form]`, and styled

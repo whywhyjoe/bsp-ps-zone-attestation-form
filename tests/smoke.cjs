@@ -82,6 +82,14 @@ async function openZone(browser, opts) {
     keysCap: opts.keysCap == null ? null : opts.keysCap });
   await page.goto(BASE + ZONE + (opts.query || ''));
   await page.waitForTimeout(1200);
+  // wait for the assignments load to leave idle/loading; tolerant on purpose:
+  // config-error and doctor pages never settle, and the checks after it still fail loudly
+  await page.waitForFunction(() => {
+    var el = document.querySelector('[data-psz-uid]');
+    var d = el && window.Alpine && window.Alpine.$data(el);
+    return !d || !d.asg || (d.asg.state !== 'idle' && d.asg.state !== 'loading');
+  }, null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(100); // let Alpine's next tick paint rows and done screens
   return { ctx, page };
 }
 // pick a zone by its label; a row showing confirm / change is switched to
@@ -122,7 +130,7 @@ async function testZoneAttestation(browser) {
   check('job aid card opens the configured URL in a new tab',
     (await card.getAttribute('href')) === JOB_AID && (await card.getAttribute('target')) === '_blank' &&
     /noopener/.test(await card.getAttribute('rel')));
-  await page.waitForFunction(() => document.querySelector('.psz-doctor tbody tr'), null, { timeout: 5000 });
+  await page.waitForFunction(() => document.querySelector('.psz-doctor tbody tr'), null, { timeout: 15000 });
   const doctor = await page.$$eval('.psz-doctor tbody tr', trs => trs.map(tr => [...tr.children].map(td => td.innerText.trim())));
   check('doctor: every target + source column OK', doctor.length >= 12 && doctor.every(r => r[4] === 'OK'),
     doctor.filter(r => r[4] !== 'OK').map(r => r.join('|')).join('; '));
@@ -172,7 +180,7 @@ async function testZoneAttestation(browser) {
   await navClick(page, 'Submit attestation');
   await page.waitForTimeout(250);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const adds = await zoneAdds(page);
   const byId = Object.fromEntries(adds.map(p => [p.LookupID, p]));
   check('one item per row', adds.length === 3, adds.length);
@@ -260,7 +268,7 @@ async function testZoneAttestation(browser) {
   await zoneConfirm(page, 1); await zonePick(page, 2, L.sec);
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(250);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const cAdds = Object.fromEntries((await zoneAdds(page)).map(p => [p.LookupID, p]));
   check('confirmed rows save the current zone, PreviousZone = it, ZoneChanged = false',
     cAdds[12].ZoneSelection === 'High Security' && cAdds[12].PreviousZone === 'High Security' && cAdds[12].ZoneChanged === false &&
@@ -274,7 +282,7 @@ async function testZoneAttestation(browser) {
   await page.locator('[data-psz-field="attestation"] input').check();
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(250);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const tAdds = Object.fromEntries((await zoneAdds(page)).map(p => [p.LookupID, p]));
   check('previousColumn = Title keeps the previous zone; a row with none falls back to titleTemplate',
     tAdds[12].Title === 'High Security' && tAdds[13].Title === 'FCP - Tower 37 — dev.tester@example.com',
@@ -302,7 +310,7 @@ async function testZoneAttestation(browser) {
   await page.locator('[data-psz-field="attestation"] input').check();
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   check('partial save → "1 of 3 areas are confirmed saved" message', /1 of 3 areas are confirmed saved/.test(await page.locator('.psz__pageerror').textContent()));
   check('the saved row is locked', (await page.locator('.psz-asg__row.is-saved').count()) === 1 &&
     (await page.locator('.psz-asg__row.is-saved .psz-combo__clear').isHidden()) &&
@@ -311,7 +319,7 @@ async function testZoneAttestation(browser) {
   await page.evaluate(() => { window.PSZ_MOCK_FAIL = {}; });
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const ids = (await zoneAdds(page)).map(p => p.LookupID).sort();
   check('retry saves only the rest — 3 items, no duplicates', JSON.stringify(ids) === '[11,12,13]', JSON.stringify(ids));
   await ctx.close();
@@ -363,7 +371,7 @@ async function testZoneAttestation(browser) {
   await navClick(page, 'Soumettre'); await page.waitForTimeout(200);
   check('French confirmation dialog', /Une fois soumises/.test(await page.locator('.psz-dialog').textContent()));
   await navClick(page, 'Confirmer');
-  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const frZones = (await zoneAdds(page)).map(p => p.ZoneSelection).sort();
   check('French submit saves English zone values', JSON.stringify(frZones) === '["High Security","Public","Standards"]', JSON.stringify(frZones));
   check('no page errors (French)', page.__errors.length === 0, page.__errors.join(' | '));
@@ -409,13 +417,13 @@ async function testZoneAttestation(browser) {
   await page.locator('[data-psz-field="attestation"] input').check();
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   check('lost reply → "1 of 3 areas are confirmed saved" (the rest only "may not be")',
     /1 of 3 areas are confirmed saved; the rest may not be/.test(await page.locator('.psz__pageerror').textContent()));
   await page.evaluate(() => { window.PSZ_MOCK_FAIL = {}; });
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const lostWrites = await page.evaluate(() => window.__PSZ_MOCK_WRITES__);
   const lostIds = lostWrites.filter(w => w.op === 'addItem').map(w => w.payload.LookupID).sort();
   check('retry asked the list about exactly the unsaved rows first',
@@ -430,11 +438,11 @@ async function testZoneAttestation(browser) {
   await page.locator('[data-psz-field="attestation"] input').check();
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   await page.evaluate(() => { window.PSZ_MOCK_FAIL = {}; });
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const capIds = (await zoneAdds(page)).map(p => p.LookupID).sort();
   check('capped earlier-responses read: retry still saves no duplicate', JSON.stringify(capIds) === '[11,12,13]', JSON.stringify(capIds));
   await ctx.close();
@@ -444,7 +452,7 @@ async function testZoneAttestation(browser) {
   await page.locator('[data-psz-field="attestation"] input').check();
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   const firstLost = await page.locator('.psz__pageerror').textContent();
   check('first add lost → "Not every area could be saved", never "nothing was saved"',
     /Not every area could be saved/.test(firstLost) && !/nothing was saved/.test(firstLost), firstLost);
@@ -463,7 +471,7 @@ async function testZoneAttestation(browser) {
   await page.locator('[data-psz-field="attestation"] input').check();
   await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
-  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 5000 });
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   saved = await zoneAdds(page);
   check('hostile values saved exactly', saved.length === 1 && saved[0].ZoneSelection === EVIL_ZONE && saved[0].AreaName === EVIL_AREA &&
     saved[0].UserDescription === '<script>window.__xss=2</script>');
@@ -565,8 +573,32 @@ async function testStandalone(browser) {
   }, SRC);
   check('thank-you illustration is in design/', files.art);
   await page.addScriptTag({ url: SRC + 'lib/pnp2.bundle.js' });
-  check('lib/pnp2.bundle.js defines window.pnp.sp', await page.evaluate(() => !!(window.pnp && window.pnp.sp && window.pnp.sp.web)));
+  check('lib/pnp2.bundle.js is a working pnp bundle (direct load)', await page.evaluate(() => !!(window.pnp && window.pnp.sp && window.pnp.sp.web)));
   check('no page errors (standalone)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // the real (non-mock) loader: mock-sp.js is blanked so PSZ_MOCK_SP is undefined and the engine
+  // runs its real adapter, which loads pnp itself; /_api/ gets a local 404 (no SharePoint here)
+  ctx = await browser.newContext({ viewport: { width: 1100, height: 1600 } });
+  page = await ctx.newPage();
+  const realUrls = [];
+  page.on('request', r => realUrls.push(r.url()));
+  await page.route('**/dev/mock-sp.js', r => r.fulfill({ contentType: 'application/javascript', body: '/* mock off: real adapter */' }));
+  await page.route('**/_api/**', r => r.fulfill({ status: 404, body: '' }));
+  await page.goto(BASE);
+  await page.waitForSelector('script[data-psz-script="pnp"]', { state: 'attached', timeout: 8000 });
+  await page.waitForFunction(() => !!(window.pnp && window.pnp.sp), null, { timeout: 8000 }).catch(() => {});
+  const pnpTag = await page.evaluate(() => {
+    const s = document.querySelector('script[data-psz-script="pnp"]');
+    return s ? s.src.split('?')[0] : null;
+  });
+  check('real loader requests pnp from src/lib/',
+    pnpTag === SRC + 'lib/pnp2.bundle.js' && realUrls.some(u => u.split('?')[0] === SRC + 'lib/pnp2.bundle.js'), String(pnpTag));
+  check('real loader: window.pnp.sp is defined', await page.evaluate(() => !!(window.pnp && window.pnp.sp)));
+  // same-origin /_api/ URLs are SharePoint REST calls the route answered with 404, not asset loads
+  const realOutside = realUrls.filter(u => !u.startsWith(SRC) && !u.startsWith(harness) && !/^(data|about|blob):/.test(u) &&
+    !(u.startsWith(new URL('/', BASE).href) && u.includes('/_api/')));
+  check('real loader: no asset request leaves src/', realOutside.length === 0, realOutside.join(' '));
   await ctx.close();
 
   // a shared BSP Forms engine already on the page can't swallow this one

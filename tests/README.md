@@ -28,7 +28,7 @@ passed as the first argument.
 
 | Suite | Tier | Runtime | Checks | What it proves |
 | --- | --- | --- | --- | --- |
-| `node tests/smoke.cjs` | full | ~1.5 min | 90 | Edit-mode placeholder; the whole attestation lifecycle on the mock (load, filter, confirm/change/keep, validation and focus, confirm dialog, per-row payload, partial-save and lost-reply retries, already-answered rows, cut-off reads, EN/FR, frozen answers mid-save, hostile text, config errors); and the **standalone** guarantees: no request leaves `src/`, the vendored files all load, every sprite reference resolves, the `.psz` layer applies, pnp loads from `lib/`, and a shared BSP Forms engine already on the page can't take the form over. |
+| `node tests/smoke.cjs` | full | ~1.5 min | 93 | Edit-mode placeholder; the whole attestation lifecycle on the mock (load, filter, confirm/change/keep, validation and focus, confirm dialog, per-row payload, partial-save and lost-reply retries, already-answered rows, cut-off reads, EN/FR, frozen answers mid-save, hostile text, config errors); and the **standalone** guarantees: no request leaves `src/`, the vendored files all load, every sprite reference resolves, the `.psz` layer applies, the real (non-mock) loader fetches pnp from `lib/`, and a shared BSP Forms engine already on the page can't take the form over. |
 
 ## Browser-suite rules
 

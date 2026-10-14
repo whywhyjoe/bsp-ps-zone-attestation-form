@@ -44,9 +44,11 @@ own and isn't set by the engine.
 
 `?v=` on the script URL is the version stamp for the engine **and** its CSS.
 Bump it on every engine or CSS deploy and keep it equal to `VERSION` in the
-engine. The config never needs a bump. The vendored `design/` and `lib/`
-files carry no stamp, so if one is ever re-vendored, rename the file or add a
-`?v=` setting override to that deploy (`04-vendoring.md`).
+engine. The config never needs a bump. Vendored `design/` and `lib/` files
+carry no stamp. When re-vendoring one, give the changed file a new name and
+update its engine or config reference (`04-vendoring.md`). The script-library
+URL settings can point to renamed files; the design CSS and sprite have no
+per-file URL override.
 
 ## Deploy
 
@@ -72,8 +74,9 @@ library (browser upload or the OneDrive-synced folder). Nothing outside
       shows every row **OK**: Responses columns, `target.set`, row columns,
       and the Assignments (source) columns. A **Problem** row names the
       column to fix.
-   2. In devtools → Network, every form request goes to
-      `…/Code/ps-zone-attestation/…`. Nothing goes to `Code/bsp-design`,
+   2. In devtools → Network, every form asset request goes to
+      `…/Code/ps-zone-attestation/…`; SharePoint list and user REST calls
+      go to the configured sites. No asset request goes to `Code/bsp-design`,
       `Code/lib` or `Code/bsp-forms`. Console: no `[PS Zone Form]` errors.
    3. Remove `data-validate`, republish.
    4. As an ordinary attester with assignment rows: submit. One Responses
