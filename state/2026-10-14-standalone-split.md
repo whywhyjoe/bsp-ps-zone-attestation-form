@@ -1,9 +1,9 @@
 # State — Standalone split from bsp-sp-parts
 
 Last touched: 2026-10-14
-Branch: `main` (new repo, committed locally, no remote yet)
-State: repo scaffolded and populated; harness suite 90/90 green; dev live
-run not done; **prod untouched**.
+Branch: `crew/zone-split-review` (review branch; Joe decides whether to merge)
+State: Fix 1 committed; the prior harness suite was 90/90 green. The new
+93-check suite is not green in local runs. Dev live run not done; **prod untouched**.
 
 ## What was done
 
@@ -18,10 +18,19 @@ guides' cache instructions were corrected during review 1: design CSS and the
 icon sprite have no per-file URL override. The review and fix cycle is still
 in progress.
 
+The overview and hosting guide now distinguish asset requests from SharePoint
+REST calls when describing the standalone check and deploy verification.
+
 Fix 1 (docs/plans/step-1.md): `testStandalone` gained a non-mock loader block
-(3 checks, suite now 93 — pending Joe's confirming run), and `live-deploy.ps1`
+(3 checks, suite now 93), and `live-deploy.ps1`
 now runs config + template-marker checks before uploading or recycling anything.
 Nothing under `src/` changed.
+
+Rook's local suite runs on the review branch: the first stopped at
+`tests/smoke.cjs:175` waiting for the done screen after Confirm. A second run
+reached the end: all three new real-loader checks passed, but three zone checks
+failed (one row already submitted, everything submitted, earlier-responses
+read cut off). The failures need triage before Review 2 or sign-off.
 
 ## Decisions (user, 2026-10-14)
 

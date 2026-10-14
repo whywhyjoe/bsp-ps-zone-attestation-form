@@ -74,8 +74,9 @@ library (browser upload or the OneDrive-synced folder). Nothing outside
       shows every row **OK**: Responses columns, `target.set`, row columns,
       and the Assignments (source) columns. A **Problem** row names the
       column to fix.
-   2. In devtools → Network, every form request goes to
-      `…/Code/ps-zone-attestation/…`. Nothing goes to `Code/bsp-design`,
+   2. In devtools → Network, every form asset request goes to
+      `…/Code/ps-zone-attestation/…`; SharePoint list and user REST calls
+      go to the configured sites. No asset request goes to `Code/bsp-design`,
       `Code/lib` or `Code/bsp-forms`. Console: no `[PS Zone Form]` errors.
    3. Remove `data-validate`, republish.
    4. As an ordinary attester with assignment rows: submit. One Responses
