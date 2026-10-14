@@ -27,7 +27,8 @@ Diagnosis, from reading the code (not yet proven by a run):
 
 ## Inputs
 
-- `tests/smoke.cjs`: `openZone` at :63-86. There are 17 `timeout: 5000` waits.
+- `tests/smoke.cjs`: `openZone` at :63-86. There are 13 `timeout: 5000` waits
+  (an earlier draft said 17; Pika's grep and a recount both give 13).
 - Engine load states: `asg.state` is one of `idle | loading | ready | error |
   empty | done` (`src/ps-zone-attestation.js:2031`, set at :2079 and
   :2121-2130). The Alpine root is the element with `data-psz-uid`
