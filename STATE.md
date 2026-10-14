@@ -11,18 +11,18 @@ the `project-state` skill.
 | | |
 | --- | --- |
 | **Version** | engine 1.0.0 (fork of BSP Forms 0.5.1), config as of bsp-sp-parts `fe5c040` |
-| **Deployed** | Nowhere yet. Prod has never had the zone attestation, and dev has only the BSP Forms copy (`<code>/bsp-forms-zc/`), not this folder. |
+| **Deployed** | **Dev** (2026-10-14, `?v=1.0.0`): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, page `SitePages/ps-zone-attestation-test.aspx`, lists on the tenant root. **Prod:** not yet. |
 | **Last shipped** | — (repo created 2026-10-14; two review rounds since; harness suite 100/100 green) |
 
 ## Next committed step
 
-Dev live run of this folder: `dev/live/live-deploy.ps1 -Ver 1.0.0`, then
-`node dev/live/live-zone.js` as admin and `--as <profile>` as a non-admin.
-The scripts are ported but haven't run from this repo yet.
+Non-admin dev run: `node dev/live/live-zone.js --as <profile>` (the admin
+run passed 23/23 on 2026-10-14). Then try `deploy/dcspad-setup-lists.js` on
+dev before prod.
 
 ## Blocking
 
-- [ ] Dev live run green from this repo (above).
+- [ ] Non-admin dev run green (above).
 - [ ] Real zone descriptions and the official French zone names (form JSON
       only; today they're `[Placeholder]` drafts).
 - [ ] The job aid's URL for `form.vars.jobAidUrl` (the card hides until set).

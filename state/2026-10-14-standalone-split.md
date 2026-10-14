@@ -55,8 +55,11 @@ Verified against an in-memory REST mock (dry run, setup, rerun, removal),
 
 - [ ] Try `deploy/dcspad-setup-lists.js` on the dev tenant (dry run, setup,
       remove-test-data) before prod.
-- [ ] Dev live run: `dev/live/live-deploy.ps1 -Ver 1.0.0` →
-      `node dev/live/live-zone.js` (admin) → `--as <profile>` (non-admin).
+- [x] Dev deploy (`live-deploy.ps1 -Ver 1.0.0`) and admin live run:
+      23/23 on 2026-10-14. On the live page, all 11 form files loaded from
+      `Code/ps-zone-attestation/` and none from the shared folders; no
+      `BSPForms` on the page.
+- [ ] Non-admin live run: `node dev/live/live-zone.js --as <profile>`.
 - [ ] Content: real zone descriptions, official French names, job aid URL.
 - [ ] Prod install (`docs/01-hosting-and-deploy.md`).
 
