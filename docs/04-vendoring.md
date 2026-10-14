@@ -45,6 +45,9 @@ Only when there's a reason (a bug fix this form needs, a security fix in a
 library). Never as routine catch-up: an unchanged copy is the point.
 
 1. Copy the new file over the old one, byte for byte (no reformatting).
+   `.gitattributes` marks `src/design/**` and `src/lib/**` `-text`, so git
+   stores and checks out exactly those bytes, line endings included (the
+   design files and intl.js are CRLF as copied; Alpine and pnp are LF).
 2. Update its row: source commit, version, hash.
 3. Run `node tests/smoke.cjs`. For a design-system change, also look at the
    harness in both languages, because a CSS change can pass every check and

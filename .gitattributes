@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Vendored byte copies: stored and checked out exactly as copied, never
+# line-ending converted, so their SHA-256 matches docs/04-vendoring.md.
+src/design/** -text
+src/lib/** -text
