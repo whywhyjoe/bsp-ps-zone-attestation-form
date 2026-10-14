@@ -2,8 +2,8 @@
 
 Last touched: 2026-10-14
 Branch: `crew/zone-split-review` (review branch; Joe decides whether to merge)
-State: Fix 1 committed; the prior harness suite was 90/90 green. The new
-93-check suite is not green in local runs. Dev live run not done; **prod untouched**.
+State: Fix 1 and Fix 2 (test-only) committed. Brume ran 93/93; Fix 2's
+double-run confirmation is pending. Dev live run not done; **prod untouched**.
 
 ## What was done
 
@@ -26,11 +26,15 @@ Fix 1 (docs/plans/step-1.md): `testStandalone` gained a non-mock loader block
 now runs config + template-marker checks before uploading or recycling anything.
 Nothing under `src/` changed.
 
-Rook's local suite runs on the review branch: the first stopped at
-`tests/smoke.cjs:175` waiting for the done screen after Confirm. A second run
-reached the end: all three new real-loader checks passed, but three zone checks
-failed (one row already submitted, everything submitted, earlier-responses
-read cut off). The failures need triage before Review 2 or sign-off.
+Rook's local suite runs on the review branch disagreed with Brume's 93/93:
+one stopped at the done screen after Confirm (`tests/smoke.cjs:175`), another
+failed three zone checks (one row already submitted, everything submitted,
+earlier-responses read cut off). Cause: `openZone` slept a fixed 1200 ms and
+the checks read the DOM once, without retrying, before the assignments load
+had settled; likely two suite runs overlapped. Fix 2 (docs/plans/step-2.md,
+tests only): `openZone` now waits for `asg.state` to leave idle/loading
+(tolerant, 15 s) plus a 100 ms paint tick, and every 5000 ms wait is 15000.
+Confirming runs (two in a row, two at once) are pending Joe or Brume.
 
 ## Decisions (user, 2026-10-14)
 
