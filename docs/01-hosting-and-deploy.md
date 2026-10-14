@@ -44,9 +44,11 @@ own and isn't set by the engine.
 
 `?v=` on the script URL is the version stamp for the engine **and** its CSS.
 Bump it on every engine or CSS deploy and keep it equal to `VERSION` in the
-engine. The config never needs a bump. The vendored `design/` and `lib/`
-files carry no stamp, so if one is ever re-vendored, rename the file or add a
-`?v=` setting override to that deploy (`04-vendoring.md`).
+engine. The config never needs a bump. Vendored `design/` and `lib/` files
+carry no stamp. When re-vendoring one, give the changed file a new name and
+update its engine or config reference (`04-vendoring.md`). The script-library
+URL settings can point to renamed files; the design CSS and sprite have no
+per-file URL override.
 
 ## Deploy
 

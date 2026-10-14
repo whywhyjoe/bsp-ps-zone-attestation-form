@@ -13,6 +13,11 @@ this repo so nothing shared can break it (2026-10-14). Everything it loads
 now sits in `src/`, which deploys as one folder. See `docs/04-vendoring.md`
 for what was copied from where.
 
+On the separate `crew/zone-split-review` branch, the hosting and vendoring
+guides' cache instructions were corrected during review 1: design CSS and the
+icon sprite have no per-file URL override. The review and fix cycle is still
+in progress.
+
 ## Decisions (user, 2026-10-14)
 
 - projects-standard profile `sp-app`, with the `browser-tests` and

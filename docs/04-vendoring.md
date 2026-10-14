@@ -53,8 +53,10 @@ library). Never as routine catch-up: an unchanged copy is the point.
    harness in both languages, because a CSS change can pass every check and
    still look wrong.
 4. **Cache:** the vendored files have no `?v=`. Deploy a changed one under a
-   new name (e.g. `components.1-2-0.css`) and point the engine at it, or the
-   browser may keep the old copy. Log it.
+   new name (e.g. `components.1-2-0.css`) and update its reference, or the
+   browser may keep the old copy. Design CSS and the sprite need an engine
+   reference change; config icons and illustrations need a config path change.
+   Libraries can use the engine's script URL settings. Log it.
 
 ## Porting an upstream engine fix
 
