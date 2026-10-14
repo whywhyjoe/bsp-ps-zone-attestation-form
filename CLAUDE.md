@@ -65,6 +65,7 @@ is not `xo-handoff` and `.xo-handoffs/`; don't cross-file them.
 | `dev/index.html` + `mock-sp.js` | Harness: the real `src/` folder, SharePoint mocked. |
 | `dev/live/` | Dev-tenant live test (needs the `sp-env` skill). Never run on prod. |
 | `tests/smoke.cjs` | Playwright regression suite. See `tests/README.md`. |
+| `tests/fixtures/bsp-forms-0.5.1/` | The real shared BSP Forms engine + CSS, for the coexistence checks only. Never deployed, never edited. |
 | `docs/` | Durable reference. Start at `docs/README.md`. |
 
 ## Where things go

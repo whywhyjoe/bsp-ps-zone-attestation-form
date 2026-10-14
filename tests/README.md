@@ -28,7 +28,33 @@ passed as the first argument.
 
 | Suite | Tier | Runtime | Checks | What it proves |
 | --- | --- | --- | --- | --- |
-| `node tests/smoke.cjs` | full | ~1.5 min | 93 | Edit-mode placeholder; the whole attestation lifecycle on the mock (load, filter, confirm/change/keep, validation and focus, confirm dialog, per-row payload, partial-save and lost-reply retries, already-answered rows, cut-off reads, EN/FR, frozen answers mid-save, hostile text, config errors); and the **standalone** guarantees: no request leaves `src/`, the vendored files all load, every sprite reference resolves, the `.psz` layer applies, the real (non-mock) loader fetches pnp from `lib/`, and a shared BSP Forms engine already on the page can't take the form over. |
+| `node tests/smoke.cjs` | full | ~1.5 min | 100 | Edit-mode placeholder; the whole attestation lifecycle on the mock (load, filter, confirm/change/keep, validation and focus, confirm dialog, per-row payload, partial-save and lost-reply retries, already-answered rows, cut-off reads, EN/FR, frozen answers mid-save, hostile text, config errors); and the **standalone** guarantees: no request leaves `src/` beyond the harness page and its mock, the vendored files all load, every sprite reference resolves, the `.psz` layer applies, config asset paths resolve inside `design/`, the real (non-mock) loader fetches pnp from `lib/`, and **the real BSP Forms 0.5.1 engine** on the same page, loaded before or after this one, mounts only its own form and leaves the zone form's computed styles unchanged. |
+
+`tests/fixtures/bsp-forms-0.5.1/` holds that engine (`bsp-forms.js`,
+`bsp-forms.css`, copied from bsp-sp-parts `fe5c040`). It's test-only and
+never deployed. The coexistence checks point its design-system base at the
+same vendored files, so they test the two engines and their layers. Two
+*different* design-system versions on one page is a deployment rule
+(`docs/00-overview.md`, *Page-wide CSS*), not something a test can settle.
+
+The style comparison fingerprints **every** computed property (sorted, so
+token load order can't matter) of every element in the zone mount, with
+`::before`/`::after`, after finishing animations. It skips only the resolved
+pixel offsets of absolute/fixed elements, which move when another form sits
+above. It refuses to compare a form that didn't render (3 rows each side),
+so two empty mounts can't match. The mount checks also require two distinct
+namespaces (`PSZoneForm` isn't `BSPForms`).
+
+The standalone checks were each shown to fail when the thing they guard
+breaks (2026-10-14):
+- a stray harness request under `dev/` failed both boundary checks;
+- `../../bsp-design/…` as the illustration path failed the asset-path check
+  (and the boundary checks);
+- the old shared `BSPForms` global put back into the fixture engine failed
+  both mount checks, and the style check with "form not rendered" rather
+  than a vacuous match;
+- `opacity: 0 !important` on `.psz-asg__row` in the fixture CSS failed both
+  style checks, on exactly the three rows.
 
 ## Browser-suite rules
 

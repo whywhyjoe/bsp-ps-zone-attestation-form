@@ -12,7 +12,7 @@ the `project-state` skill.
 | --- | --- |
 | **Version** | engine 1.0.0 (fork of BSP Forms 0.5.1), config as of bsp-sp-parts `fe5c040` |
 | **Deployed** | Nowhere yet. Prod has never had the zone attestation, and dev has only the BSP Forms copy (`<code>/bsp-forms-zc/`), not this folder. |
-| **Last shipped** | — (repo created 2026-10-14; harness suite 90/90 green) |
+| **Last shipped** | — (repo created 2026-10-14; two review rounds since; harness suite 100/100 green) |
 
 ## Next committed step
 

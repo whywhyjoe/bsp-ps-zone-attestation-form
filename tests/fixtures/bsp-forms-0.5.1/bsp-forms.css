@@ -1,0 +1,637 @@
+/*! BSP Forms · v0.5.0 · bsp-forms.css */
+/* =====================================================================
+   BSP Forms — additive component layer for the JSON-driven forms app.
+   ---------------------------------------------------------------------
+   Link order on a page: colors_and_type.css → components.css → THIS FILE.
+   (The engine injects all three in that order automatically.)
+
+   Rules of this layer, in the spirit of editorial.css:
+   - Scoped to .bspf; never redefines :root, never restyles base BSP classes.
+   - Built entirely from the design system's tokens. The choice-pill hues
+     are the one place new *derived* values appear: each hue is either an
+     existing feedback tint pair or a color-mix() of a chart-palette token
+     with white/slate — no free-standing hex.
+   - Composes with components.css (.field, .input, .stepper, .msgbar,
+     .dropzone, .tag, .avatar, .btn, .spinner) rather than replacing them.
+   ===================================================================== */
+
+/* Alpine pre-boot hide — lives here (not an inline <style>) so the CSP
+   never has to allow an inline style tag. */
+[x-cloak] { display: none !important; }
+
+/* ---------------------------------------------------------------------
+   Root — fills the hosting div edge-to-edge. The custom-script web part
+   already supplies outer padding/margins, so the app adds none.
+   --------------------------------------------------------------------- */
+.bspf {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font: var(--type-body1);
+  color: var(--fg-primary);
+}
+.bspf *, .bspf *::before, .bspf *::after { box-sizing: border-box; }
+
+/* ---------------------------------------------------------------------
+   Frames — how the form sits on the page. Default is the card frame:
+   a raised surface with a tinted header band and a subtle footer for
+   the nav, all from existing surface/tint tokens. `appearance.frame:
+   "plain"` opts back into the flat, chrome-less layout.
+   --------------------------------------------------------------------- */
+.bspf--card {
+  background: var(--surface-raised);
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-4);
+  overflow: hidden;
+}
+.bspf--card .bspf__content { padding: var(--space-320); }
+
+/* Header (title + intro boilerplate from config, optional brand icon) */
+.bspf__head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-240);
+  margin-bottom: var(--space-240);
+}
+.bspf__head-copy { display: flex; flex-direction: column; gap: var(--space-80); min-width: 0; }
+.bspf__head-icon { width: 48px; height: 48px; flex: none; }
+.bspf__title { font: var(--type-title3); font-weight: var(--weight-regular); color: var(--fg-primary); margin: 0; }
+.bspf__intro { font: var(--type-body1); color: var(--fg-secondary); margin: 0; max-width: 64ch; }
+/* Band header — a low-saturation tint strip (engagement-layer grounds). */
+.bspf__head--band {
+  margin: 0;
+  padding: var(--space-320);
+  align-items: center;
+  border-bottom: var(--stroke-thin) solid var(--stroke-divider);
+}
+.bspf__head--sky     { background: var(--surface-tint-sky); }
+.bspf__head--blue    { background: var(--surface-tint-blue); }
+.bspf__head--neutral { background: var(--surface-tint-neutral); }
+
+/* Stepper row (reuses .stepper) */
+.bspf__stepper { margin: 0 0 var(--space-240); }
+.bspf .stepper__step.is-done { cursor: pointer; }
+.bspf .stepper__step.is-done:hover .stepper__label { color: var(--fg-primary); }
+
+/* Page + section scaffolding */
+.bspf-page { display: flex; flex-direction: column; gap: var(--space-240); }
+.bspf-page__title { font: var(--type-subtitle1); color: var(--fg-primary); margin: 0; }
+.bspf-page__desc  { font: var(--type-body1); color: var(--fg-secondary); margin: calc(-1 * var(--space-160)) 0 0; max-width: 64ch; }
+.bspf-section { display: flex; flex-direction: column; gap: var(--space-160); }
+.bspf-section__title { font: var(--type-body2-strong); color: var(--fg-primary); margin: 0; }
+.bspf-section__desc  { font: var(--type-caption1); color: var(--fg-secondary); margin: calc(-1 * var(--space-100)) 0 0; max-width: 64ch; }
+.bspf-fields { display: flex; flex-direction: column; gap: var(--space-160); }
+/* heading "field" — one wrapper so visibleWhen hides title + description */
+.bspf-heading { display: flex; flex-direction: column; gap: var(--space-60); }
+.bspf-heading .bspf-section__desc { margin: 0; }
+/* Hairline between sibling sections gives each page quiet structure. */
+.bspf-page .bspf-section + .bspf-section {
+  border-top: var(--stroke-thin) solid var(--stroke-divider);
+  padding-top: var(--space-240);
+}
+/* Prose links (author [text](url) markup) keep the base <a> styling. */
+.bspf__intro a, .bspf .field__hint a, .bspf-section__desc a, .bspf-page__desc a, .bspf-done__msg a { font-weight: var(--weight-semibold); }
+
+/* Section head with an icon tile (section.icon) — the .card__icon-tile--sm
+   treatment, re-scoped: tint-blue ground, accent glyph. */
+.bspf-section__head { display: flex; align-items: flex-start; gap: var(--space-120); }
+.bspf-section__tile {
+  width: 32px; height: 32px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-large);
+  background: var(--surface-tint-blue); color: var(--accent-rest);
+}
+.bspf-section__copy { display: flex; flex-direction: column; gap: var(--space-20); min-width: 0; padding-top: var(--space-20); }
+.bspf-section__head .bspf-section__title { font: var(--type-subtitle2); }
+.bspf-section__head .bspf-section__desc { margin: 0; }
+.bspf-section__head + .bspf-fields { margin-top: var(--space-40); }
+
+/* Two-column sections (section.columns: 2). Keyed to the FORM's width, not
+   the viewport — a web part can sit in a one-third column on a wide screen.
+   Below the threshold (or without container-query support) it stays one
+   column. Hidden (x-show) fields drop out of the flow, so a conditional
+   field simply appears in the next cell. */
+.bspf { container: bspf / inline-size; }
+@container bspf (min-width: 600px) {
+  .bspf-fields--2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-240);
+    row-gap: var(--space-200);
+    align-items: start;
+  }
+  .bspf-fields--2 > .bspf-field--full,
+  .bspf-fields--2 > .bspf-heading,
+  .bspf-fields--2 > .msgbar,
+  .bspf-fields--2 > .field__hint { grid-column: 1 / -1; }
+}
+
+/* Locked switch (lockWhen) — still reads clearly as ON, just not
+   clickable; the note under it says why. The design system has no
+   disabled .switch state, so it lives here, scoped to .bspf. */
+.bspf .switch:has(input:disabled) { cursor: not-allowed; }
+.bspf .switch input:disabled + .switch__track { opacity: .7; }
+.bspf-field__lock {
+  display: flex; align-items: flex-start; gap: var(--space-60);
+  margin: 0; font: var(--type-caption1); color: var(--fg-info);
+}
+.bspf-field__lock .icon { flex: none; margin-top: var(--space-20); }
+
+/* Read-only value (readOnly text fields, e.g. carried in from the URL) —
+   reads as content, not as an input. */
+.bspf-readonly__value {
+  margin: 0; padding: var(--space-80) var(--space-120);
+  background: var(--surface-subtle);
+  border-radius: var(--radius-medium);
+  font: var(--type-body1-strong); color: var(--fg-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Result screen (afterSubmit / queryError) — sits in the .bspf-done layout */
+.bspf-result__link {
+  display: inline-flex; align-items: center; gap: var(--space-80);
+  max-width: 100%; margin-top: var(--space-80);
+  font: var(--type-subtitle2); color: var(--accent-rest);
+  overflow-wrap: anywhere; text-align: left;
+}
+.bspf-result__link .icon { flex: none; transition: transform var(--motion-normal) var(--ease-out); }
+.bspf-result__link:hover .icon { transform: translateX(3px); }
+.bspf-result__copy { display: flex; flex-direction: column; align-items: center; gap: var(--space-120); width: 100%; max-width: 560px; }
+.bspf-result__copyrow { display: flex; gap: var(--space-80); width: 100%; }
+.bspf-result__copyrow .input { flex: 1; min-width: 0; }
+.bspf-result__count { margin: 0; font: var(--type-caption1); color: var(--fg-secondary); }
+@media (prefers-reduced-motion: reduce) { .bspf-result__link .icon { transition: none; } }
+
+/* Prompt dialog body text (the sheet itself is the design system's .dialog) */
+.bspf-dialog__msg { font: var(--type-body1); color: var(--fg-primary); margin: 0; }
+
+/* Field extras on top of .field */
+.bspf-field__warning { margin: 0; font: var(--type-caption1); color: var(--fg-warning); }
+.bspf .field__hint { max-width: 64ch; }
+
+/* ---------------------------------------------------------------------
+   Choice pills — the SharePoint-modern colored value pill.
+   Hue = existing feedback tint pair, or a chart-palette token mixed with
+   white (ground) / slate (text). No free-standing hex.
+   --------------------------------------------------------------------- */
+.bspf-pill {
+  display: inline-flex; align-items: center; gap: var(--space-40);
+  padding: var(--space-20) var(--space-100);
+  border-radius: 999px;
+  font: var(--type-caption1-strong);
+  background: var(--bspf-pill-bg, var(--surface-neutral-tint));
+  color: var(--bspf-pill-fg, var(--fg-neutral));
+  max-width: 100%; min-width: 0;
+}
+.bspf-pill > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bspf-pill--blue     { --bspf-pill-bg: var(--surface-info-tint);    --bspf-pill-fg: var(--fg-info); }
+.bspf-pill--green    { --bspf-pill-bg: var(--surface-success-tint); --bspf-pill-fg: var(--fg-success); }
+.bspf-pill--lime     { --bspf-pill-bg: color-mix(in srgb, var(--fg-success-on-dark) 22%, var(--bmo-white));   --bspf-pill-fg: color-mix(in srgb, var(--bmo-positive) 70%, var(--bmo-slate)); }
+.bspf-pill--yellow   { --bspf-pill-bg: var(--surface-warning-tint); --bspf-pill-fg: var(--fg-warning); }
+.bspf-pill--red      { --bspf-pill-bg: var(--surface-danger-tint);  --bspf-pill-fg: var(--fg-danger); }
+.bspf-pill--gray     { --bspf-pill-bg: var(--surface-neutral-tint); --bspf-pill-fg: var(--fg-neutral); }
+.bspf-pill--sky      { --bspf-pill-bg: color-mix(in srgb, var(--bmo-chart-sky) 14%, var(--bmo-white));       --bspf-pill-fg: var(--bmo-chart-navy); }
+.bspf-pill--teal     { --bspf-pill-bg: color-mix(in srgb, var(--bmo-chart-mint) 18%, var(--bmo-white));      --bspf-pill-fg: color-mix(in srgb, var(--bmo-chart-mint) 45%, var(--bmo-slate)); }
+.bspf-pill--berry    { --bspf-pill-bg: color-mix(in srgb, var(--bmo-chart-purple) 12%, var(--bmo-white));    --bspf-pill-fg: color-mix(in srgb, var(--bmo-chart-purple) 65%, var(--bmo-slate)); }
+.bspf-pill--lavender { --bspf-pill-bg: color-mix(in srgb, var(--bmo-chart-lavender) 16%, var(--bmo-white));  --bspf-pill-fg: color-mix(in srgb, var(--bmo-chart-lavender) 55%, var(--bmo-slate)); }
+.bspf-pill--orange   { --bspf-pill-bg: color-mix(in srgb, var(--bmo-chart-orange) 20%, var(--bmo-white));    --bspf-pill-fg: color-mix(in srgb, var(--bmo-chart-orange) 45%, var(--bmo-slate)); }
+/* Remove affordance inside a selected pill (multi-choice) */
+.bspf-pill__remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; padding: 0; margin-right: calc(-1 * var(--space-20));
+  border: none; border-radius: var(--radius-circle);
+  background: transparent; color: inherit; cursor: pointer; flex: none;
+}
+.bspf-pill__remove:hover { background: color-mix(in srgb, var(--bmo-slate) 8%, transparent); }
+.bspf-pill__remove:focus-visible { outline: var(--stroke-thick) solid var(--stroke-focus); outline-offset: 1px; }
+.bspf-pill__remove .icon { width: 10px; height: 10px; }
+
+/* ---------------------------------------------------------------------
+   Combo — pill-valued dropdown (single + multi choice, lookup).
+   The control reads as an .input; the menu is a Fluent popover.
+   --------------------------------------------------------------------- */
+.bspf-combo { position: relative; }
+.bspf-combo__control {
+  display: flex; align-items: center; gap: var(--space-80);
+  width: 100%; min-height: 32px;
+  padding: var(--space-20) var(--space-100);
+  border: var(--stroke-thin) solid var(--stroke-control);
+  border-radius: var(--radius-medium);
+  background: var(--surface-input);
+  font: var(--type-body1); color: var(--fg-primary);
+  text-align: left; cursor: pointer;
+}
+.bspf-combo__control:hover { border-color: var(--stroke-control-strong); }
+.bspf-combo__control:focus-visible,
+.bspf-combo__control[aria-expanded="true"] {
+  outline: none;
+  border-color: var(--stroke-accent);
+  box-shadow: 0 0 0 1px var(--stroke-accent);
+}
+.bspf-combo__control[aria-invalid="true"] { border-color: var(--fg-danger); }
+.bspf-combo__control[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 1px var(--fg-danger); }
+.bspf-combo__value { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-40); }
+.bspf-combo__placeholder { color: var(--fg-secondary); }
+.bspf-combo__chevron { flex: none; color: var(--fg-secondary); }
+.bspf-combo__control[aria-expanded="true"] .bspf-combo__chevron { transform: rotate(180deg); }
+
+/* Shared popover menu (combo + people picker) */
+.bspf-combo__menu, .bspf-people__menu {
+  position: absolute; top: calc(100% + var(--space-40)); left: 0; right: 0; z-index: 60;
+  padding: var(--space-40);
+  background: var(--surface-raised);
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-16);
+  max-height: 280px; overflow: auto;
+}
+.bspf-combo__option {
+  display: flex; align-items: center; gap: var(--space-80);
+  width: 100%; padding: var(--space-60) var(--space-80);
+  border: none; border-radius: var(--radius-small);
+  background: transparent; font: var(--type-body1); color: var(--fg-primary);
+  text-align: left; cursor: pointer;
+}
+.bspf-combo__option:hover { background: var(--f2-grey-96); }
+.bspf-combo__option[aria-selected="true"] { background: var(--surface-selected-tint); }
+.bspf-combo__option:focus-visible { outline: var(--stroke-thick) solid var(--stroke-focus); outline-offset: -2px; }
+.bspf-combo__check { margin-left: auto; color: var(--accent-rest); flex: none; }
+.bspf-combo__fillin {
+  display: flex; gap: var(--space-80); align-items: center;
+  padding: var(--space-60) var(--space-80);
+  border-top: var(--stroke-thin) solid var(--stroke-divider);
+  margin-top: var(--space-40);
+}
+.bspf-combo__fillin .input { flex: 1; }
+
+/* ---------------------------------------------------------------------
+   People picker — token field + directory suggestion menu.
+   --------------------------------------------------------------------- */
+.bspf-people { position: relative; }
+.bspf-people__control {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-40);
+  width: 100%; min-height: 32px;
+  padding: var(--space-20) var(--space-80);
+  border: var(--stroke-thin) solid var(--stroke-control);
+  border-radius: var(--radius-medium);
+  background: var(--surface-input);
+  cursor: text;
+}
+.bspf-people__control:focus-within { border-color: var(--stroke-accent); box-shadow: 0 0 0 1px var(--stroke-accent); }
+.bspf-people__control[aria-invalid="true"] { border-color: var(--fg-danger); }
+.bspf-people__control[aria-invalid="true"]:focus-within { box-shadow: 0 0 0 1px var(--fg-danger); }
+.bspf-people__input {
+  flex: 1; min-width: 120px; border: none; outline: none; background: transparent;
+  font: var(--type-body1); color: var(--fg-primary); height: 24px;
+}
+.bspf-people__input::placeholder { color: var(--fg-secondary); }
+.bspf .bspf-people__tag { gap: var(--space-60); padding-left: var(--space-40); }
+.bspf-people__photo { width: 20px; height: 20px; border-radius: var(--radius-circle); object-fit: cover; flex: none; }
+.bspf-people__option {
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
+  column-gap: var(--space-100); align-items: center;
+  width: 100%; padding: var(--space-60) var(--space-80);
+  border: none; border-radius: var(--radius-small);
+  background: transparent; text-align: left; cursor: pointer;
+}
+.bspf-people__option:hover, .bspf-people__option.is-active { background: var(--f2-grey-96); }
+.bspf-people__option:focus-visible { outline: var(--stroke-thick) solid var(--stroke-focus); outline-offset: -2px; }
+.bspf-people__option .avatar, .bspf-people__option .bspf-people__photo--lg { grid-row: 1 / span 2; }
+.bspf-people__photo--lg { width: 28px; height: 28px; border-radius: var(--radius-circle); object-fit: cover; }
+.bspf-people__name { font: var(--type-body1); color: var(--fg-primary); }
+.bspf-people__mail { font: var(--type-caption1); color: var(--fg-secondary); grid-column: 2; }
+.bspf-people__note {
+  padding: var(--space-80); font: var(--type-caption1); color: var(--fg-secondary);
+}
+
+/* ---------------------------------------------------------------------
+   Attachments — dropzone + file rows.
+   --------------------------------------------------------------------- */
+.bspf-attach__drop { cursor: pointer; transition: border-color var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out); }
+.bspf-attach__drop.is-drag { border-color: var(--stroke-accent); background: var(--surface-selected-tint); }
+.bspf-attach__drop:focus-visible { outline: var(--stroke-thick) solid var(--stroke-focus); outline-offset: 2px; }
+.bspf-attach__list { display: flex; flex-direction: column; gap: var(--space-40); margin-top: var(--space-80); }
+.bspf-attach__item {
+  display: flex; align-items: center; gap: var(--space-100);
+  padding: var(--space-60) var(--space-100);
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-medium);
+  background: var(--surface-raised);
+  font: var(--type-body1);
+}
+.bspf-attach__item .icon { color: var(--fg-secondary); flex: none; }
+.bspf-attach__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bspf-attach__size { font: var(--type-caption1); color: var(--fg-secondary); flex: none; }
+.bspf-attach__item.is-failed { border-color: var(--stroke-danger-tint); background: var(--surface-danger-tint); }
+.bspf-attach__item.is-done .icon { color: var(--fg-success); }
+
+/* ---------------------------------------------------------------------
+   Navigation row + confirmation + service screens
+   --------------------------------------------------------------------- */
+.bspf-nav { display: flex; align-items: center; gap: var(--space-80); margin-top: var(--space-320); }
+.bspf-nav__spacer { flex: 1; }
+/* Footer variant used by the card frame — the .panel__foot register. */
+.bspf-nav--foot {
+  margin-top: 0;
+  padding: var(--space-120) var(--space-320);
+  background: var(--surface-subtle);
+  border-top: var(--stroke-thin) solid var(--stroke-divider);
+}
+.bspf__pageerror { margin-top: var(--space-240); }
+
+.bspf-done { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-120); padding: var(--space-480) var(--space-160); }
+.bspf-done__icon { color: var(--fg-success); }
+.bspf-done__art { width: 180px; max-width: 60%; height: auto; margin-bottom: var(--space-80); }
+.bspf-done__title { font: var(--type-title3); font-weight: var(--weight-regular); color: var(--fg-primary); margin: 0; }
+.bspf-done__msg { font: var(--type-body1); color: var(--fg-secondary); margin: 0; max-width: 52ch; }
+.bspf-done .btn { margin-top: var(--space-120); }
+
+/* Edit-mode placeholder + suspension (web-part edit view) */
+.bspf-editnote {
+  display: flex; align-items: center; gap: var(--space-100);
+  padding: var(--space-160);
+  border: var(--stroke-thin) dashed var(--stroke-control);
+  border-radius: var(--radius-medium);
+  background: var(--surface-subtle);
+  font: var(--type-body1); color: var(--fg-secondary);
+}
+.bspf-editnote code { font-family: var(--font-family-mono); font-size: 12px; background: none; padding: 0; }
+[data-bsp-form].is-suspended .bspf { display: none; }
+[data-bsp-form]:not(.is-suspended) > .bspf-editnote { display: none; }
+
+/* Doctor (config validation) report */
+.bspf-doctor { margin-bottom: var(--space-240); display: flex; flex-direction: column; gap: var(--space-120); }
+.bspf-doctor .grid tbody tr { cursor: default; }
+
+/* The submit lock (a fieldset disabled while saving) adds no box of its own */
+.bspf__lock { border: 0; margin: 0; padding: 0; min-width: 0; }
+
+/* Visually hidden, still read by screen readers */
+.bspf-sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Header card (form.headerCard) — a link tile beside the intro: a raised
+   surface on the tinted band, icon tile, accent title, open-in-new cue.
+   Hover lift comes from the design system's .lift.
+   --------------------------------------------------------------------- */
+.bspf__head--hascard .bspf__head-copy { flex: 1 1 auto; }
+.bspf-tipcard {
+  position: relative;
+  display: flex; align-items: center; gap: var(--space-120);
+  flex: 0 1 340px; min-width: 0;
+  padding: var(--space-120) var(--space-160);
+  background: var(--surface-raised);
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-4);
+  color: var(--fg-primary);
+  text-decoration: none;
+}
+.bspf-tipcard:hover, .bspf-tipcard:focus-visible { color: var(--fg-primary); text-decoration: none; }
+.bspf-tipcard__icon {
+  width: 48px; height: 48px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-large);
+  background: var(--surface-tint-blue); color: var(--accent-rest);
+}
+.bspf-tipcard__icon img { width: 36px; height: 36px; }
+.bspf-tipcard__copy { display: flex; flex-direction: column; gap: var(--space-20); min-width: 0; flex: 1; }
+.bspf-tipcard__title { font: var(--type-body1-strong); color: var(--accent-rest); }
+.bspf-tipcard__text { font: var(--type-caption1); color: var(--fg-secondary); }
+.bspf-tipcard__go {
+  flex: none; align-self: flex-start; color: var(--fg-secondary);
+  transition: transform var(--motion-normal) var(--ease-out), color var(--motion-normal) var(--ease-out);
+}
+.bspf-tipcard:hover .bspf-tipcard__go { color: var(--accent-rest); transform: translate(2px, -2px); }
+@media (prefers-reduced-motion: reduce) {
+  .bspf .bspf-tipcard.lift:hover, .bspf-tipcard:hover .bspf-tipcard__go { transform: none; }
+}
+
+/* Tinted section (section.tint) — a soft panel that sets one section apart,
+   e.g. the attestation checkbox. Replaces the hairline between sections. */
+.bspf-page .bspf-section.bspf-section--tint {
+  padding: var(--space-200) var(--space-240);
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-large);
+}
+.bspf-page .bspf-section--tint + .bspf-section { border-top: none; }
+.bspf-section--sky     { background: var(--surface-tint-sky); }
+.bspf-section--blue    { background: var(--surface-tint-blue); }
+.bspf-section--neutral { background: var(--surface-tint-neutral); }
+
+/* ---------------------------------------------------------------------
+   Current user (currentUser field) — an identity card: photo or
+   initials, name, email.
+   --------------------------------------------------------------------- */
+.bspf-who__card {
+  display: flex; align-items: center; gap: var(--space-160);
+  padding: var(--space-120) var(--space-160);
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-large);
+  background: var(--surface-subtle);
+  max-width: 560px;
+}
+.bspf-who__avatar { display: inline-flex; flex: none; border-radius: var(--radius-circle); box-shadow: 0 0 0 2px var(--surface-raised), var(--shadow-4); }
+.bspf-who__photo { width: 48px; height: 48px; border-radius: var(--radius-circle); object-fit: cover; display: block; }
+.bspf-who__id { display: flex; flex-direction: column; gap: var(--space-20); min-width: 0; flex: 1; }
+.bspf-who__name { font: var(--type-subtitle2); color: var(--fg-primary); overflow-wrap: anywhere; }
+.bspf-who__mail { font: var(--type-caption1); color: var(--fg-secondary); overflow-wrap: anywhere; }
+.bspf-who__spin { flex: none; }
+
+/* ---------------------------------------------------------------------
+   Color dots — a choice's hue as a small swatch (assignments rows). One
+   custom property per hue (--bspf-hue), shared with the row accent.
+   --------------------------------------------------------------------- */
+.bspf-dot--green,    .bspf-asg__row--green    { --bspf-hue: var(--fg-success); }
+/* a light green: far lighter than red/orange, so the pair still separates
+   for red-green colour blindness (the zone attestation's lowest zone) */
+.bspf-dot--lime,     .bspf-asg__row--lime     { --bspf-hue: color-mix(in srgb, var(--fg-success-on-dark) 80%, var(--bmo-positive)); }
+.bspf-dot--yellow,   .bspf-asg__row--yellow   { --bspf-hue: var(--f2-yellow); }
+.bspf-dot--orange,   .bspf-asg__row--orange   { --bspf-hue: var(--bmo-chart-orange); }
+.bspf-dot--red,      .bspf-asg__row--red      { --bspf-hue: var(--fg-danger); }
+.bspf-dot--blue,     .bspf-asg__row--blue     { --bspf-hue: var(--accent-rest); }
+.bspf-dot--gray,     .bspf-asg__row--gray     { --bspf-hue: var(--f2-grey-74); }
+.bspf-dot--sky,      .bspf-asg__row--sky      { --bspf-hue: var(--bmo-chart-sky); }
+.bspf-dot--teal,     .bspf-asg__row--teal     { --bspf-hue: var(--bmo-chart-mint); }
+.bspf-dot--berry,    .bspf-asg__row--berry    { --bspf-hue: var(--bmo-chart-purple); }
+.bspf-dot--lavender, .bspf-asg__row--lavender { --bspf-hue: var(--bmo-chart-lavender); }
+.bspf-dot {
+  display: inline-block; width: 12px; height: 12px; flex: none;
+  border-radius: var(--radius-circle);
+  background: var(--bspf-hue, var(--f2-grey-74));
+  /* a hairline ring keeps light hues (yellow) visible on white */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bmo-slate) 14%, transparent);
+}
+.bspf-zone { display: inline-flex; align-items: center; gap: var(--space-80); min-width: 0; }
+.bspf-zone > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Clear (×) inside a combo control, and the menu's "Clear selection" row */
+.bspf-combo__clear {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; padding: 0; flex: none;
+  border: none; border-radius: var(--radius-circle);
+  background: transparent; color: var(--fg-secondary); cursor: pointer;
+}
+.bspf-combo__clear:hover { background: var(--f2-grey-94); color: var(--fg-primary); }
+.bspf-combo__clear:focus-visible { outline: var(--stroke-thick) solid var(--stroke-focus); outline-offset: 1px; }
+.bspf-combo__option--clear {
+  color: var(--fg-secondary);
+  border-bottom: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-small) var(--radius-small) 0 0;
+  margin-bottom: var(--space-40);
+}
+.bspf-combo__option--clear .icon { color: var(--fg-secondary); }
+
+/* ---------------------------------------------------------------------
+   Assignments (type "assignments") — one card per row: head (row name +
+   answered status), body (the value: dot + label, its description), foot
+   (confirm / change, or the dropdown). The card wears the hue of the value
+   it shows — a thick left stripe and a tinted head — so the colour reads
+   at a glance; the label always names it too. Cards rise in once on load
+   (motion-safe only). No overflow clipping: the menus must escape.
+   --------------------------------------------------------------------- */
+.bspf-asg { gap: var(--space-120); }
+.bspf-asg__state {
+  display: flex; align-items: center; gap: var(--space-100);
+  padding: var(--space-200);
+  border: var(--stroke-thin) dashed var(--stroke-control);
+  border-radius: var(--radius-large);
+  font: var(--type-body1); color: var(--fg-secondary);
+}
+.bspf-asg__err { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-120); }
+.bspf-asg__list { display: flex; flex-direction: column; gap: var(--space-160); }
+.bspf-asg__row {
+  --bspf-stripe: 8px;
+  position: relative;
+  display: flex; flex-direction: column;
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-large);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+  padding-left: var(--bspf-stripe);
+  transition: border-color var(--motion-normal) var(--ease-out), box-shadow var(--motion-normal) var(--ease-out);
+}
+/* the hue stripe: painted over the card's own edge, under nothing */
+.bspf-asg__row::before {
+  content: ""; position: absolute; top: -1px; bottom: -1px; left: -1px;
+  width: var(--bspf-stripe);
+  border-radius: var(--radius-large) 0 0 var(--radius-large);
+  background: var(--bspf-hue, var(--stroke-control));
+  transition: background var(--motion-normal) var(--ease-out);
+}
+.bspf-asg__row.has-hue { border-color: color-mix(in srgb, var(--bspf-hue) 45%, var(--stroke-divider)); }
+/* each card is its own stacking context (position + the rise animation), so
+   the card with an open menu sits above its siblings */
+.bspf-asg__row.is-open { z-index: 3; }
+.bspf-asg__row.is-error { border-color: var(--fg-danger); box-shadow: 0 0 0 1px var(--fg-danger), var(--shadow-2); }
+
+.bspf-asg__head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-120);
+  padding: var(--space-120) var(--space-200);
+  border-radius: 0 var(--radius-large) 0 0;
+  border-bottom: var(--stroke-thin) solid var(--stroke-divider);
+  background: var(--surface-subtle);
+}
+.bspf-asg__row.has-hue .bspf-asg__head {
+  background: color-mix(in srgb, var(--bspf-hue) 18%, var(--surface-raised));
+  border-bottom-color: color-mix(in srgb, var(--bspf-hue) 35%, var(--stroke-divider));
+}
+.bspf-asg__area { display: flex; flex-direction: column; gap: var(--space-20); min-width: 0; }
+.bspf-asg__label { font: var(--type-subtitle2); color: var(--fg-primary); overflow-wrap: anywhere; }
+.bspf-asg__detail { font: var(--type-caption1); color: var(--fg-secondary); }
+/* answered: a solid success badge (BSP .badge geometry), readable on any hue */
+.bspf-asg__status {
+  display: inline-flex; align-items: center; gap: var(--space-40); flex: none;
+  height: 24px; padding: 0 var(--space-100) 0 var(--space-80);
+  border-radius: 12px;
+  background: var(--fg-success); color: var(--fg-on-accent);
+  font: var(--type-caption1-strong); white-space: nowrap;
+}
+.bspf-asg__status .icon { width: 16px; height: 16px; }
+
+.bspf-asg__body { display: flex; flex-direction: column; gap: var(--space-80); padding: var(--space-160) var(--space-200) var(--space-120); }
+.bspf-asg__eyebrow { font: var(--type-caption1-strong); color: var(--fg-secondary); letter-spacing: .06em; text-transform: uppercase; }
+.bspf-asg__zones { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-80) var(--space-120); }
+.bspf-asg__zone { display: inline-flex; align-items: center; gap: var(--space-80); min-width: 0; font: var(--type-subtitle2); color: var(--fg-primary); }
+.bspf-asg__zone .bspf-dot { width: 20px; height: 20px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bmo-slate) 14%, transparent), 0 0 0 2px var(--surface-raised); }
+.bspf-asg__zonename { overflow-wrap: anywhere; }
+/* changed: the old value greys out and is struck through */
+.bspf-asg__zone.is-replaced { color: var(--fg-secondary); font: var(--type-body1); }
+.bspf-asg__zone.is-replaced .bspf-asg__zonename { text-decoration: line-through; }
+.bspf-asg__zone.is-replaced .bspf-dot { width: 14px; height: 14px; filter: grayscale(1); opacity: .45; }
+.bspf-asg__arrow { display: inline-flex; color: var(--fg-secondary); }
+.bspf-asg__desc { margin: 0; max-width: 72ch; font: var(--type-body1); color: var(--fg-secondary); }
+
+/* the answer band. Unanswered: an accent tint and an accent rule, so the
+   action reads as "to do"; answered: it settles to neutral. */
+.bspf-asg__foot {
+  display: flex; flex-direction: column; gap: var(--space-80);
+  padding: var(--space-160) var(--space-200);
+  border-radius: 0 0 var(--radius-large) 0;
+  border-top: var(--stroke-thick) solid var(--accent-rest);
+  background: color-mix(in srgb, var(--accent-rest) 7%, var(--surface-raised));
+  transition: background var(--motion-normal) var(--ease-out), border-color var(--motion-normal) var(--ease-out);
+}
+.bspf-asg__row.is-set .bspf-asg__foot { border-top-color: var(--stroke-divider); background: var(--surface-subtle); }
+.bspf-asg__row.is-error .bspf-asg__foot { border-top-color: var(--fg-danger); }
+.bspf-asg__confirm, .bspf-asg__pick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-120) var(--space-160); }
+/* the confirm checkbox as a bordered tile: a big, obvious target */
+.bspf-asg__confirm .check {
+  min-height: 40px; padding: 0 var(--space-160);
+  border: var(--stroke-thin) solid var(--stroke-control-strong);
+  border-radius: var(--radius-medium);
+  background: var(--surface-raised);
+  font: var(--type-body1-strong);
+  transition: background var(--motion-normal) var(--ease-out), border-color var(--motion-normal) var(--ease-out);
+}
+.bspf-asg__confirm .check:hover { border-color: var(--accent-rest); }
+.bspf-asg__confirm .check input { width: 20px; height: 20px; }
+.bspf-asg__confirm .check:has(input:checked) { border-color: var(--fg-success); background: var(--surface-success-tint); }
+.bspf-asg__confirm .check:has(input:focus-visible) { outline: var(--stroke-thick) solid var(--stroke-focus); outline-offset: 1px; }
+.bspf-asg__confirm .check:has(input[aria-invalid="true"]) { border-color: var(--fg-danger); }
+.bspf-asg__pick .bspf-combo__control { min-height: 40px; }
+.bspf-asg__pick .bspf-combo { flex: 0 1 360px; min-width: 0; }
+.bspf-asg__foot .field__error { margin: 0; }
+/* a saved row (partial save, retry pending) is shown, not editable */
+.bspf-asg__row.is-saved .bspf-combo__control { cursor: default; background: var(--surface-subtle); }
+.bspf-asg__row.is-saved .bspf-combo__chevron { display: none; }
+.bspf-asg__progress { max-width: 360px; }
+@keyframes bspf-row-in {
+  from { opacity: 0; transform: translateY(calc(var(--reveal-rise) / 2)); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bspf-asg__row {
+    animation: bspf-row-in var(--motion-reveal) var(--ease-out) both;
+    animation-delay: calc(var(--bspf-i, 0) * 50ms);
+  }
+}
+/* the done/empty screens' info variant */
+.bspf-done__icon--info { color: var(--accent-rest); }
+
+/* Narrow forms (one-third columns, mobile) — tighter card padding. Keyed
+   to the form's own width (the bspf container), not the viewport. */
+@container bspf (max-width: 640px) {
+  .bspf--card .bspf__content, .bspf__head--band { padding: var(--space-240); }
+  .bspf-nav--foot { padding: var(--space-120) var(--space-240); }
+}
+/* Very narrow: the brand icon stacks above the title instead of squeezing
+   the intro into a thin column. */
+@container bspf (max-width: 479px) {
+  .bspf__head { flex-direction: column-reverse; align-items: flex-start; gap: var(--space-160); }
+  .bspf__head-icon { width: 40px; height: 40px; }
+}
+/* Header card drops under the intro, full width. */
+@container bspf (max-width: 719px) {
+  .bspf__head.bspf__head--hascard { flex-direction: column; align-items: stretch; gap: var(--space-200); }
+  .bspf-tipcard { flex: none; }
+}
+/* Narrow: assignment cards tighten up; the dropdown takes the full width */
+@container bspf (max-width: 539px) {
+  .bspf-asg__row { --bspf-stripe: 6px; }
+  .bspf-asg__head, .bspf-asg__body, .bspf-asg__foot { padding-left: var(--space-160); padding-right: var(--space-160); }
+  .bspf-asg__pick .bspf-combo { flex-basis: 100%; }
+}

@@ -39,6 +39,18 @@ hold values spelled exactly as in `choices`.
 | `vars.jobAidUrl` | `""` | The job aid's address. While empty, or not http(s)/server-relative, the job aid card is hidden. |
 | `headerCard` | job aid tile | `{ title, text, url, icon }`; `url` is `{var:jobAidUrl}`; opens in a new tab. `icon` is a path under `design/` (`abacus-icons/light-bulb-48.svg`). A new icon file must be vendored into `src/design/` first (`04-vendoring.md`). |
 
+**Asset paths stay inside `design/`.** `headerCard.icon`, `appearance.icon`
+and `confirmation.illustration` are resolved against `design/`. The engine
+passes an absolute URL or a server-relative path (`/sites/…`) through
+untouched, and a relative path can climb out with `../`
+(`../../bsp-design/…` lands in the shared `Code/bsp-design/`). Either way a
+config edit would quietly bring back a dependency on the shared folder,
+without any setting. Use a plain path below `design/`
+(`abacus-icons/light-bulb-48.svg`). The suite fails on any path that leaves
+`design/` ("config asset paths are relative and resolve inside design/"),
+but an edit made in the deployed copy never meets the suite. Check by hand
+when editing on the tenant.
+
 ## `target` — where responses are saved
 
 | Key | Value | Notes |
@@ -53,7 +65,8 @@ hold values spelled exactly as in `choices`.
 - `submitConfirm` — the "are you sure?" dialog after validation: `title`,
   `message`, `confirm`, `cancel`. Focus starts on cancel; **Escape goes back**.
 - `confirmation` — the thank-you screen: `title`, `message`,
-  `allowAnother: false`, `illustration` (a path under `design/`).
+  `allowAnother: false`, `illustration` (a path below `design/`; see
+  *Asset paths stay inside `design/`*).
 - `strings` — overrides for engine messages, all EN/FR pairs. The
   assignment wording (`assignCurrent`, `assignConfirm`, `assignChange`,
   `assignKeep`, `assignNewPlaceholder`, status words, `assignRowRequired`,

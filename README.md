@@ -33,7 +33,7 @@ folder with SharePoint mocked. Add `?validate` for the column check,
 node tests/smoke.cjs
 ```
 
-This runs the regression suite (93 checks, Playwright). See
+This runs the regression suite (100 checks, Playwright). See
 [`tests/README.md`](tests/README.md).
 
 ## Deploying

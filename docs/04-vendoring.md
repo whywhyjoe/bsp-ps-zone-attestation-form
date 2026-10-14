@@ -39,6 +39,12 @@ sets were left out.
 | `tests/smoke.cjs` | `bsp-forms/dev/smoke.spec.js` (zone section + edit mode) | renamed selectors; plus the *standalone* checks. |
 | `dev/live/*.js` | `bsp-forms/dev/live/live-zone*.js` | renamed selectors, new page name. `live-deploy.ps1` replaces `live-setup.ps1` + `live-page.ps1`. |
 
+## Test fixture (dev-only, never deployed)
+
+| File | Source | Why |
+| --- | --- | --- |
+| `tests/fixtures/bsp-forms-0.5.1/bsp-forms.js`, `bsp-forms.css` | `bsp-sp-parts/bsp-forms/` @ `fe5c040`, unchanged | The real shared engine and layer, so the suite's coexistence checks run against BSP Forms itself, not a stub. Byte copies of the upstream files; refresh only to test against a newer shared engine, and keep the folder name on its version. |
+
 ## Refreshing a byte copy
 
 Only when there's a reason (a bug fix this form needs, a security fix in a

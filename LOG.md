@@ -7,6 +7,27 @@ Newest first.
 
 ---
 
+## 2026-10-14 — Codex review fixes (xo turns 1–2)
+
+Codex reviewed main (turn 1) and the fixes (turn 2). Test and doc changes
+only; `src/` untouched. The request-boundary check allows exactly the
+harness page and mock. The coexistence checks load the real BSP Forms 0.5.1
+(`tests/fixtures/`, dev-only) before and after this engine, and compare every
+computed style of the zone form against the form alone. Config asset paths
+must resolve inside `design/`. The overview's CSS claims are corrected
+(*Page-wide CSS*, the shared `[x-cloak]` rule). Each new check was shown to
+fail on its breakage. Suite 100/100.
+
+## 2026-10-14 — merged crew/zone-split-review (`9a416c3`)
+
+An xo crew experiment ran review → fix → re-review → fix on the split. Its
+reviewer found two real defects: the suite's pnp check bypassed the engine's
+loader, and `live-deploy.ps1` uploaded files and recycled the page before
+validating the config and template. Both fixed, plus load-state waits for
+the flaky zone checks and corrected cache docs. Suite 93/93. Nothing under
+`src/` changed. The crew's plan files (`docs/plans/`) were removed after the
+merge; git history has them.
+
 ## 2026-10-14 — split out of bsp-sp-parts; scaffolded
 
 Started from [projects-standard](https://github.com/whywhyjoe/projects-standard)

@@ -522,6 +522,10 @@ async function testZoneAttestation(browser) {
 /* The standalone guarantees: the form runs from its own folder and
    nothing else. SRC is the deploy folder as the harness serves it. */
 const SRC = new URL('../src/', BASE).href;
+// the only non-src/ files a run may load: the harness page and its mock
+const HARNESS_FILES = [new URL(BASE).origin + new URL(BASE).pathname, new URL('mock-sp.js', BASE).href];
+const inBounds = u => u.startsWith(SRC) || HARNESS_FILES.includes(u.split(/[?#]/)[0]) || /^(data|about|blob):/.test(u);
+const FIXTURE = new URL('../tests/fixtures/bsp-forms-0.5.1/', BASE).href;
 async function testStandalone(browser) {
   console.log('standalone:');
   // everything it loads comes from src/ (or the harness page itself);
@@ -543,9 +547,8 @@ async function testStandalone(browser) {
     await p.waitForTimeout(600);
     return { ctx: c, page: p };
   })();
-  const harness = new URL('./', BASE).href;
-  const outside = page.__urls.filter(u => !u.startsWith(SRC) && !u.startsWith(harness) && !/^(data|about|blob):/.test(u));
-  check('every request stays inside src/ (or the harness page)', outside.length === 0, outside.join(' '));
+  const outside = page.__urls.filter(u => !inBounds(u));
+  check('every request stays inside src/ (beyond the harness page + mock)', outside.length === 0, outside.join(' '));
   const loaded = new Set(page.__urls.filter(u => u.startsWith(SRC)).map(u => u.slice(SRC.length).split('?')[0]));
   const expected = ['ps-zone-attestation.js', 'ps-zone-attestation.css', 'ps-zone-attestation.json', 'design/colors_and_type.css',
     'design/components.css', 'design/fluent-basic-icons.svg', 'design/abacus-icons/light-bulb-48.svg', 'lib/alpine.js', 'lib/intl.js'];
@@ -572,6 +575,19 @@ async function testStandalone(browser) {
     return { art: r.ok && /<svg/.test(await r.text()) };
   }, SRC);
   check('thank-you illustration is in design/', files.art);
+  // an absolute or server-relative asset path in the config would load from
+  // outside the folder with no setting involved (resolveAsset passes it
+  // through), and a relative one can climb out with ../. So: relative, AND
+  // resolved against design/ exactly as the engine does, it stays inside.
+  const assetPaths = await page.evaluate(async src => {
+    const c = await (await fetch(src + 'ps-zone-attestation.json')).json();
+    return [c.form.headerCard && c.form.headerCard.icon, c.form.appearance && c.form.appearance.icon,
+      c.confirmation && c.confirmation.illustration].filter(Boolean);
+  }, SRC);
+  const assetOut = assetPaths.filter(p => /^(\/|[a-z][\w+.-]*:)/i.test(p) ||
+    !new URL(p, SRC + 'design/').href.startsWith(SRC + 'design/'));
+  check('config asset paths are relative and resolve inside design/',
+    assetPaths.length > 0 && assetOut.length === 0, 'outside: ' + assetOut.join(', '));
   await page.addScriptTag({ url: SRC + 'lib/pnp2.bundle.js' });
   check('lib/pnp2.bundle.js is a working pnp bundle (direct load)', await page.evaluate(() => !!(window.pnp && window.pnp.sp && window.pnp.sp.web)));
   check('no page errors (standalone)', page.__errors.length === 0, page.__errors.join(' | '));
@@ -596,23 +612,145 @@ async function testStandalone(browser) {
     pnpTag === SRC + 'lib/pnp2.bundle.js' && realUrls.some(u => u.split('?')[0] === SRC + 'lib/pnp2.bundle.js'), String(pnpTag));
   check('real loader: window.pnp.sp is defined', await page.evaluate(() => !!(window.pnp && window.pnp.sp)));
   // same-origin /_api/ URLs are SharePoint REST calls the route answered with 404, not asset loads
-  const realOutside = realUrls.filter(u => !u.startsWith(SRC) && !u.startsWith(harness) && !/^(data|about|blob):/.test(u) &&
+  const realOutside = realUrls.filter(u => !inBounds(u) &&
     !(u.startsWith(new URL('/', BASE).href) && u.includes('/_api/')));
   check('real loader: no asset request leaves src/', realOutside.length === 0, realOutside.join(' '));
   await ctx.close();
 
-  // a shared BSP Forms engine already on the page can't swallow this one
-  ctx = await browser.newContext({ viewport: { width: 1100, height: 1600 } });
-  page = await ctx.newPage();
-  await page.addInitScript(() => {
-    window.BSPForms = { __engineLoaded: true, _defs: {}, scan: function () { window.__bspScanned = (window.__bspScanned || 0) + 1; } };
-    window.BSP_FORMS_SETTINGS = { designBase: '/nowhere/', libBase: '/nowhere/' };
+  await testCoexistence(browser);
+}
+
+/* The real shared engine on the same page: BSP Forms 0.5.1 (bsp-forms.js +
+   bsp-forms.css, a dev-only fixture in tests/fixtures/, never deployed) with
+   a one-field form of its own, loaded before this engine and after it. Its
+   design-system base points at the same vendored files, so this tests the
+   two ENGINES and their layers, not two design-system versions (a newer
+   shared design system restyling shared classes is the documented reason the
+   form gets its own page, docs/00-overview.md). Alpine is put on the page
+   first: two engines loading it at once would both inject it. */
+const BSP_MOUNT = '<div data-bsp-form><script type="application/json" data-bspf-config>' +
+  '{"form":{"title":"Shared engine form"},"target":{"listTitle":"Other-List"},' +
+  '"pages":[{"sections":[{"fields":[{"id":"who","type":"text","label":"Name","column":"Title"}]}]}]}</script></div>';
+const bspSettings = () => '<script>window.BSP_FORMS_SETTINGS = { mockSp: window.PSZ_MOCK_SP, designBase: ' +
+  JSON.stringify(SRC + 'design/') + ', alpineUrl: ' + JSON.stringify(SRC + 'lib/alpine.js') + ' };</script>';
+// The zone form's whole computed look: every property of every element in
+// its mount, plus ::before/::after, hashed per element (animations finished
+// first, so the rows' rise animation can't make two pages differ). `rows`
+// lets a comparison refuse a form that didn't render: two empty mounts
+// would otherwise look identical.
+async function zoneLook(page) {
+  return page.evaluate(() => {
+    document.getAnimations().forEach(a => { try { a.finish(); } catch (e) { /* infinite: leave it */ } });
+    const mount = document.querySelector('[data-psz-form]');
+    if (!mount) return { rows: 0, els: [] };
+    const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16); };
+    // sorted: Chromium lists custom properties (--tokens) in the order their
+    // stylesheets happened to load, which varies from one page load to the next.
+    // An absolute/fixed element reports its offsets (top, inset-block-start…)
+    // as resolved pixels from its containing block, so they move when another
+    // form sits above this one; those are layout, not style, and are skipped.
+    // Everywhere else offsets compare as declared.
+    const OFFSETS = /^(top|right|bottom|left|inset(-(block|inline)(-(start|end))?)?)$/;
+    const sig = (el, pseudo) => {
+      const cs = getComputedStyle(el, pseudo);
+      const placed = cs.position === 'absolute' || cs.position === 'fixed';
+      return [...cs].filter(p => !(placed && OFFSETS.test(p))).sort().map(p => p + ':' + cs.getPropertyValue(p)).join(';');
+    };
+    const els = [mount, ...mount.querySelectorAll('*')].map(el => {
+      const name = el.tagName.toLowerCase() + (el.classList.length ? '.' + [...el.classList].join('.') : '');
+      return name + ' ' + fnv(sig(el, null) + '|' + sig(el, '::before') + '|' + sig(el, '::after'));
+    });
+    return { rows: mount.querySelectorAll('.psz-asg__row').length, els };
+  });
+}
+// '' when two looks match (and both are a fully rendered form), else why not
+function lookDiff(a, b) {
+  if (a.rows !== 3 || b.rows !== 3) return 'form not rendered (rows ' + a.rows + ' / ' + b.rows + ')';
+  if (a.els.length !== b.els.length) return 'element count ' + a.els.length + ' vs ' + b.els.length;
+  const diff = a.els.map((e, i) => e === b.els[i] ? null : i + ': ' + b.els[i].split(' ')[0]).filter(Boolean);
+  return diff.length ? diff.length + ' element(s) differ, e.g. ' + diff.slice(0, 3).join(', ') : '';
+}
+async function bothMounted(page) {
+  await page.waitForFunction(() => {
+    const b = document.querySelector('[data-bsp-form]'), z = document.querySelector('[data-psz-form]');
+    return b && z && b.getAttribute('data-bspf-state') === 'ready' && z.getAttribute('data-psz-state') === 'ready' &&
+      z.querySelectorAll('.psz-asg__row').length === 3;
+  }, null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  return page.evaluate(() => {
+    const b = document.querySelector('[data-bsp-form]'), z = document.querySelector('[data-psz-form]');
+    const has = (root, re) => [root, ...root.querySelectorAll('*')].some(el =>
+      [...el.attributes].some(a => re.test(a.name) || (a.name === 'class' && re.test(a.value))));
+    return {
+      bsp: b.getAttribute('data-bspf-state'), zone: z.getAttribute('data-psz-state'),
+      rows: z.querySelectorAll('.psz-asg__row').length, bspForm: !!b.querySelector('.bspf'),
+      defs: [Object.keys(window.BSPForms._defs).length, Object.keys(window.PSZoneForm._defs).length],
+      // two separate namespaces, and PSZoneForm still this engine's (a shared
+      // engine assigning it would make both _defs counts read 1 off one object)
+      ownNs: window.PSZoneForm !== window.BSPForms && window.PSZoneForm.version !== window.BSPForms.version,
+      zoneHasBsp: has(z, /bspf|bsp-form/), bspHasZone: has(b, /psz/)
+    };
+  });
+}
+async function testCoexistence(browser) {
+  const open = async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1100, height: 1600 } });
+    const page = await ctx.newPage();
+    page.__errors = [];
+    page.on('pageerror', e => page.__errors.push(e.message));
+    return { ctx, page };
+  };
+  // baseline: the zone form alone
+  let { ctx, page } = await open();
+  await page.goto(BASE);
+  await page.waitForSelector('.psz-asg__row', { timeout: 15000 });
+  await page.waitForTimeout(300);
+  const alone = await zoneLook(page);
+  await ctx.close();
+
+  // BSP Forms first: the shared engine and its form come before this one in the page
+  ({ ctx, page } = await open());
+  await page.route('**/dev/index.html*', async route => {
+    const html = await (await route.fetch()).text();
+    const before = '<script src="' + SRC + 'lib/alpine.js"></script>';
+    const after = bspSettings() + BSP_MOUNT + '<script src="' + FIXTURE + 'bsp-forms.js?v=fixture"></script>';
+    await route.fulfill({ contentType: 'text/html',
+      body: html.replace('<script src="mock-sp.js"></script>', before + '<script src="mock-sp.js"></script>' + after) });
   });
   await page.goto(BASE);
-  await page.waitForTimeout(1200);
-  check('with BSP Forms loaded first: still mounts, ignores its settings',
-    (await page.locator('.psz-asg__row').count()) === 3 &&
-    (await page.evaluate(() => !window.__bspScanned && Object.keys(window.BSPForms._defs).length === 0)));
+  let st = await bothMounted(page);
+  check('BSP Forms first: both forms mount, each engine only its own',
+    st.bsp === 'ready' && st.zone === 'ready' && st.rows === 3 && st.bspForm && st.defs.join() === '1,1' && st.ownNs, JSON.stringify(st));
+  check('BSP Forms first: no class or attribute crosses between the two forms', !st.zoneHasBsp && !st.bspHasZone, JSON.stringify(st));
+  let diff = lookDiff(alone, await zoneLook(page));
+  check('BSP Forms first: every computed style in the zone form matches the form alone', diff === '', diff);
+  check('no page errors (BSP Forms first)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // BSP Forms later: added to a page where the zone form is already running
+  ({ ctx, page } = await open());
+  await page.goto(BASE);
+  await page.waitForSelector('.psz-asg__row', { timeout: 15000 });
+  await page.evaluate(({ settings, mount, src }) => {
+    const host = document.createElement('div');
+    host.innerHTML = mount;
+    document.body.appendChild(host.firstChild);
+    window.BSP_FORMS_SETTINGS = JSON.parse(settings);
+    window.BSP_FORMS_SETTINGS.mockSp = window.PSZ_MOCK_SP;
+    const s = document.createElement('script');
+    s.src = src;
+    document.head.appendChild(s);
+  }, { settings: JSON.stringify({ designBase: SRC + 'design/', alpineUrl: SRC + 'lib/alpine.js' }), mount: BSP_MOUNT,
+    src: FIXTURE + 'bsp-forms.js?v=fixture' });
+  st = await bothMounted(page);
+  check('BSP Forms later: it mounts its own form and leaves the zone form alone',
+    st.bsp === 'ready' && st.zone === 'ready' && st.rows === 3 && st.bspForm && st.defs.join() === '1,1' && st.ownNs &&
+    !st.zoneHasBsp && !st.bspHasZone, JSON.stringify(st));
+  const bspCss = await page.evaluate(() => [...document.styleSheets].some(s => /bsp-forms\.css/.test(s.href || '')));
+  diff = lookDiff(alone, await zoneLook(page));
+  check('BSP Forms later: bsp-forms.css changes no computed style in the zone form',
+    bspCss && diff === '', bspCss ? diff : 'bsp-forms.css not loaded');
+  check('no page errors (BSP Forms later)', page.__errors.length === 0, page.__errors.join(' | '));
   await ctx.close();
 }
 

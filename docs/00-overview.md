@@ -60,9 +60,27 @@ time, afterSubmit…). They're inert here. Trimming them was deferred
 are page-wide. The engine reuses one that's already on the page instead of
 loading a second copy, because two Alpines on one page break each other.
 So on a page shared with other parts, the form could run on *their*
-versions. That's why the form gets its own page. The CSS can't leak this
-way: the vendored files are deduped by URL, and a page that also loads the
-shared BSP CSS just gets both copies.
+versions. Two engines that both start loading Alpine at the same moment can
+also inject it twice.
+
+**Page-wide CSS.** The design-system stylesheets are page-wide too, and they
+are the one thing the rename can't separate. This form and every other BSP
+part use the same design-system classes and tokens (`.field`, `.btn`,
+`--color-…`). If the page also loads the shared `Code/bsp-design` CSS, both
+copies apply, and whichever loads later wins wherever the two versions
+differ. A newer shared design system can restyle this form's controls, and
+this form's copy can restyle theirs. The two form layers are scoped to their
+own prefixes, `.psz-*` in `ps-zone-attestation.css` and `.bspf-*` in
+`bsp-forms.css`, with one exception: both carry the same global
+`[x-cloak] { display: none !important; }` (Alpine's pre-boot hide, kept out of
+inline styles for CSP). The declarations are identical, so either copy
+gives the same result, but don't change it in one layer only. The suite
+proves the real BSP Forms engine and layer, loaded before or after this
+one, leave every computed style in the zone form unchanged.
+
+Both points are why **the form gets its own page**, with no other
+custom-script parts on it. That's a deployment rule, not something the code
+can enforce.
 
 ## Decisions
 

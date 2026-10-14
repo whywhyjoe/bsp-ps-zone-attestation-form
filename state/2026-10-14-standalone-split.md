@@ -1,42 +1,33 @@
 # State — Standalone split from bsp-sp-parts
 
 Last touched: 2026-10-14
-Branch: `crew/zone-split-review` (review branch; Joe decides whether to merge)
-State: Fix 1 and Fix 2 (test-only) committed. Fix 2 passed four local 93-check
-runs (two sequential, then two concurrent); final reviewer sign-off is pending.
-Dev live run not done; **prod untouched**.
+Branch: `main` (local only, no remote). `crew/zone-split-review` is merged
+(`9a416c3`); the branch and its worktree under `~/.xo/rooms/` still exist.
+State: split done; three review rounds behind it (crew, Codex turn 1, Codex
+re-review turn 2), all fixes committed on main; suite 100/100 green. Dev
+live run not done; **prod untouched**.
 
 ## What was done
 
 The zone attestation was a config of the shared BSP Forms engine in
 `bsp-sp-parts/bsp-forms`. Because it's critical, the user had it split into
 this repo so nothing shared can break it (2026-10-14). Everything it loads
-now sits in `src/`, which deploys as one folder. See `docs/04-vendoring.md`
-for what was copied from where.
+sits in `src/`, which deploys as one folder (`docs/04-vendoring.md`).
 
-On the separate `crew/zone-split-review` branch, the hosting and vendoring
-guides' cache instructions were corrected during review 1: design CSS and the
-icon sprite have no per-file URL override. The final review is pending.
-
-The overview and hosting guide now distinguish asset requests from SharePoint
-REST calls when describing the standalone check and deploy verification.
-
-Fix 1 (docs/plans/step-1.md): `testStandalone` gained a non-mock loader block
-(3 checks, suite now 93), and `live-deploy.ps1`
-now runs config + template-marker checks before uploading or recycling anything.
-Nothing under `src/` changed.
-
-Rook's local suite runs on the review branch disagreed with Brume's 93/93:
-one stopped at the done screen after Confirm (`tests/smoke.cjs:175`), another
-failed three zone checks (one row already submitted, everything submitted,
-earlier-responses read cut off). Cause: `openZone` slept a fixed 1200 ms and
-the checks read the DOM once, without retrying, before the assignments load
-had settled; likely two suite runs overlapped. Fix 2 (docs/plans/step-2.md,
-tests only): `openZone` now waits for `asg.state` to leave idle/loading
-(tolerant, 15 s) plus a 100 ms paint tick, and every 5000 ms wait is 15000.
-On `a49c072`, Rook ran the 93-check suite twice in sequence, then two copies
-concurrently; all four exited 0 with ALL CHECKS PASSED. These are local mock
-and loader checks, not a live SharePoint run.
+Review round 1 (xo crew, merged): the real pnp loader is now tested,
+`live-deploy.ps1` validates before it touches the tenant, the zone checks
+wait on load state, and the cache docs are corrected. Review round 2 (Codex,
+xo turn 1 in this repo): request-boundary check tightened to the harness
+page and mock; the coexistence check now loads the real BSP Forms 0.5.1
+(`tests/fixtures/`) before and after this engine; config asset paths must
+be relative (tested + documented); the overview's wrong "CSS can't leak"
+claim is replaced by *Page-wide CSS*. Re-review (turn 2) closed the boundary
+and coexistence fixes and found three more, all fixed: the asset-path check
+now also rejects `../` escapes; the style comparison covers every computed
+property and can't match two empty forms; the overview admits the shared
+`[x-cloak]` rule. A further hole found while testing (a shared engine
+assigning `window.PSZoneForm`) is now checked too. Each new check was shown
+to fail on the breakage it guards.
 
 ## Decisions (user, 2026-10-14)
 
@@ -47,10 +38,14 @@ and loader checks, not a live SharePoint run.
   page would otherwise mount or skip this form.
 - **bsp-sp-parts keeps its copy** of the config (its suite's assignments
   reference), with a pointer to this repo as the deploy source.
+- **Merge the crew branch** into main before fixing the Codex findings.
+- The crew experiment is over for now (too much babysitting). Lessons are in
+  xo `state/2026-10-14-crew-run-lessons.md`.
 
 ## Next
 
-- [ ] Create the GitHub repo and push, if wanted (initial commit is local only).
+- [ ] Delete `crew/zone-split-review` and its worktree if Joe agrees.
+- [ ] Create the GitHub repo and push, if wanted.
 - [ ] Dev live run: `dev/live/live-deploy.ps1 -Ver 1.0.0` →
       `node dev/live/live-zone.js` (admin) → `--as <profile>` (non-admin).
 - [ ] Content: real zone descriptions, official French names, job aid URL.
@@ -62,6 +57,7 @@ and loader checks, not a live SharePoint run.
   (`C:/dev/repos/sp-traffic-analytics/node_modules` worked) and a server on
   the repo root. On this machine, `C:/dev/repos` served on 8647 also works:
   pass `http://127.0.0.1:8647/bsp-ps-zone-attestation-form/dev/index.html`.
+  Two suite runs at once used to flake; the load-state waits fixed that.
 - `live-deploy.ps1` swaps exact lines in the config. Keep the JSON
   hand-formatted.
 - Dev's shared `<code>/bsp-forms/` is the builder branch's 0.6.0. This repo
