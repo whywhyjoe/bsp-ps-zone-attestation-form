@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PS Zone Attestation · dev harness</title>
+  <!-- =================================================================
+    Local dev harness — runs the real deploy folder (../src/) with ZERO
+    SharePoint and ZERO network: only the SharePoint adapter is mocked.
+    The engine finds design/ and lib/ beside itself exactly as it does
+    in production, so this harness also proves the folder is complete.
+
+    Serve the repo root over HTTP (the engine fetches the config and
+    sprite, which file:// blocks):
+
+        python -m http.server 8646        (from the repo root)
+        → http://localhost:8646/dev/index.html
+
+    Query flags: ?validate renders the doctor report; ?lang=fr opens in
+    French (or use the EN / FR buttons); ?Mode=Edit shows the edit-mode
+    placeholder. Writes land on window.__PSZ_MOCK_WRITES__ (mock-sp.js).
+  ================================================================== -->
+  <style>
+    /* Harness chrome only — the page around the web-part div. */
+    body { margin: 0; background: #f5f6f7; }
+    .harness-bar {
+      padding: 10px 24px; background: #001928; color: #fff;
+      font: 600 13px/1.4 "Segoe UI", sans-serif; letter-spacing: .02em;
+    }
+    .harness-bar small { font-weight: 400; opacity: .7; }
+    .harness-bar button { margin-left: 8px; font: inherit; padding: 1px 8px; cursor: pointer; }
+    .harness-canvas { max-width: 860px; margin: 24px auto; background: #fff; border-radius: 8px; padding: 32px; }
+  </style>
+</head>
+<body>
+  <div class="harness-bar">PS Zone Attestation · dev harness <small>— mock SharePoint, real src/ folder · writes logged to <code>__PSZ_MOCK_WRITES__</code></small>
+    <button type="button" onclick="window.intl && intl.setLang('en')">EN</button><button type="button" onclick="window.intl && intl.setLang('fr')">FR</button></div>
+
+  <!-- Simulates the modern-page canvas + the web part's own padding. -->
+  <div class="harness-canvas">
+
+    <!-- ============ the actual web part insert, dev-configured ============ -->
+    <script src="mock-sp.js"></script>
+    <script>
+      window.PSZ_FORM_SETTINGS = { mockSp: window.PSZ_MOCK_SP };
+    </script>
+    <div data-psz-form data-config="../src/ps-zone-attestation.json"></div>
+    <script>
+      if (location.search.indexOf('validate') > -1) document.querySelector('[data-psz-form]').setAttribute('data-validate', '');
+    </script>
+    <script src="../src/ps-zone-attestation.js?v=dev"></script>
+    <!-- ==================================================================== -->
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+<!-- =====================================================================
+     BMO Design System · curated icon sprite
+
+     Symbol id convention:  ic-fluent-{icon}-{size}-{variant}
+     (matches Fluent System Icons filename tokens, e.g.
+      ic_fluent_home_24_regular.svg  ->  ic-fluent-home-24-regular)
+
+     Use it TWO equivalent ways; both resolve to the same symbol:
+       no-JS :  <svg class="icon"><use href="#ic-fluent-home-24-regular"/></svg>
+                (add a size helper class on the svg as needed)
+       sugar :  <fluent-icon name="home-24-regular"></fluent-icon>
+
+     LOADING: symbols are referenced same-document (href="#id"), which is what
+     fluent-icon.js and the copy-paste snippets emit. So INLINE this block into
+     the page (drop it in the body once). It can also be hosted as a file and
+     referenced as bmo-icons.svg#id, but then you must also point
+     fluent-icon.js resolve() at the file path.
+
+     ART: placeholder line icons on a 24x24 grid, fill:none + currentColor, so
+     they inherit text color and scale with the .icon size helpers. For a real
+     project, replace each placeholder with the matching real Fluent 24 glyph
+     copied from the fluentui-system-icons repo (its svg/ folder) — an expected
+     visual change, same 24 viewBox, no reflow. Not every Fluent icon ships in
+     every size; 24 regular is the most universally available, so the whole set
+     is normalized to it.
+
+     OLD -> NEW id map (the fork this retires):
+       #ic-home / semantic        ->  #ic-fluent-home-24-regular
+       #ic-close, #ic-x           ->  #ic-fluent-dismiss-24-regular
+       #i-arrow, #ic-arrow-right  ->  #ic-fluent-arrow-right-24-regular
+       #i-chev, #ic-chev-right    ->  #ic-fluent-chevron-right-24-regular
+       #ic-chev-down              ->  #ic-fluent-chevron-down-24-regular
+       #ic-more                   ->  #ic-fluent-more-horizontal-24-regular
+       #ic-warn                   ->  #ic-fluent-warning-24-regular
+       #ic-doc                    ->  #ic-fluent-document-24-regular
+       #ic-dollar                 ->  #ic-fluent-money-24-regular
+       #i-bell                    ->  #ic-fluent-alert-24-regular
+       #i-export                  ->  #ic-fluent-arrow-export-24-regular
+       #i-inbox                   ->  #ic-fluent-mail-inbox-24-regular
+       #i-policy                  ->  #ic-fluent-shield-24-regular
+       #i-chart                   ->  #ic-fluent-data-bar-vertical-24-regular
+       #ic-calendar               ->  #ic-fluent-calendar-ltr-24-regular
+     (Some are best-guess Fluent names: money, shield, data-bar-vertical,
+      mail-inbox especially. Confirm against the Fluent reference before the
+      real-asset swap; the names are the durable contract, so adjust here.)
+
+     ADD AN ICON: take ic_fluent_{name}_24_regular.svg from the fluentui-system-icons
+     repo, wrap its <path>s in <symbol id="ic-fluent-{name}-24-regular"
+     viewBox="0 0 24 24">, and change each path's baked fill="#212121" to
+     fill="currentColor". Real Fluent glyphs are filled shapes, not strokes —
+     never set them to fill:none. For a filled variant, suffix the id with
+     24-filled. For more than one or two extras, use the Fluent Resizable icon
+     font instead (docs/TECHNICAL-REFERENCE.md §6).
+     ===================================================================== -->
+<defs>
+
+  <!-- add -->
+  <symbol id="ic-fluent-add-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></g></symbol>
+
+  <!-- alert (bell) -->
+  <symbol id="ic-fluent-alert-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a5 5 0 0 1 5 5c0 5 2 6 2 6H5s2-1 2-6a5 5 0 0 1 5-5zM10.3 19a1.8 1.8 0 0 0 3.4 0"/></g></symbol>
+
+  <!-- arrow-down -->
+  <symbol id="ic-fluent-arrow-down-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13M6 12l6 6 6-6"/></g></symbol>
+
+  <!-- arrow-export -->
+  <symbol id="ic-fluent-arrow-export-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-5M14 5h5v5M19 5l-8 8"/></g></symbol>
+
+  <!-- arrow-right -->
+  <symbol id="ic-fluent-arrow-right-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12 6l6 6-6 6"/></g></symbol>
+
+  <!-- arrow-up -->
+  <symbol id="ic-fluent-arrow-up-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 12l6-6 6 6"/></g></symbol>
+
+  <!-- attach -->
+  <symbol id="ic-fluent-attach-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 8.5l-6 6a2 2 0 1 0 2.8 2.8l6-6a3.5 3.5 0 0 0-5-5l-6.5 6.5a5 5 0 0 0 7 7l5.5-5.5"/></g></symbol>
+
+  <!-- calendar-ltr -->
+  <symbol id="ic-fluent-calendar-ltr-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7zM5 10h14M9 4v3M15 4v3"/></g></symbol>
+
+  <!-- checkmark -->
+  <symbol id="ic-fluent-checkmark-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></g></symbol>
+
+  <!-- checkmark-circle -->
+  <symbol id="ic-fluent-checkmark-circle-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M8.5 12.2l2.4 2.4 4.6-4.9"/></g></symbol>
+
+  <!-- chevron-down -->
+  <symbol id="ic-fluent-chevron-down-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></g></symbol>
+
+  <!-- chevron-left -->
+  <symbol id="ic-fluent-chevron-left-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l-5 5 5 5"/></g></symbol>
+
+  <!-- chevron-right -->
+  <symbol id="ic-fluent-chevron-right-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 7l5 5-5 5"/></g></symbol>
+
+  <!-- clock -->
+  <symbol id="ic-fluent-clock-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></g></symbol>
+
+  <!-- closed-caption -->
+  <symbol id="ic-fluent-closed-caption-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="1.5"/><path d="M10.8 10.6a2 2 0 1 0 0 2.8M16.6 10.6a2 2 0 1 0 0 2.8"/></g></symbol>
+
+  <!-- data-bar-vertical (chart) -->
+  <symbol id="ic-fluent-data-bar-vertical-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19v-6M12 19V6M17 19v-9"/></g></symbol>
+
+  <!-- delete (trash) -->
+  <symbol id="ic-fluent-delete-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12M9.5 8V6a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M8 8l.8 11a1 1 0 0 0 1 .9h4.4a1 1 0 0 0 1-.9L16 8M10.5 11.5v5M13.5 11.5v5"/></g></symbol>
+
+  <!-- dismiss (close / x) -->
+  <symbol id="ic-fluent-dismiss-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></g></symbol>
+
+  <!-- dismiss-circle -->
+  <symbol id="ic-fluent-dismiss-circle-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/></g></symbol>
+
+  <!-- document (doc) -->
+  <symbol id="ic-fluent-document-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h7l4 4v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM14 4v4h4"/></g></symbol>
+
+  <!-- document-pdf -->
+  <symbol id="ic-fluent-document-pdf-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h7l4 4v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM14 4v4h4"/><path d="M8.5 15.5h7"/></g></symbol>
+
+  <!-- edit (pencil) -->
+  <symbol id="ic-fluent-edit-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19l1-4 9-9 3 3-9 9-4 1zM14 6l3 3"/></g></symbol>
+
+  <!-- filter (funnel) -->
+  <symbol id="ic-fluent-filter-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14l-5.5 7v5l-3-2v-3L5 6z"/></g></symbol>
+
+  <!-- folder -->
+  <symbol id="ic-fluent-folder-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7z"/></g></symbol>
+
+  <!-- full-screen-maximize -->
+  <symbol id="ic-fluent-full-screen-maximize-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9V6a1 1 0 0 1 1-1h3M15 5h3a1 1 0 0 1 1 1v3M19 15v3a1 1 0 0 1-1 1h-3M9 19H6a1 1 0 0 1-1-1v-3"/></g></symbol>
+
+  <!-- grid -->
+  <symbol id="ic-fluent-grid-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></g></symbol>
+
+  <!-- home -->
+  <symbol id="ic-fluent-home-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5L12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-7.5z"/></g></symbol>
+
+  <!-- info -->
+  <symbol id="ic-fluent-info-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 11.5v4.5"/><path d="M12 8.2h.01"/></g></symbol>
+
+  <!-- mail -->
+  <symbol id="ic-fluent-mail-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM4.5 8l7.5 5 7.5-5"/></g></symbol>
+
+  <!-- mail-inbox (inbox) -->
+  <symbol id="ic-fluent-mail-inbox-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.8-6.2a1 1 0 0 1 1-.8h8.4a1 1 0 0 1 1 .8L19 13v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-4zM5 13h4a3 3 0 0 0 6 0h4"/></g></symbol>
+
+  <!-- money (dollar) -->
+  <symbol id="ic-fluent-money-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="10" rx="1.5"/><circle cx="12" cy="12" r="2.3"/><path d="M7 12h.01M17 12h.01"/></g></symbol>
+
+  <!-- more-horizontal (more) -->
+  <symbol id="ic-fluent-more-horizontal-24-regular" viewBox="0 0 24 24"><g fill="currentColor" stroke="none"><circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/></g></symbol>
+
+  <!-- open (pop-out) -->
+  <symbol id="ic-fluent-open-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-5M14 5h5v5M19 5l-8 8"/></g></symbol>
+
+  <!-- person -->
+  <symbol id="ic-fluent-person-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5.5 19a6.5 6.5 0 0 1 13 0"/></g></symbol>
+
+  <!-- person-add -->
+  <symbol id="ic-fluent-person-add-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8.5" r="3.3"/><path d="M3.5 19a6 6 0 0 1 11-3.3M18 8v6M15 11h6"/></g></symbol>
+
+  <!-- phone -->
+  <symbol id="ic-fluent-phone-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 4.5l3 .8 1 3.2-1.9 1.4a10 10 0 0 0 4.6 4.6l1.4-1.9 3.2 1 .8 3a1 1 0 0 1-1 1.1A13.5 13.5 0 0 1 5.4 5.5a1 1 0 0 1 1.1-1z"/></g></symbol>
+
+  <!-- pause -->
+  <symbol id="ic-fluent-pause-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9.2 6v12M14.8 6v12"/></g></symbol>
+
+  <!-- play -->
+  <symbol id="ic-fluent-play-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 5.5l10 6.5-10 6.5z"/></g></symbol>
+
+  <!-- question -->
+  <symbol id="ic-fluent-question-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.4 2.4 0 1 1 3.3 2.6c-.7.3-1.1 1-1.1 1.8"/><path d="M11.8 16.5h.01"/></g></symbol>
+
+  <!-- receipt -->
+  <symbol id="ic-fluent-receipt-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3V4zM9 8h6M9 11.5h6M9 15h4"/></g></symbol>
+
+  <!-- search -->
+  <symbol id="ic-fluent-search-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M15 15l4 4"/></g></symbol>
+
+  <!-- settings (gear) -->
+  <symbol id="ic-fluent-settings-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 4v2.2M12 17.8V20M5 7.5l1.9 1.1M17.1 15.4L19 16.5M5 16.5l1.9-1.1M17.1 8.6L19 7.5"/></g></symbol>
+
+  <!-- shield (policy) -->
+  <symbol id="ic-fluent-shield-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l7 2.5v5c0 5-3.5 8-7 9.5-3.5-1.5-7-4.5-7-9.5v-5L12 4zM9 12l2 2 4-4"/></g></symbol>
+
+  <!-- speaker-2 (volume) -->
+  <symbol id="ic-fluent-speaker-2-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h3l4.5 3.5v-11L7 10H4z"/><path d="M15 9.5a4 4 0 0 1 0 5M17.5 7.5a7 7 0 0 1 0 9"/></g></symbol>
+
+  <!-- star -->
+  <symbol id="ic-fluent-star-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l2.3 4.7 5.2.8-3.8 3.7.9 5.2-4.6-2.5-4.6 2.5.9-5.2L6.5 10l5.2-.8L12 4.5z"/></g></symbol>
+
+  <!-- warning (warn) -->
+  <symbol id="ic-fluent-warning-24-regular" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l8.5 14.5H3.5L12 5z"/><path d="M12 10.5v4M12 17h.01"/></g></symbol>
+
+
+  <!-- ===== FILLED VARIANT EXAMPLES =================================== -->
+  <!-- Demonstrates the -filled axis. Knockout uses #fff (swap to your page
+       ground token if you place these on tinted bands). -->
+
+  <!-- checkmark-circle, filled -->
+  <symbol id="ic-fluent-checkmark-circle-24-filled" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="currentColor"/><path d="M8.4 12.2l2.5 2.5 4.7-5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+
+  <!-- warning, filled -->
+  <symbol id="ic-fluent-warning-24-filled" viewBox="0 0 24 24"><path d="M11.1 5.2a1 1 0 0 1 1.8 0l8 14a1 1 0 0 1-.9 1.5H4a1 1 0 0 1-.9-1.5l8-14z" fill="currentColor"/><path d="M12 10v4M12 17h.01" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+
+</defs>
+</svg>

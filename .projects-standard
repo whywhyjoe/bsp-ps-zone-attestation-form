@@ -1,0 +1,7 @@
+version = "0.3.1"
+profile = "sp-app"
+fragments = []
+# browser-tests and design-system were chosen, but neither fragment exists yet in
+# projects-standard 0.3.1 (fragments/README.md: "earned, not yet built"). This
+# repo carries both concerns by hand: tests/smoke.cjs and src/design/.
+scaffolded = "2026-10-14"

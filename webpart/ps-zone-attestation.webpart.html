@@ -1,0 +1,23 @@
+<!-- =====================================================================
+  Physical Security Zones Attestation — web part entry snippet
+  ---------------------------------------------------------------------
+  Paste into a Modern Script Editor web part on the attestation page.
+  TENANT is the tenant host; keep the path matching where the deployed
+  ps-zone-attestation/ folder really is (docs/01-hosting-and-deploy.md).
+
+  Bump ?v= to the engine VERSION on every engine deploy — it also
+  cache-busts ps-zone-attestation.css. The JSON config is fetched
+  uncached, so config edits never need a bump.
+
+  Optional on the div:
+    data-validate   renders the config-vs-list "doctor" report above the
+                    form (install check — remove before go-live).
+
+  The engine loads its own design/ and lib/ from beside itself; nothing
+  else goes on the page. Give the form its own page: Alpine, pnpjs and
+  intl.js are page globals, and a second copy from another web part
+  would be reused instead of this folder's (docs/00-overview.md).
+  ===================================================================== -->
+
+<div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
+<script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.0.0"></script>

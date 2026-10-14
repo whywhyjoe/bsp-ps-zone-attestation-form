@@ -1,0 +1,9 @@
+# Generated documents live here and are never committed.
+# Reviews, cross-reviews, migration plans, analyses, scratch write-ups.
+.scratch/
+
+# Local environment
+.env
+.env.local
+node_modules/
+__pycache__/
