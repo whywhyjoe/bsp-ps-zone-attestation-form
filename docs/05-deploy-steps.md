@@ -16,10 +16,45 @@ Three places in SharePoint are involved:
 | --- | --- |
 | `/teams/FCUWebDatastores` | Two lists: the assignments (who answers which area) and the responses (the answers). |
 | `/sites/FCUPortal/Code/ps-zone-attestation/` | The form's files: everything in this repo's `src/` folder. |
-| `/sites/FCUPortal`, a new page | The page people open. It has one web part that loads the form. |
+| `/sites/FCUPortal`, a new page | The page people open. It has two web parts: the form, and a resources panel beside it. |
 
 Nothing else is needed: no build, no install, no other library. The form
 loads only its own files.
+
+## See it first, on your own computer (optional)
+
+You can run the whole page locally before touching SharePoint: the form and
+its resources panel, with sample data. It needs no SharePoint and no
+internet, because SharePoint is replaced by a stand-in (`dev/mock-sp.js`) and
+every other file is in the repo.
+
+1. Get the repo. It's private on GitHub
+   (`whywhyjoe/bsp-ps-zone-attestation-form`): either sign in to GitHub and
+   clone it, or download it from the repo page (*Code → Download ZIP*) and
+   unzip it.
+2. In that folder, start a local web server. With Python:
+
+   ```bash
+   python -m http.server 8646
+   ```
+
+   No Python? Any static web server pointed at the folder works, for example
+   VS Code's *Live Server* extension, or `npx http-server -p 8646` if Node is
+   installed. (Double-clicking the HTML file doesn't work: the browser blocks
+   the files the page loads.)
+3. Open `http://localhost:8646/dev/page.html`.
+
+What you'll see: "Dev Tester" with three sample areas, and the resources
+panel on the right. You can click through everything, including submitting.
+Answers go to the stand-in, not SharePoint, and a reload starts fresh.
+
+| Add to the address | To see |
+| --- | --- |
+| `?lang=fr` | French (the EN / FR buttons in the top bar also switch) |
+| `?Mode=Edit` | What the web parts show while a SharePoint page is being edited |
+
+`dev/index.html` is the form alone. Add `?validate` to it to see the
+*Form configuration check* table from step 7.
 
 ## Before you start
 
