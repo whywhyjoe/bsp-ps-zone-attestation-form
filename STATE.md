@@ -10,8 +10,8 @@ the `project-state` skill.
 
 | | |
 | --- | --- |
-| **Version** | engine 1.0.0 (fork of BSP Forms 0.5.1), config as of bsp-sp-parts `fe5c040` |
-| **Deployed** | **Dev** (2026-10-14, `?v=1.0.0`): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, page `SitePages/ps-zone-attestation-test.aspx`, lists on the tenant root. **Prod:** not yet. |
+| **Version** | engine 1.1.0 (fork of BSP Forms 0.5.1, plus the resources panel) |
+| **Deployed** | **Dev** (2026-10-14, `?v=1.1.0`, form + resources panel; live run 24/24): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, page `SitePages/ps-zone-attestation-test.aspx`, lists on the tenant root. **Prod:** not yet. |
 | **Last shipped** | — (repo created 2026-10-14; two review rounds since; harness suite 100/100 green) |
 
 ## Next committed step
