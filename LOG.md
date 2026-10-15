@@ -7,6 +7,17 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.2.1: icons under VS Code Live Server
+
+Live Server injects its reload script before every `</svg>` in an `.svg`,
+including the example one in the sprite's header comment. The injected
+`<!-- … -->` ended that comment early and closed the sprite before any
+symbol, so no icons showed. The engine strips Live Server's block before
+parsing, and warns if a sprite ever parses with no symbols. A suite check
+reproduces Live Server's rewrite (it fails without the fix: 0 symbols, all
+42 icons missing). The harness pages link to each other (form only ↔ with
+the resources sidebar). Suite 132/132.
+
 ## 2026-10-14 — engine 1.2.0: error reporting, saving overlay
 
 - **Error log:** a failure the user hits (`init` once the config has

@@ -54,7 +54,12 @@ Answers go to the stand-in, not SharePoint, and a reload starts fresh.
 | `?Mode=Edit` | What the web parts show while a SharePoint page is being edited |
 
 `dev/index.html` is the form alone. Add `?validate` to it to see the
-*Form configuration check* table from step 7.
+*Form configuration check* table from step 7. A link in each page's top bar
+switches between the two.
+
+VS Code's *Live Server* works too, from engine 1.2.1 on. It rewrites `.svg`
+files to add its reload script, which broke the icons in earlier versions;
+the engine now strips that script.
 
 ## Before you start
 
@@ -274,7 +279,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-form data-validate data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.0"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.1"></script>
    ```
 
    It's the snippet in `webpart/ps-zone-attestation.webpart.html`, plus
@@ -284,7 +289,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.0"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.1"></script>
    ```
 
    It's `webpart/ps-zone-attestation-resources.webpart.html`. Both web parts
@@ -331,7 +336,7 @@ the date and `?v=` you deployed in `STATE.md`.
 - **A new version of the form's code** (`ps-zone-attestation.js` or `.css`):
   1. Download the two deployed files first (for rollback).
   2. Upload the new ones over them.
-  3. In **both** web parts, change `?v=1.2.0` to the new version (the
+  3. In **both** web parts, change `?v=1.2.1` to the new version (the
      `VERSION` line near the top of `ps-zone-attestation.js`). Without this,
      browsers may keep the old code.
   4. Repeat step 7's checks 2, 4 and 5.

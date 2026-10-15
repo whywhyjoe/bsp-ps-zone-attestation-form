@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.2.0 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.2.1 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.0"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.1"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.2.0';
+  var VERSION = '1.2.1';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -495,10 +495,19 @@
       .then(function (r) { if (!r.ok) throw new Error('sprite HTTP ' + r.status); return r.text(); })
       .then(function (text) {
         if (document.getElementById('ic-fluent-checkmark-24-regular')) return;
+        // A live-reload dev server (VS Code Live Server) injects its script
+        // into .svg files before EVERY "</svg>", including the example one
+        // inside this sprite's header comment. The injected "<!-- … -->"
+        // then ends that comment early, the example's </svg> closes the root
+        // svg, and every symbol falls outside it: no icons. Strip it.
+        text = String(text).replace(/<!-- Code injected by live-server -->\s*<script[\s\S]*?<\/script>/gi, '');
         var box = document.createElement('div');
         box.innerHTML = text;
         var svg = box.querySelector('svg');
         if (!svg) throw new Error('sprite parse failed');
+        if (!svg.querySelector('symbol')) {
+          console.warn('[PS Zone Form] icon sprite parsed without any icons. Is something (a dev server, a proxy) rewriting .svg files?');
+        }
         svg.style.display = 'none';
         svg.setAttribute('aria-hidden', 'true');
         svg.setAttribute('data-psz', 'sprite');

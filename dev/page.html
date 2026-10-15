@@ -26,6 +26,7 @@
     }
     .harness-bar small { font-weight: 400; opacity: .7; }
     .harness-bar button { margin-left: 8px; font: inherit; padding: 1px 8px; cursor: pointer; }
+    .harness-bar a { margin-left: 16px; color: #9fd3ff; }
     .harness-page { max-width: 1280px; margin: 24px auto; display: grid; grid-template-columns: 3fr 1fr; gap: 24px; padding: 0 24px; }
     .harness-col { background: #fff; border-radius: 8px; padding: 24px; min-width: 0; }
     @media (max-width: 900px) { .harness-page { grid-template-columns: 1fr; } }
@@ -33,7 +34,8 @@
 </head>
 <body>
   <div class="harness-bar">PS Zone Attestation · page harness <small>— form + resources panel, mock SharePoint</small>
-    <button type="button" onclick="window.intl && intl.setLang('en')">EN</button><button type="button" onclick="window.intl && intl.setLang('fr')">FR</button></div>
+    <button type="button" onclick="window.intl && intl.setLang('en')">EN</button><button type="button" onclick="window.intl && intl.setLang('fr')">FR</button>
+    <a href="index.html" onclick="this.href = 'index.html' + location.search">← Form only</a></div>
 
   <script src="mock-sp.js"></script>
   <script>

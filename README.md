@@ -39,14 +39,14 @@ only), `?lang=fr` for French or `?Mode=Edit` for the edit-mode placeholder.
 node tests/smoke.cjs
 ```
 
-This runs the regression suite (113 checks, Playwright). See
+This runs the regression suite (132 checks, Playwright). See
 [`tests/README.md`](tests/README.md).
 
 ## Deploying
 
 **Follow [`docs/05-deploy-steps.md`](docs/05-deploy-steps.md).** It's step
 by step, for someone new to the project, with a check after each step. In
-short: create two lists, upload the contents of `src/` to
+short: create three lists (one is the error log), upload the contents of `src/` to
 `/sites/FCUPortal/Code/ps-zone-attestation/`, add two web parts to a page of
 its own, and check it. No build and no install.
 

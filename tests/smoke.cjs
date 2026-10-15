@@ -733,6 +733,33 @@ async function testStandalone(browser) {
   check('real loader: no asset request leaves src/', realOutside.length === 0, realOutside.join(' '));
   await ctx.close();
 
+  // served by VS Code Live Server: it injects its reload script before
+  // EVERY "</svg>" in an .svg (event-stream replace), including the example
+  // one in the sprite's header comment, whose own "<!-- … -->" then ends that
+  // comment early. Reproduced here exactly; the icons must still resolve.
+  ctx = await browser.newContext({ viewport: { width: 1100, height: 1600 } });
+  page = await ctx.newPage();
+  const warns = [];
+  page.on('console', m => { if (m.type() === 'warning') warns.push(m.text()); });
+  await page.route('**/fluent-basic-icons.svg', async route => {
+    const svg = await (await route.fetch()).text();
+    const INJECTED = '<!-- Code injected by live-server -->\n<script>\n\t// <![CDATA[  <-- For SVG support\n' +
+      "\tif ('WebSocket' in window) { (function () { for (var i = 0; i < 1; ++i) {} })(); }\n\t// ]]>\n</script>";
+    await route.fulfill({ contentType: 'image/svg+xml', body: svg.split('</svg>').join(INJECTED + '</svg>') });
+  });
+  await page.goto(BASE);
+  await page.waitForSelector('.psz-asg__row', { timeout: 15000 });
+  await page.waitForTimeout(400);
+  const ls = await page.evaluate(() => {
+    const uses = [...document.querySelectorAll('.psz use')].map(u => (u.getAttribute('href') || '').slice(1));
+    const sprite = document.querySelector('svg[data-psz="sprite"]');
+    return { uses: uses.length, missing: uses.filter(id => !document.getElementById(id)).length,
+      symbols: sprite ? sprite.querySelectorAll('symbol').length : -1, scripts: sprite ? sprite.querySelectorAll('script').length : -1 };
+  });
+  check('Live Server-rewritten sprite: every icon still resolves (its injected script stripped)',
+    ls.uses > 0 && ls.missing === 0 && ls.symbols > 40 && ls.scripts === 0 && !warns.some(w => /sprite/.test(w)), JSON.stringify(ls));
+  await ctx.close();
+
   await testCoexistence(browser);
 }
 

@@ -29,12 +29,14 @@
     }
     .harness-bar small { font-weight: 400; opacity: .7; }
     .harness-bar button { margin-left: 8px; font: inherit; padding: 1px 8px; cursor: pointer; }
+    .harness-bar a { margin-left: 16px; color: #9fd3ff; }
     .harness-canvas { max-width: 860px; margin: 24px auto; background: #fff; border-radius: 8px; padding: 32px; }
   </style>
 </head>
 <body>
   <div class="harness-bar">PS Zone Attestation · dev harness <small>— mock SharePoint, real src/ folder · writes logged to <code>__PSZ_MOCK_WRITES__</code></small>
-    <button type="button" onclick="window.intl && intl.setLang('en')">EN</button><button type="button" onclick="window.intl && intl.setLang('fr')">FR</button></div>
+    <button type="button" onclick="window.intl && intl.setLang('en')">EN</button><button type="button" onclick="window.intl && intl.setLang('fr')">FR</button>
+    <a href="page.html" onclick="this.href = 'page.html' + location.search">With the resources sidebar →</a></div>
 
   <!-- Simulates the modern-page canvas + the web part's own padding. -->
   <div class="harness-canvas">
