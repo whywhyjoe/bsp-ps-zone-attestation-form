@@ -62,6 +62,13 @@ no `window.close()` failed the Back-closes-the-tab check; no back marker on
 the intro link failed its check; one grid column failed the two-columns
 check. Five failures, no others.
 
+The 1.3.2 checks (Codex review, xo turn 3) failed with their fixes reverted
+(2026-10-15), four failures and no others: a mock that trims area names
+again; Back closing without the `pszFrom=form` marker; `{}` instead of a
+null-prototype map; the empty screen without the cut-off warning. The mock
+now matches area names as SharePoint's `eq` does (case-blind, spaces count);
+`dev/live/live-zone.js` confirms that on the real list.
+
 What the harness **can't** reproduce: SharePoint's in-place navigation,
 which ignores `target="_blank"` on a same-tenant link unless it carries
 `data-interception="off"`. The suite checks the attribute;
