@@ -39,11 +39,39 @@ English and is what lands in `ZoneSelection` / `PreviousZone`; only `label`
 and `description` are translated. `CurrentZone` in the Assignments list must
 hold values spelled exactly as in `choices`.
 
+## Formatting: the inline markdown subset
+
+Since 1.4.0 the longer texts take a small, fixed piece of markdown:
+
+| Write | Shows as | Notes |
+| --- | --- | --- |
+| `[text](url)` | a link | Only `https://`, `http://`, `mailto:`, server-relative `/…` and `#anchor` addresses; anything else stays as typed. Off-page links open in a new tab. |
+| `**text**` | **bold** | |
+| `*text*` | *italic* | Either can go inside the other (`**a *b* c**`, `*a **b** c*`) or inside a link's text. |
+| `\*` | a literal `*` | In the JSON file that's `\\*`, because JSON doubles backslashes. |
+
+The markers must hug their text: `5 * 3`, `a*b`, `Public*`, an unclosed `**`
+and markers across a line break all stay as typed. **Nothing else is
+markup**: no headings, bullets, numbered lists, dividers or HTML. Those show
+exactly as written, so a French sentence starting "1. " can't turn into a
+list. Every string is escaped first, so no text can inject markup.
+
+Which texts: the form's `intro`, `headerNote`, notes (`text`), section and
+page descriptions, field hints, the zone descriptions, the `empty`,
+`allDone`, thank-you and dialog messages; the access list's `intro` and
+`empty.message`; the side panel's `text` and `description`. Everything
+else (titles, labels, buttons, status tags, the built-in messages) is plain
+text: asterisks and brackets show as typed.
+
+The exact behaviour is the case table in `tests/markdown-cases.cjs`, which
+the suite runs against the engine's `prose()`. It's written to be copied
+as-is to the other BSP parts that adopt the same subset, so they all agree.
+
 ## `form`
 
 | Key | In this form | Notes |
 | --- | --- | --- |
-| `title`, `intro` | EN/FR pairs | Title "Physical Security Work Zone Confirmation" (1.3.0). `intro` takes `[text](url)` links (http(s), mailto, `/…`, `#…`; anything else stays literal). |
+| `title`, `intro` | EN/FR pairs | Title "Physical Security Work Zone Confirmation" (1.3.0). `intro` takes links, **bold** and *italic* (*Formatting*, above). |
 | `appearance` | card · band · sky | Frame, header band, band tint (`sky` `blue` `neutral`). |
 | `headerNote` | `{ style: "info", text }` | 1.3.1. A callout in the header band, under the intro: "Any change to a zone will be reviewed…". `style` is `info` (default), `warning`, `success` or `danger`; `text` takes links and `{var:…}`. |
 | `headerUser` | `{ label: "Confirmation by:" }` | 1.3.1. The who card (photo or initials, name, email) as the header's right column. It replaces a `currentUser` field in the body; below ~720px it drops under the intro. |
@@ -240,7 +268,7 @@ with it.
 | --- | --- | --- |
 | `feature` | `title`, `text`, `url`, `icon`, `description` | The large card the job aid used to have on the form (icon tile, title, text), then the description below it. |
 | `link` | `title`, `url`, `icon`, `description` | A compact one-line document link, then its description. `icon` defaults to `document`; `document-pdf` suits a PDF. |
-| `text` | `title`, `text` | A small heading and one paragraph. `text` takes `[text](url)` links. |
+| `text` | `title`, `text` | A small heading and one paragraph. `text` takes links, bold and italic (*Formatting*). |
 | `contact` | `name`, `email`, `title` | An optional small heading (e.g. "Questions?"), then a card with initials, the name and a mailto link. |
 
 - **Links:** `url` empty → the item still shows, unlinked (that's how the
@@ -250,7 +278,7 @@ with it.
 - **Icons:** a path under `design/` (`abacus-icons/light-bulb-48.svg`) or a
   sprite name (`document`, `document-pdf`, `shield`, `info`, `folder` …,
   the `fluent-basic-icons.svg` set).
-- `description` (on `feature`, `link`, `contact`) takes `[text](url)` links.
+- `description` (on `feature`, `link`, `contact`) takes links, bold and italic (*Formatting*).
   Every text can be an `{ "en", "fr" }` pair.
 - The validator refuses (an error card in the panel, the form unaffected):
   no sections, a section without `items`, an unknown `type`, a

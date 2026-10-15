@@ -194,6 +194,10 @@ async function submitAndConfirm(page, confirmText) {
   check("nobody else's rows shown", others.length > 0 && !labels.some(l => others.includes(l)));
   check('Confirmation by: my name + email', (await page.locator('.psz-who__name').textContent()) === me.Title &&
     (await page.locator('.psz-who__mail').textContent()).toLowerCase() === me.Email.toLowerCase());
+  // the deployed engine's markdown subset, on the real page (the suite has the full case table)
+  const md = await page.evaluate(() => window.PSZoneForm._prose ? window.PSZoneForm._prose('**b** *i* [l](/x) <u>u</u>') : null);
+  check('deployed prose(): bold, italic, link, HTML escaped', md === '<strong>b</strong> <em>i</em> <a href="/x" target="_blank" rel="noopener noreferrer" ' +
+    'data-interception="off">l</a> &lt;u&gt;u&lt;/u&gt;', md);
   check('no job aid card on the form (it lives in the resources panel)', (await page.locator('[data-psz-form] .psz-tipcard').count()) === 0);
   await page.waitForSelector('[data-psz-resources][data-psz-state="ready"]', { timeout: 30000 });
   check('resources panel: job aid card → configured URL, new tab',

@@ -1341,6 +1341,44 @@ async function testAccess(browser) {
   await ctx.close();
 }
 
+/* The inline markdown subset (1.4.0): every case in tests/markdown-cases.cjs
+   through the engine's real prose(), then markdown in each config reaching
+   the page as markup (form, side panel, access list), and a title (plain
+   text, not prose) keeping its asterisks. */
+const MD_CASES = require('./markdown-cases.cjs');
+async function testMarkdown(browser) {
+  console.log('markdown subset:');
+  let { ctx, page } = await openZone(browser, { mutate: cfg => {
+    cfg.form.headerNote.text = 'Any **change** to a zone is *reviewed*. See [**the list**](#top).';
+    cfg.form.title = 'Title with *stars*';
+  } });
+  const got = await page.evaluate(cs => cs.map(([n, i]) => window.PSZoneForm._prose(i)), MD_CASES);
+  MD_CASES.forEach(([name, input, expected], i) => check('markdown: ' + name, got[i] === expected, JSON.stringify(got[i])));
+  const form = await page.evaluate(() => ({
+    note: document.querySelector('.psz__head-note .msgbar__body').innerHTML,
+    title: document.querySelector('.psz__title').textContent
+  }));
+  check('form: markdown in the header callout renders (bold, italic, a bold link)',
+    form.note === 'Any <strong>change</strong> to a zone is <em>reviewed</em>. See <a href="#top"><strong>the list</strong></a>.', form.note);
+  check('form: a title is plain text, its asterisks stay', form.title === 'Title with *stars*', form.title);
+  check('no page errors (markdown, form)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  ({ ctx, page } = await openPage(browser, { mutate: cfg => { cfg.sections[1].items[0].text = { en: 'Due **Friday**, *no exceptions*.', fr: 'x' }; } }));
+  const res = await page.evaluate(() => document.querySelector('.psz-res__text').innerHTML);
+  check('side panel: markdown in an information paragraph renders', res === 'Due <strong>Friday</strong>, <em>no exceptions</em>.', res);
+  await ctx.close();
+
+  ({ ctx, page } = await openAccess(browser, { mutate: cfg => { cfg.intro = { en: '**For information only.** Confirm zones with the [zone confirmation tool]({var:formUrl}).', fr: 'x' }; } }));
+  const acc = await page.evaluate(() => {
+    const i = document.querySelector('.psz-acc__intro .msgbar__body'), a = i.querySelector('a');
+    return { strong: (i.querySelector('strong') || {}).textContent, back: a && a.hasAttribute('data-psz-back') };
+  });
+  check('access list: markdown in the intro renders, and its form link is still a back link',
+    acc.strong === 'For information only.' && acc.back, JSON.stringify(acc));
+  await ctx.close();
+}
+
 (async () => {
   const browser = await launch();
   try {
@@ -1351,6 +1389,7 @@ async function testAccess(browser) {
     await testStandalone(browser);
     await testResources(browser);
     await testAccess(browser);
+    await testMarkdown(browser);
   } finally {
     await browser.close();
   }

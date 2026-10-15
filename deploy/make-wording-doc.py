@@ -263,6 +263,13 @@ def para(cell, text, size=9, bold=False, color=None, italic=False):
     return p
 def is_placeholder(s):
     return '[Placeholder]' in s or '[Texte provisoire]' in s
+# the texts the engine runs through prose() (engine 1.4.0+): links, bold,
+# italic. Everything else is plain text. Keep in step with docs/03-config.md,
+# "Formatting".
+def takes_formatting(key):
+    last = key.split(' › ')[-1]
+    if last not in ('intro', 'text', 'description', 'message'): return False
+    return 'button' not in key and '(feature) › text' not in key
 
 counter = {'n': 0}
 def string_table(prefix, rows, file_label, note_placeholders=True):
@@ -287,6 +294,8 @@ def string_table(prefix, rows, file_label, note_placeholders=True):
         for j, c in enumerate(cells): c.width = widths[j]
         para(cells[0], '%s-%02d' % (prefix, i), 8, True)
         para(cells[1], where, 9)
+        if takes_formatting(key):
+            para(cells[1], 'Formatting allowed', 7.5, True, '0F6E3F')
         para(cells[1], key, 7.5, color=GREY, italic=True)
         para(cells[2], en, 9); para(cells[3], fr, 9)
         if note_placeholders and (is_placeholder(en) or is_placeholder(fr)):
@@ -322,6 +331,9 @@ for line in [
     'Rows shaded yellow still hold placeholder text ([Placeholder] or [Texte provisoire]) and must be filled in before go-live.',
     'Keep anything in curly braces exactly as it is, for example {n}, {total} or {submit}. The page replaces it with a number or a button name.',
     'Keep links in the form [link text](address). You can change the link text in the square brackets; leave the address in round brackets alone unless that row is about it.',
+    'Rows marked "Formatting allowed" can also use **bold** and *italic* (two asterisks or one, right up against the words). '
+    'Nothing else works: no headings, bullet points, numbered lists or lines. Those show exactly as typed. '
+    'In every other row, asterisks and brackets show as typed.',
     'All French text is a draft and needs a French reviewer, even where the English is final.',
     'Zone names and descriptions can change. The zone values the system stores (Public, Public Plus, Standards, Secure Restricted, High Security) can\'t, so only the wording is listed here.',
     'The grey text under "Where it shows" is for the person applying the changes; you can ignore it.',

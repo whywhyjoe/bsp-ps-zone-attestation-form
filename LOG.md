@@ -7,6 +7,22 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.4.0: inline markdown in author text
+
+`prose()` (every longer config text: intros, notes, descriptions, screen and
+dialog messages, the side panel's paragraphs, the access list's intro)
+takes a fixed inline subset on top of the links it already had:
+`**bold**`, `*italic*` (either inside the other, or inside a link's text)
+and `\*` for a literal asterisk. Everything is escaped first; links are held
+aside while emphasis is matched, so markers in a URL are never touched;
+markers must hug their text, so `5 * 3`, `a*b`, `Public*` and an unclosed
+`**` stay as typed. No block markup: headings, lists and dividers show as
+written (wanted later for BSP Forms, other parts and intl.js; not this form).
+
+The behaviour is the case table `tests/markdown-cases.cjs` (39 cases),
+written to be copied to those other parts. The SME wording document marks
+the 21 rows that take formatting. Suite 226/226; dev admin run 33/33.
+
 ## 2026-10-15 — engine 1.3.4: Codex turn-5 findings
 
 - **Opener only by the engine:** a config could set the button's internal

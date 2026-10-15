@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.3.4 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.4.0 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.4"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.0"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.3.4';
+  var VERSION = '1.4.0';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1499,20 +1499,45 @@
   function icon(name, size) {
     return '<svg class="icon icon--' + (size || 16) + '" aria-hidden="true"><use href="#' + name + '"/></svg>';
   }
-  // Author prose (intro, descriptions, hints, notes, confirmation): escaped,
-  // then [text](url) becomes a link. Only http(s), mailto, server-relative
-  // and #anchor targets. Off-page links open in a new tab so a half-filled
-  // form isn't lost. data-interception="off" on every such link: a modern
-  // SharePoint page otherwise catches a click on a same-tenant link (at the
-  // window, before any handler of ours) and navigates IN PLACE, target or
-  // not, replacing the form (seen on the dev tenant with 1.3.0).
+  /* Author prose (intro, descriptions, hints, notes, screens, dialog text):
+     escaped FIRST, so nothing in a string can become markup by itself, then
+     a small inline markdown subset (1.4.0; docs/03-config.md, "Formatting"):
+       [text](url)   a link: http(s), mailto, server-relative or #anchor only
+       **bold**      *italic*   (either inside the other, or inside a link's text)
+       \*            a literal asterisk
+     Markers must hug their text: "5 * 3", "a*b", "Public*" and an unclosed
+     ** stay literal. No headings, lists, rules or raw HTML: block markup
+     shows as typed. Test cases: tests/markdown-cases.cjs.
+     Off-page links open in a new tab so a half-filled form isn't lost.
+     data-interception="off" on every such link: a modern SharePoint page
+     otherwise catches a click on a same-tenant link (at the window, before
+     any handler of ours) and navigates IN PLACE, target or not, replacing
+     the form (seen on the dev tenant with 1.3.0). */
   var LINK_RE = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:|\/|#)[^)\s]*)\)/g;
-  function prose(s) {
-    return esc(s).replace(LINK_RE, function (m, text, href) {
-      var ext = href.charAt(0) !== '#';
-      return '<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener noreferrer" data-interception="off"' : '') + '>' + text + '</a>';
-    });
+  // placeholders while emphasis is matched: links (so ** in a URL is never
+  // touched) and escaped asterisks. Control characters can't come from an
+  // author's text: they're stripped first.
+  var MD_HOLD_RE = /[\u0001-\u0003]/g, MD_LINK_RE = /\u0001(\d+)\u0002/g, MD_STAR = '\u0003';
+  // bold first: its text may hold single stars (italic inside bold)
+  var MD_BOLD_RE = /(^|[^\w])\*\*(?=[^\s*])([^\n]*?\S)\*\*(?!\w)/g;
+  // italic: its text may hold whole <strong> runs (bold inside italic), but
+  // never part of one, so tags can't cross
+  var MD_EM_RE = /(^|[^\w*])\*(?=[^\s*])((?:[^*\n<]|<strong>[^<]*<\/strong>)*?(?:[^\s*<]|<strong>[^<]*<\/strong>))\*(?![\w*])/g;
+  function emphasis(h) {
+    return h.replace(MD_BOLD_RE, '$1<strong>$2</strong>').replace(MD_EM_RE, '$1<em>$2</em>');
   }
+  function prose(s) {
+    var links = [];
+    var h = esc(String(s == null ? '' : s).replace(MD_HOLD_RE, '')).replace(/\\\*/g, MD_STAR);
+    h = h.replace(LINK_RE, function (m, text, href) {
+      var ext = href.charAt(0) !== '#';
+      links.push('<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener noreferrer" data-interception="off"' : '') + '>' +
+        emphasis(text) + '</a>');
+      return '\u0001' + (links.length - 1) + '\u0002';
+    });
+    return emphasis(h).replace(MD_LINK_RE, function (m, i) { return links[+i]; }).split(MD_STAR).join('*');
+  }
+  NS._prose = prose; // for tests/markdown-cases.cjs
 
   function fieldShell(f, inner, S) {
     var noLabel = f.type === 'heading' || f.type === 'note' || f.type === 'boolean';

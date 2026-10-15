@@ -1,0 +1,61 @@
+/*! PS Zone Attestation · tests/markdown-cases.cjs — the inline markdown subset, as cases */
+/*
+ * What prose() turns an author string into: [name, input, expected HTML].
+ * The subset (docs/03-config.md, "Formatting"): [text](url), **bold**,
+ * *italic*, \* for a literal asterisk; everything escaped first; nothing
+ * else is markup. Written to be copied as-is to the other BSP parts that
+ * adopt the subset (BSP Forms, intl.js), so they all agree on every case.
+ * Run by tests/smoke.cjs against the engine's real prose().
+ */
+'use strict';
+const A = (href, text, ext = true) =>
+  '<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener noreferrer" data-interception="off"' : '') + '>' + text + '</a>';
+
+module.exports = [
+  // the basics
+  ['plain text', 'Plain text, nothing to do.', 'Plain text, nothing to do.'],
+  ['bold', '**Bold**', '<strong>Bold</strong>'],
+  ['italic', '*italic*', '<em>italic</em>'],
+  ['mixed in a sentence', 'Any **change** is *reviewed*.', 'Any <strong>change</strong> is <em>reviewed</em>.'],
+  ['two of each', '**a** **b** and *c* *d*', '<strong>a</strong> <strong>b</strong> and <em>c</em> <em>d</em>'],
+  // nesting: either inside the other, both at once; crossing is never made
+  ['italic inside bold', '**a *b* c**', '<strong>a <em>b</em> c</strong>'],
+  ['bold inside italic', '*a **b** c*', '<em>a <strong>b</strong> c</em>'],
+  ['bold and italic', '***both***', '<em><strong>both</strong></em>'],
+  ['crossing markers stay partly literal', '*a **b* c**', '*a <strong>b* c</strong>'],
+  // asterisks that aren't emphasis stay as typed
+  ['spaced arithmetic', '5 * 3 * 2', '5 * 3 * 2'],
+  ['inside a word', 'a*b*c', 'a*b*c'],
+  ['trailing footnote star', 'Public*', 'Public*'],
+  ['unclosed bold', '**unclosed', '**unclosed'],
+  ['spaced markers', '** not bold ** and * not italic *', '** not bold ** and * not italic *'],
+  ['across a line break', '*a\nb*', '*a\nb*'],
+  ['escaped asterisks', 'Zones marked \\*restricted\\* need approval.', 'Zones marked *restricted* need approval.'],
+  ['escaped inside bold', '**5 \\* 3**', '<strong>5 * 3</strong>'],
+  // links, and emphasis around and inside them
+  ['link', 'See the [standards](https://example.com/s).', 'See the ' + A('https://example.com/s', 'standards') + '.'],
+  ['server-relative link', '[list](/sites/FCUPortal/x.aspx)', A('/sites/FCUPortal/x.aspx', 'list')],
+  ['anchor link (same page, no new tab)', '[top](#top)', A('#top', 'top', false)],
+  ['mailto link', '[Ana](mailto:ana@example.com)', A('mailto:ana@example.com', 'Ana')],
+  ['bold link text', '[**bold link**](/x)', A('/x', '<strong>bold link</strong>')],
+  ['link inside bold', '**[link](#top)**', '<strong>' + A('#top', 'link', false) + '</strong>'],
+  ['** inside a URL is left alone', '[x](https://example.com/a**b**c)', A('https://example.com/a**b**c', 'x')],
+  ['emphasis markers between slashes in a URL are left alone', '[x](https://example.com/**b**/*c*/)', A('https://example.com/**b**/*c*/', 'x')],
+  ['javascript: is never a link', '[x](javascript:alert(1))', '[x](javascript:alert(1))'],
+  // escaping comes first: no string can make markup by itself
+  ['HTML is shown, not run', '<b>x</b> **y**', '&lt;b&gt;x&lt;/b&gt; <strong>y</strong>'],
+  ['HTML inside bold', '**<img src=x onerror=alert(1)>**', '<strong>&lt;img src=x onerror=alert(1)&gt;</strong>'],
+  ['quotes and ampersands', 'Q&A "today"', 'Q&amp;A &quot;today&quot;'],
+  ['control characters are dropped', 'a\u0001b\u00020\u0003c', 'ab0c'],
+  // block markup isn't part of the subset: it shows as typed
+  ['heading', '# Heading', '# Heading'],
+  ['bullet', '- item', '- item'],
+  ['star bullet', '* item', '* item'],
+  ['numbered', '1. First', '1. First'],
+  ['divider', '---', '---'],
+  // real-world text
+  ['emails and underscores', 'first_last@example.com in PS_Zone-Attestation', 'first_last@example.com in PS_Zone-Attestation'],
+  ['French guillemets', '« *texte* »', '« <em>texte</em> »'],
+  ['French punctuation', 'Qui? *Vous*! **Merci** :', 'Qui? <em>Vous</em>! <strong>Merci</strong> :'],
+  ['apostrophe before italic', "l'*outil*", "l'<em>outil</em>"]
+];
