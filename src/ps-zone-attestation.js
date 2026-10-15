@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.4.0 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.4.1 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.0"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.1"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.0';
+  var VERSION = '1.4.1';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1073,7 +1073,9 @@
   // only http(s) and server-relative targets leave the form as a link/redirect
   function safeHref(u) {
     var s = String(u == null ? '' : u).trim();
-    return /^https?:\/\/[^\s]+$/i.test(s) || /^\/(?!\/)[^\s]*$/.test(s) ? s : '';
+    // server-relative means ONE leading slash: "//host" and "/\host" (which
+    // browsers read as "//host") would leave the site
+    return /^https?:\/\/[^\s]+$/i.test(s) || /^\/(?![\/\\])[^\s]*$/.test(s) ? s : '';
   }
   var PILL_CYCLE = ['blue', 'green', 'lavender', 'orange', 'teal', 'berry', 'yellow', 'sky', 'red', 'gray'];
 
@@ -1502,40 +1504,71 @@
   /* Author prose (intro, descriptions, hints, notes, screens, dialog text):
      escaped FIRST, so nothing in a string can become markup by itself, then
      a small inline markdown subset (1.4.0; docs/03-config.md, "Formatting"):
-       [text](url)   a link: http(s), mailto, server-relative or #anchor only
+       [text](url)   a link: http(s), mailto, server-relative (one leading
+                     slash: never "//host" or "/\host") or #anchor only
        **bold**      *italic*   (either inside the other, or inside a link's text)
        \*            a literal asterisk
-     Markers must hug their text: "5 * 3", "a*b", "Public*" and an unclosed
-     ** stay literal. No headings, lists, rules or raw HTML: block markup
-     shows as typed. Test cases: tests/markdown-cases.cjs.
+     Markers must hug their text and can't sit inside a word (accented
+     letters count as letters) or span a line break: "5 * 3", "a*b", "é*x*é",
+     "Public*" and an unclosed ** stay literal, and so does bold whose text
+     holds an unpaired * (crossed markers like "*a **b* c**" stay as typed).
+     No headings, lists, rules or raw HTML: block markup shows as typed.
+     A string longer than MD_MAX is shown escaped, unformatted (it bounds the
+     regexes' worst case; author texts are far shorter).
+     Test cases: tests/markdown-cases.cjs.
      Off-page links open in a new tab so a half-filled form isn't lost.
      data-interception="off" on every such link: a modern SharePoint page
      otherwise catches a click on a same-tenant link (at the window, before
      any handler of ours) and navigates IN PLACE, target or not, replacing
      the form (seen on the dev tenant with 1.3.0). */
-  var LINK_RE = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:|\/|#)[^)\s]*)\)/g;
+  var LINK_RE = /\[([^\]\n\r\u2028\u2029]+)\]\(((?:https?:\/\/|mailto:|\/(?![\/\\])|#)[^)\s]*)\)/g;
   // placeholders while emphasis is matched: links (so ** in a URL is never
-  // touched) and escaped asterisks. Control characters can't come from an
-  // author's text: they're stripped first.
-  var MD_HOLD_RE = /[\u0001-\u0003]/g, MD_LINK_RE = /\u0001(\d+)\u0002/g, MD_STAR = '\u0003';
+  // touched), escaped asterisks, and (prose's caller) template values held
+  // out of formatting. Control characters can't come from an author's
+  // text: they're stripped first.
+  var MD_HOLD_RE = /[\u0001-\u0005]/g, MD_LINK_RE = /\u0001(\d+)\u0002/g, MD_STAR = '\u0003';
+  var MD_MAX = 4000;
+  // a "word" letter for the inside-a-word rule: ASCII plus Latin-1 and
+  // Latin Extended-A/B letters (French accents), not just \w
+  var MD_W = 'A-Za-z0-9_\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u024F';
+  // line breaks emphasis never spans
+  var MD_NL = '\\n\\r\\u2028\\u2029';
   // bold first: its text may hold single stars (italic inside bold)
-  var MD_BOLD_RE = /(^|[^\w])\*\*(?=[^\s*])([^\n]*?\S)\*\*(?!\w)/g;
+  var MD_BOLD_RE = new RegExp('(^|[^' + MD_W + '])\\*\\*(?=[^\\s*])([^' + MD_NL + ']*?\\S)\\*\\*(?![' + MD_W + '])', 'g');
   // italic: its text may hold whole <strong> runs (bold inside italic), but
   // never part of one, so tags can't cross
-  var MD_EM_RE = /(^|[^\w*])\*(?=[^\s*])((?:[^*\n<]|<strong>[^<]*<\/strong>)*?(?:[^\s*<]|<strong>[^<]*<\/strong>))\*(?![\w*])/g;
+  var MD_EM_RE = new RegExp('(^|[^' + MD_W + '*])\\*(?=[^\\s*])((?:[^*<' + MD_NL + ']|<strong>[^<]*<\\/strong>)*?' +
+    '(?:[^\\s*<]|<strong>[^<]*<\\/strong>))\\*(?![' + MD_W + '*])', 'g');
   function emphasis(h) {
-    return h.replace(MD_BOLD_RE, '$1<strong>$2</strong>').replace(MD_EM_RE, '$1<em>$2</em>');
+    return h.replace(MD_BOLD_RE, function (m, pre, text) {
+      // an unpaired * inside means crossed markers ("*a **b* c**"): leave it all as typed
+      return (text.split('*').length - 1) % 2 ? m : pre + '<strong>' + text + '</strong>';
+    }).replace(MD_EM_RE, '$1<em>$2</em>');
   }
-  function prose(s) {
+  var mdLongWarned = false;
+  var MD_VAL_RE = /\u0004(\d+)\u0005/g;
+  // held (optional): values a template filled in from list data or the
+  // user (renderTemplate's third argument). They stand in s as \u0004n\u0005
+  // while formatting runs and go back in afterwards as escaped literal text,
+  // so a list value like "**x**" or "[a](https://…)" is never formatted.
+  function prose(s, held) {
     var links = [];
-    var h = esc(String(s == null ? '' : s).replace(MD_HOLD_RE, '')).replace(/\\\*/g, MD_STAR);
+    s = String(s == null ? '' : s).replace(held ? /[\u0001-\u0003]/g : MD_HOLD_RE, '');
+    var putBack = function (out) {
+      return held ? out.replace(MD_VAL_RE, function (m, i) { return esc(held[+i] == null ? '' : held[+i]); }) : out;
+    };
+    if (s.length > MD_MAX) {
+      if (!mdLongWarned) { mdLongWarned = true; console.warn('[PS Zone Form] a text over ' + MD_MAX + ' characters is shown without formatting or links'); }
+      return putBack(esc(s));
+    }
+    var h = esc(s).replace(/\\\*/g, MD_STAR);
     h = h.replace(LINK_RE, function (m, text, href) {
       var ext = href.charAt(0) !== '#';
       links.push('<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener noreferrer" data-interception="off"' : '') + '>' +
         emphasis(text) + '</a>');
       return '\u0001' + (links.length - 1) + '\u0002';
     });
-    return emphasis(h).replace(MD_LINK_RE, function (m, i) { return links[+i]; }).split(MD_STAR).join('*');
+    return putBack(emphasis(h).replace(MD_LINK_RE, function (m, i) { return links[+i]; }).split(MD_STAR).join('*'));
   }
   NS._prose = prose; // for tests/markdown-cases.cjs
 
@@ -2539,7 +2572,10 @@
       showResult: function (spec, href) {
         var self = this;
         this.result.title = this.renderTemplate(spec.title || '');
-        this.result.html = prose(this.renderTemplate(spec.message || ''));
+        // the message is formatted; the values it fills in (list data, the
+        // user's answers) are not: they go back in as escaped text
+        var held = [];
+        this.result.html = prose(this.renderTemplate(spec.message || '', null, held), held);
         this.result.href = href || '';
         this.result.linkText = href ? (this.renderTemplate((spec.link && spec.link.text) || '') || href) : '';
         this.result.copyText = spec.copy ? this.renderTemplate(spec.copy) : '';
@@ -3219,11 +3255,22 @@
           return payload;
         });
       },
-      renderTemplate: function (tpl, row) {
+      // held (optional): an array. Values from data (rows, answers, the
+      // user, the lookup, dates) go in it and the result carries \u0004n\u0005
+      // in their place, for prose(…, held) to put back unformatted. Values
+      // the config author wrote ({form:title}, {var:…}) stay inline.
+      renderTemplate: function (tpl, row, held) {
         var self = this;
         var u = adapter.userInfo ? adapter.userInfo() : {};
         var now = new Date();
-        return String(tpl).replace(/\{(form:title|user:name|user:email|date|time|now|lookup|field:[^}]+|var:[^}]+|row:[^}]+)\}/g, function (m, tok) {
+        var src = held ? String(tpl).replace(/[\u0004\u0005]/g, '') : String(tpl);
+        return src.replace(/\{(form:title|user:name|user:email|date|time|now|lookup|field:[^}]+|var:[^}]+|row:[^}]+)\}/g, function (m, tok) {
+          var v = value(m, tok);
+          if (!held || tok === 'form:title' || tok.indexOf('var:') === 0) return v;
+          held.push(v);
+          return '\u0004' + (held.length - 1) + '\u0005';
+        });
+        function value(m, tok) {
           if (tok === 'form:title') return cfg.form.title || '';
           // {now}: the submit's instant as ISO 8601 (UTC) — what a Date and
           // Time column takes; SharePoint shows it in the site's time zone.
@@ -3252,7 +3299,7 @@
             return v == null ? '' : String(v);
           }
           return m;
-        });
+        }
       },
       validateAll: function () {
         for (var i = 0; i < cfg.pages.length; i++) {

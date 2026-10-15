@@ -264,11 +264,17 @@ def para(cell, text, size=9, bold=False, color=None, italic=False):
 def is_placeholder(s):
     return '[Placeholder]' in s or '[Texte provisoire]' in s
 # the texts the engine runs through prose() (engine 1.4.0+): links, bold,
-# italic. Everything else is plain text. Keep in step with docs/03-config.md,
-# "Formatting".
+# italic. Everything else is plain text. Taken from prose()'s call sites in
+# src/ps-zone-attestation.js (grep "prose("): intro, headerNote / note text,
+# section and page description, field hint and lockNote, zone description,
+# empty / allDone / confirmation / submitConfirm / prompt / afterSubmit /
+# queryError message, the access intro and empty message, the side panel's
+# text items and descriptions (a feature card's own text is plain). Keep in
+# step with docs/03-config.md, "Formatting".
+PROSE_KEYS = ('intro', 'text', 'description', 'message', 'hint', 'lockNote')
 def takes_formatting(key):
     last = key.split(' › ')[-1]
-    if last not in ('intro', 'text', 'description', 'message'): return False
+    if last not in PROSE_KEYS: return False
     return 'button' not in key and '(feature) › text' not in key
 
 counter = {'n': 0}

@@ -1361,6 +1361,25 @@ async function testMarkdown(browser) {
   check('form: markdown in the header callout renders (bold, italic, a bold link)',
     form.note === 'Any <strong>change</strong> to a zone is <em>reviewed</em>. See <a href="#top"><strong>the list</strong></a>.', form.note);
   check('form: a title is plain text, its asterisks stay', form.title === 'Title with *stars*', form.title);
+  // a result message formats its own text, never the data it fills in
+  const result = await page.evaluate(() => {
+    const d = Alpine.$data(document.querySelector('[data-psz-form] .psz[x-data]'));
+    d.result.lookup = '**bold** [a](https://example.com) <b>x</b>';
+    d.showResult({ message: '**Found:** {lookup} for *{user:name}*' }, '');
+    return d.result.html;
+  });
+  check('result message: its own markdown formats, the data it fills in stays literal (escaped)',
+    result === '<strong>Found:</strong> **bold** [a](https://example.com) &lt;b&gt;x&lt;/b&gt; for <em>Dev Tester</em>', result);
+  // the length bound: hostile strings stay fast; past 4,000 characters, plain escaped text
+  const bound = await page.evaluate(() => {
+    const p = window.PSZoneForm._prose, t0 = performance.now();
+    const outs = ['**a '.repeat(999), '['.repeat(3999), '*a '.repeat(1333), '[x](/'.repeat(799)].map(s => p(s));
+    const ms = performance.now() - t0;
+    const long = p('**b** ' + 'x'.repeat(4000));
+    return { ms, unchanged: outs.every((o, i) => !/<strong>|<em>|<a /.test(o)), long: long.slice(0, 12) };
+  });
+  check('worst-case strings under the bound format in well under a second; over it, plain text',
+    bound.ms < 500 && bound.unchanged && bound.long === '**b** xxxxxx', JSON.stringify(bound));
   check('no page errors (markdown, form)', page.__errors.length === 0, page.__errors.join(' | '));
   await ctx.close();
 

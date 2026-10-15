@@ -45,23 +45,34 @@ Since 1.4.0 the longer texts take a small, fixed piece of markdown:
 
 | Write | Shows as | Notes |
 | --- | --- | --- |
-| `[text](url)` | a link | Only `https://`, `http://`, `mailto:`, server-relative `/…` and `#anchor` addresses; anything else stays as typed. Off-page links open in a new tab. |
+| `[text](url)` | a link | Only `https://`, `http://`, `mailto:`, server-relative `/…` (one leading slash: `//host` and `/\host` are refused, they'd leave the site) and `#anchor` addresses; anything else stays as typed. Off-page links open in a new tab. |
 | `**text**` | **bold** | |
 | `*text*` | *italic* | Either can go inside the other (`**a *b* c**`, `*a **b** c*`) or inside a link's text. |
 | `\*` | a literal `*` | In the JSON file that's `\\*`, because JSON doubles backslashes. |
 
-The markers must hug their text: `5 * 3`, `a*b`, `Public*`, an unclosed `**`
-and markers across a line break all stay as typed. **Nothing else is
-markup**: no headings, bullets, numbered lists, dividers or HTML. Those show
-exactly as written, so a French sentence starting "1. " can't turn into a
-list. Every string is escaped first, so no text can inject markup.
+The markers must hug their text and can't sit inside a word: `5 * 3`, `a*b`,
+`é*mot*é` (accented letters count as letters), `Public*` and an unclosed `**`
+stay as typed, and so do markers across any line break. Crossed markers,
+such as `*a **b* c**`, stay entirely as typed rather than half-formatted.
+**Nothing else is markup**: no headings, bullets, numbered lists, dividers or
+HTML. Those show exactly as written, so a French sentence starting "1. "
+can't turn into a list. Every string is escaped first, so no text can inject
+markup. A text over 4,000 characters is shown as plain text (a safety bound;
+author texts are far shorter).
 
 Which texts: the form's `intro`, `headerNote`, notes (`text`), section and
-page descriptions, field hints, the zone descriptions, the `empty`,
-`allDone`, thank-you and dialog messages; the access list's `intro` and
-`empty.message`; the side panel's `text` and `description`. Everything
-else (titles, labels, buttons, status tags, the built-in messages) is plain
-text: asterisks and brackets show as typed.
+page descriptions, field `hint` and `lockNote`, the zone descriptions, the
+`empty`, `allDone`, thank-you, dialog and prompt messages, and a result
+message (`afterSubmit` / `queryError`); the access list's `intro` and
+`empty.message`; the side panel's `text` items and `description`s. Everything
+else (titles, labels, buttons, status tags, a feature card's own text, the
+built-in messages) is plain text: asterisks and brackets show as typed.
+
+A result message's `{…}` values from data (`{row:…}`, `{field:…}`,
+`{user:…}`, `{lookup}`, dates) are filled in **after** formatting, as plain
+text: list data like `**x**` or `[a](https://…)` is never formatted. Values
+the config author wrote (`{form:title}`, `{var:…}`) are formatted with the
+message.
 
 The exact behaviour is the case table in `tests/markdown-cases.cjs`, which
 the suite runs against the engine's `prose()`. It's written to be copied

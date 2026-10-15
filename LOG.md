@@ -7,6 +7,26 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.4.1: Codex review of the markdown subset (xo turn 7)
+
+- **High, older than the markdown:** a link address starting `//host` (or
+  `/\host`, which browsers read the same) passed as "server-relative" and
+  pointed off-site. Links and `safeHref` now require exactly one leading
+  slash. The shared BSP Forms engine has the same link rule.
+- A result message (`afterSubmit` / `queryError`) formatted the data it
+  filled in: list values now go back in after formatting, escaped.
+- Emphasis no longer spans `\r` or the Unicode line separators.
+- "Inside a word" counts accented letters (Latin-1, Latin Extended-A/B).
+- Crossed markers (`*a **b* c**`) and bold holding an unpaired `*` stay as
+  typed.
+- A text over 4,000 characters shows plain (a margin: the worst case
+  measured ~50 ms at 4,000 without it).
+- The wording document and docs list exactly prose()'s inputs (hints, lock
+  notes, result messages added).
+
+52 cases now; each fix's cases fail with it reverted. Suite 241/241; dev
+admin run 33/33.
+
 ## 2026-10-15 — engine 1.4.0: inline markdown in author text
 
 `prose()` (every longer config text: intros, notes, descriptions, screen and
