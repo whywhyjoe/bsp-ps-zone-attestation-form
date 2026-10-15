@@ -11,6 +11,8 @@
 #   python deploy/make-wording-doc.py
 # (optional arguments: <repo root> <output .docx>; the defaults are this repo
 # and docs/PS-Work-Zone-Confirmation-wording.docx)
+# With PSZ_SELFTEST=1 set, it only checks which keys it marks "Formatting
+# allowed" (takes_formatting) and exits.
 import json, re, sys, os, datetime
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
@@ -273,9 +275,17 @@ def is_placeholder(s):
 # step with docs/03-config.md, "Formatting".
 PROSE_KEYS = ('intro', 'text', 'description', 'message', 'hint', 'lockNote')
 def takes_formatting(key):
-    last = key.split(' › ')[-1]
-    if last not in PROSE_KEYS: return False
-    return 'button' not in key and '(feature) › text' not in key
+    parts = key.split(' › ')
+    if parts[-1] not in PROSE_KEYS: return False
+    # a note's button label and a feature card's own text are plain; match
+    # whole path segments, so a field id like "buttonCount" doesn't count
+    return 'button' not in parts and not (len(parts) > 1 and parts[-1] == 'text' and parts[-2].endswith('(feature)'))
+if __name__ == '__main__' and os.environ.get('PSZ_SELFTEST'):
+    for k, want in [('field "buttonCount" › hint', True), ('field "accessNotice" › button › text', False),
+                    ('group 1 › item 1 (feature) › text', False), ('group 1 › item 1 (feature) › description', True),
+                    ('field "zones" › zone "Public" › label', False), ('field "x" › lockNote', True)]:
+        assert takes_formatting(k) == want, k
+    print('takes_formatting: ok'); sys.exit(0)
 
 counter = {'n': 0}
 def string_table(prefix, rows, file_label, note_placeholders=True):

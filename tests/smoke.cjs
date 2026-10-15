@@ -1352,8 +1352,8 @@ async function testMarkdown(browser) {
     cfg.form.headerNote.text = 'Any **change** to a zone is *reviewed*. See [**the list**](#top).';
     cfg.form.title = 'Title with *stars*';
   } });
-  const got = await page.evaluate(cs => cs.map(([n, i]) => window.PSZoneForm._prose(i)), MD_CASES);
-  MD_CASES.forEach(([name, input, expected], i) => check('markdown: ' + name, got[i] === expected, JSON.stringify(got[i])));
+  const got = await page.evaluate(cs => cs.map(([n, i, e, held]) => held ? window.PSZoneForm._prose(i, held.slice()) : window.PSZoneForm._prose(i)), MD_CASES);
+  MD_CASES.forEach(([name, input, expected], i) => check('markdown: ' + name, got[i] === expected, JSON.stringify(got[i]).slice(0, 300)));
   const form = await page.evaluate(() => ({
     note: document.querySelector('.psz__head-note .msgbar__body').innerHTML,
     title: document.querySelector('.psz__title').textContent

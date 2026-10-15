@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.4.1 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.4.2 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.1"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.2"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.1';
+  var VERSION = '1.4.2';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1547,6 +1547,9 @@
   }
   var mdLongWarned = false;
   var MD_VAL_RE = /\u0004(\d+)\u0005/g;
+  // a whole link address, as LINK_RE's address part allows it (for an
+  // address finished with held values: no whitespace, one leading slash)
+  var LINK_ADDR_RE = /^(?:https?:\/\/|mailto:|\/(?![\/\\])|#)[^\s)]*$/;
   // held (optional): values a template filled in from list data or the
   // user (renderTemplate's third argument). They stand in s as \u0004n\u0005
   // while formatting runs and go back in afterwards as escaped literal text,
@@ -1563,6 +1566,16 @@
     }
     var h = esc(s).replace(/\\\*/g, MD_STAR);
     h = h.replace(LINK_RE, function (m, text, href) {
+      // a held value in the address: check the FINISHED address, values in,
+      // against the same rule ("/" + "/host" must not pass as "//host").
+      // A failing link stays as typed; its values still go back in as text.
+      if (held && MD_VAL_RE.test(href)) {
+        MD_VAL_RE.lastIndex = 0;
+        var full = href.replace(MD_VAL_RE, function (x, i) { return String(held[+i] == null ? '' : held[+i]); });
+        if (!LINK_ADDR_RE.test(full)) return m;
+        href = href.replace(MD_VAL_RE, function (x, i) { return esc(held[+i] == null ? '' : held[+i]); });
+      }
+      MD_VAL_RE.lastIndex = 0;
       var ext = href.charAt(0) !== '#';
       links.push('<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener noreferrer" data-interception="off"' : '') + '>' +
         emphasis(text) + '</a>');

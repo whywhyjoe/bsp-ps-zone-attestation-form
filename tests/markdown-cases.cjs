@@ -1,15 +1,29 @@
 /*! PS Zone Attestation · tests/markdown-cases.cjs — the inline markdown subset, as cases */
 /*
- * What prose() turns an author string into: [name, input, expected HTML].
+ * What prose() turns an author string into:
+ *   [name, input, expected HTML]            prose(input)
+ *   [name, input, expected HTML, held]      prose(input, held)
  * The subset (docs/03-config.md, "Formatting"): [text](url), **bold**,
  * *italic*, \* for a literal asterisk; everything escaped first; nothing
- * else is markup. Written to be copied as-is to the other BSP parts that
- * adopt the subset (BSP Forms, intl.js), so they all agree on every case.
- * Run by tests/smoke.cjs against the engine's real prose().
+ * else is markup; a text over 4,000 characters is shown plain.
+ *
+ * held is the template contract: a template ("Area: {row:AreaName}") puts
+ * each value that comes from DATA (list rows, answers, the user) in the
+ * held array and leaves \u0004n\u0005 in its place (n = its index), so the
+ * value is never formatted: it goes back in as escaped text after the
+ * author's markdown is rendered. Inside a link address the finished
+ * address (values in) must still pass the address rule, or the link stays
+ * as typed. A port must keep this contract, not just the plain cases.
+ *
+ * Written to be copied as-is to the other BSP parts that adopt the subset
+ * (BSP Forms, intl.js), so they all agree on every case. Run by
+ * tests/smoke.cjs against the engine's real prose().
  */
 'use strict';
 const A = (href, text, ext = true) =>
   '<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener noreferrer" data-interception="off"' : '') + '>' + text + '</a>';
+const V = n => '\u0004' + n + '\u0005'; // where held value n stands
+const MAX = 4000;
 
 module.exports = [
   // the basics
@@ -70,5 +84,21 @@ module.exports = [
   ['emails and underscores', 'first_last@example.com in PS_Zone-Attestation', 'first_last@example.com in PS_Zone-Attestation'],
   ['French guillemets', '« *texte* »', '« <em>texte</em> »'],
   ['French punctuation', 'Qui? *Vous*! **Merci** :', 'Qui? <em>Vous</em>! <strong>Merci</strong> :'],
-  ['apostrophe before italic', "l'*outil*", "l'<em>outil</em>"]
+  ['apostrophe before italic', "l'*outil*", "l'<em>outil</em>"],
+  // the length bound: 4,000 characters still format, 4,001 show plain
+  ['exactly 4,000 characters still format', '**b** ' + 'x'.repeat(MAX - 6), '<strong>b</strong> ' + 'x'.repeat(MAX - 6)],
+  ['4,001 characters show plain, escaped', '**b** <i>' + 'x'.repeat(MAX - 8), '**b** &lt;i&gt;' + 'x'.repeat(MAX - 8)],
+  // held values (templates): data is never formatted, the author's markdown is
+  ['a held value goes in as escaped text', 'Area: ' + V(0), 'Area: **x** [a](https://example.com) &lt;b&gt;',
+    ['**x** [a](https://example.com) <b>']],
+  ['author markdown around a held value formats', '**' + V(0) + '** for *' + V(1) + '*', '<strong>Ana</strong> for <em>Tower 10</em>',
+    ['Ana', 'Tower 10']],
+  ['held values over the bound still go back in, plain', '**b** ' + 'x'.repeat(MAX) + V(0), '**b** ' + 'x'.repeat(MAX) + '&lt;v&gt;', ['<v>']],
+  ['a held value in a link address: allowed when the finished address passes', '[open](/sites/' + V(0) + ')',
+    A('/sites/Area-1?c=1&amp;d=&quot;q&quot;', 'open'), ['Area-1?c=1&d="q"']],
+  ['a held value making "//host" leaves the link as typed', '[x](/' + V(0) + ')', '[x](//evil.example/)', ['/evil.example/']],
+  ['a held value making "/\\host" leaves the link as typed', '[x](/' + V(0) + ')', '[x](/\\evil.example/)', ['\\evil.example/']],
+  ['a held value adding a space leaves the link as typed', '[x](/a' + V(0) + ')', '[x](/a b)', [' b']],
+  ['a held value as the whole address is never a link', '[x](' + V(0) + ')', '[x](https://example.com)', ['https://example.com']],
+  ['held markers an author typed lose their control characters', 'a' + V(0) + 'b', 'a0b']
 ];

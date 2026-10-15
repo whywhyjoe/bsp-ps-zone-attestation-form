@@ -7,6 +7,21 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.4.2: Codex turn-8 findings on the markdown subset
+
+- **High:** a data value inside a link address could finish it as
+  `//host` (`[x](/{field:area})` with `/host`) after the address check had
+  passed. The finished address, values in, is now checked again; a failing
+  link stays as typed and its values go back in as text.
+- The shared case table now specifies the template contract (held values,
+  as an optional 4th element) and the 4,000 / 4,001-character boundary:
+  63 cases, so a port can't pass it while formatting data or skipping the
+  bound.
+- The wording document matches whole path segments (`button`), not the
+  word anywhere; its classifier has a self-test.
+
+Suite 252/252; dev admin run 33/33.
+
 ## 2026-10-15 — engine 1.4.1: Codex review of the markdown subset (xo turn 7)
 
 - **High, older than the markdown:** a link address starting `//host` (or
