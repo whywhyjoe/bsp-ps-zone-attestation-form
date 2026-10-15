@@ -103,7 +103,8 @@
               },
               "button": {
                 "text": { "en": "Employee access list", "fr": "Liste des accès des employés" },
-                "url": "{var:accessListUrl}"
+                "url": "{var:accessListUrl}",
+                "fromForm": true
               }
             }
           ]

@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.3.1 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.3.2 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.1"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.2"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.3.1';
+  var VERSION = '1.3.2';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1379,6 +1379,13 @@
         var b = f.button = Object.assign({}, f.button || {});
         b.url = safeHref(fillVars(b.url, cfg));
         if (!b.text || !b.url) errors.push('field "' + f.id + '": a feature note needs button.text and an http(s) or server-relative button.url');
+        // fromForm: mark the URL so the access list's Back may close the tab
+        // this button opens (and only that tab)
+        else if (b.fromForm) {
+          var hash = b.url.indexOf('#');
+          var base = hash > -1 ? b.url.slice(0, hash) : b.url, frag = hash > -1 ? b.url.slice(hash) : '';
+          b.url = base + (base.indexOf('?') > -1 ? '&' : '?') + FROM_FORM + frag;
+        }
       }
     });
     var hn = cfg.form.headerNote;
@@ -3710,6 +3717,12 @@
      ------------------------------------------------------------------ */
   NS._acc = {};
   function normKey(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
+  // maps keyed by area name: no prototype, so an area called "constructor"
+  // or "toString" isn't already "there"
+  function keyMap() { return Object.create(null); }
+  // The form's access-list button adds this to the URL (button.fromForm),
+  // so Back knows the form opened this tab and may close it.
+  var FROM_FORM = 'pszFrom=form';
   function normalizeAccess(raw, lang) {
     var errors = [];
     var cfg = localize(raw || {}, lang);
@@ -3736,7 +3749,7 @@
   // listed for each, sorted by name. A row for an area that isn't one of
   // the user's is never shown.
   function accessGroups(areas, rows) {
-    var groups = [], byKey = {};
+    var groups = [], byKey = keyMap();
     areas.forEach(function (a) {
       var k = normKey(a);
       if (!k || byKey[k]) return;
@@ -3772,18 +3785,20 @@
         (mail ? '<a class="psz-errmail" href="' + esc(mail) + '">' + esc(S.errorMailLink) + '</a>' : '') + '</div></div>';
     }
     var groups = accessGroups(def.data.areas, def.data.rows);
-    if (!groups.length) {
-      var em = cfg.empty || {};
-      return '<div class="psz-done psz-done--empty">' +
-        '<svg class="icon icon--48 psz-done__icon psz-done__icon--info" aria-hidden="true"><use href="#ic-fluent-info-24-regular"/></svg>' +
-        '<h3 class="psz-done__title">' + esc(em.title || S.accessEmptyTitle) + '</h3>' +
-        '<p class="psz-done__msg">' + prose(em.message || S.accessEmptyMessage) + '</p></div>';
-    }
+    // a cut-off read is said out loud, even when what did arrive had no
+    // usable area (the empty screen alone would claim "nothing assigned")
     var h = '';
     if (def.data.more) {
       h += '<div class="msgbar msgbar--warning" role="status">' +
         icon(ICONS.warning, 20).replace('class="icon', 'class="msgbar__icon icon') +
         '<div class="msgbar__body">' + esc(S.accessMore) + '</div></div>';
+    }
+    if (!groups.length) {
+      var em = cfg.empty || {};
+      return h + '<div class="psz-done psz-done--empty">' +
+        '<svg class="icon icon--48 psz-done__icon psz-done__icon--info" aria-hidden="true"><use href="#ic-fluent-info-24-regular"/></svg>' +
+        '<h3 class="psz-done__title">' + esc(em.title || S.accessEmptyTitle) + '</h3>' +
+        '<p class="psz-done__msg">' + prose(em.message || S.accessEmptyMessage) + '</p></div>';
     }
     if (groups.length > 1) {
       h += '<div class="psz-acc__tools">' +
@@ -3838,7 +3853,7 @@
   }
   // panels the user collapsed stay collapsed through a re-render
   function accessClosed(def) {
-    var closed = {};
+    var closed = keyMap();
     if (def.root) def.root.querySelectorAll('details[data-psz-area]').forEach(function (d) {
       if (!d.open) closed[d.getAttribute('data-psz-area')] = true;
     });
@@ -3876,7 +3891,7 @@
       if (!emails.length) throw new Error('no-user');
       return adapter.getAssignments(cfg.assignments, emails);
     }).then(function (asg) {
-      var seen = {}, areas = [];
+      var seen = keyMap(), areas = [];
       (asg.rows || []).forEach(function (r) {
         var a = String(r[cfg.assignments.labelColumn] == null ? '' : r[cfg.assignments.labelColumn]).trim();
         if (a && !seen[normKey(a)]) { seen[normKey(a)] = true; areas.push(a); }
@@ -3900,12 +3915,13 @@
       def.mount.setAttribute('data-psz-state', 'ready');
     });
   }
-  // Back: a tab of its own (one history entry, as the form's link opens
-  // it) closes, and the browser shows the form's tab again. Otherwise —
-  // or if the browser won't let the script close it — the link is followed.
+  // Back: a tab the FORM opened (its button marks the URL with FROM_FORM)
+  // that is still on its first page closes, and the browser shows the
+  // form's tab again. Anything else — opened from elsewhere, navigated
+  // since, or a browser that won't let the script close it — follows the link.
   function accessBack(ev, a) {
     if (ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
-    if (history.length > 1) return;
+    if (history.length > 1 || !new RegExp('[?&]' + FROM_FORM + '(&|$)').test(location.search)) return;
     ev.preventDefault();
     var href = a.href;
     try { window.close(); } catch (e) { /* not closable */ }

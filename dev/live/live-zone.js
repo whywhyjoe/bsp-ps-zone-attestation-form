@@ -37,6 +37,11 @@ const ACCESS_PAGE = new URL(SITE).pathname + '/SitePages/ps-zone-attestation-acc
 // employee must never show
 const ACCESS = [['Live Employee Two', 'Live Employee One'], ['Live Employee Three', 'Live Employee Five', 'Live Employee Four'], []];
 const OTHER_EMPLOYEE = 'Live Employee Not Yours';
+// SharePoint's own matching, checked for real: a row whose AreaName is MINE[0] upper-cased must
+// show (eq is case-blind); a row whose AreaName is MINE[2] with outer spaces must NOT (eq doesn't
+// trim) — so MINE[2] still lists nobody
+const CASED_EMPLOYEE = 'Live Employee Cased';
+const SPACED_EMPLOYEE = 'Live Employee Spaced';
 const mailOf = n => n.toLowerCase().replace(/ /g, '.') + '@example.invalid';
 // the example areas (sorted: Concourse Podium, Tower 10, Tower 37). Quotes and accents in list data
 // are covered by the harness's hostile-text test.
@@ -168,7 +173,8 @@ async function submitAndConfirm(page, confirmText) {
   const others = rows.filter(r => String(r.UserEmail).toLowerCase() !== me.Email.toLowerCase()).map(r => r.AreaName);
   // the access list's rows (as admin): ACCESS for my areas, one for someone else's
   const haveAcc = (await rest(admin, 'GET', X + '/items?$select=AreaName,EmployeeName&$top=500')).value;
-  const wantAcc = MINE.flatMap((n, i) => (ACCESS[i] || []).map(e => [n, e])).concat([[OTHER, OTHER_EMPLOYEE]]);
+  const wantAcc = MINE.flatMap((n, i) => (ACCESS[i] || []).map(e => [n, e])).concat([[OTHER, OTHER_EMPLOYEE],
+    [MINE[0].toUpperCase(), CASED_EMPLOYEE]], MINE[2] ? [[' ' + MINE[2] + ' ', SPACED_EMPLOYEE]] : []);
   for (const [area, name] of wantAcc) {
     if (haveAcc.some(x => x.AreaName === area && x.EmployeeName === name)) continue;
     await rest(admin, 'POST', X + '/items', { Title: area, AreaName: area, EmployeeName: name, EmployeeEmail: mailOf(name) });
@@ -200,7 +206,7 @@ async function submitAndConfirm(page, confirmText) {
   // the employee access list: the notice's link opens it in a new tab; Back closes that tab
   const accLink = page.locator('[data-psz-form] a.psz-callout__btn');
   check('notice: the access-list link points at the access page, new tab',
-    (await accLink.getAttribute('href')) === ACCESS_PAGE && (await accLink.getAttribute('target')) === '_blank', await accLink.getAttribute('href'));
+    (await accLink.getAttribute('href')) === ACCESS_PAGE + '?pszFrom=form' && (await accLink.getAttribute('target')) === '_blank', await accLink.getAttribute('href'));
   const [acc] = await Promise.all([ctx.waitForEvent('page'), accLink.click()]);
   acc.__errors = [];
   acc.on('pageerror', e => { if (e.message && e.message !== 'undefined') acc.__errors.push(e.message); });
@@ -208,9 +214,11 @@ async function submitAndConfirm(page, confirmText) {
   await acc.waitForSelector('details.psz-acc__area, .psz-acc .msgbar--danger, .psz-acc .psz-done', { timeout: 30000 }).catch(() => {});
   const accAreas = await acc.$$eval('details.psz-acc__area', ds => ds.map(d => [d.querySelector('.psz-acc__area-name').textContent, d.open,
     [...d.querySelectorAll('.psz-acc__name')].map(n => n.textContent)]));
-  const wantAreas = MINE.map((n, i) => [n, true, (ACCESS[i] || []).slice().sort()]);
+  const wantAreas = MINE.map((n, i) => [n, true, (ACCESS[i] || []).concat(i === 0 ? [CASED_EMPLOYEE] : []).sort()]);
   check('access list: my areas, all expanded, each with its employees by name (nobody on the third)',
     JSON.stringify(accAreas) === JSON.stringify(wantAreas), JSON.stringify(accAreas));
+  check('access list: SharePoint matches an area name in other case, not one with outer spaces',
+    JSON.stringify(accAreas[0] && accAreas[0][2]).includes(CASED_EMPLOYEE) && !JSON.stringify(accAreas).includes(SPACED_EMPLOYEE), JSON.stringify(accAreas));
   const accText = await acc.locator('.psz-acc').textContent().catch(() => '');
   check("access list: nobody else's area or employee", !accText.includes(OTHER) && !accText.includes(OTHER_EMPLOYEE));
   await acc.screenshot({ path: path.join(OUT, 'zone-access.png'), fullPage: true });

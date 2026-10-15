@@ -71,7 +71,7 @@ the console. At most one report per kind and 5 per page load.
 
 | Column | Type | Notes |
 | --- | --- | --- |
-| `AreaName` | Single line of text | **Indexed.** The area, as in the Assignments list's `AreaName` (matched ignoring case and outer spaces). |
+| `AreaName` | Single line of text | **Indexed.** The area, as in the Assignments list's `AreaName` (matched ignoring case only: SharePoint's `eq` doesn't trim, so a leading or trailing space means the row never shows). |
 | `EmployeeName` | Single line of text | Shown, sorted by. |
 | `EmployeeEmail` | Single line of text | Shown as a mailto link when it's an address. |
 

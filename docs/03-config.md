@@ -139,7 +139,9 @@ Note `style`s: `info` (default), `warning`, `success`, `danger` (a message
 bar), `plain` (a hint line), and `feature` (1.3.1): the one message meant to
 be acted on, as a card with an accent edge, an icon tile (`icon`: a sprite
 name such as `person`), a `title`, the `text`, and a primary button
-`{ "text", "url" }` that opens `url` in a new tab. The validator refuses an
+`{ "text", "url", "fromForm" }` that opens `url` in a new tab. `fromForm: true`
+(1.3.2) adds `pszFrom=form` to the URL's query: the access list's Back closes
+only a tab carrying that marker. The validator refuses an
 unknown style and a `feature` note without `button.text` or with a
 `button.url` that isn't http(s) or server-relative (after `{var:…}`).
 
@@ -287,9 +289,9 @@ when there's more than one area.
 | Key | Notes |
 | --- | --- |
 | `title`, `back`, `intro` | EN/FR pairs. `back` is the link above the card (default "Back"). `intro` is the info bar. |
-| `vars.formUrl` | The form page. The back link goes there, and so does any intro link to that same address. **Back** closes the tab when it's a tab of its own (one history entry: how the form's link opens it), which returns the user to the form with their answers intact; otherwise it follows the link. Must be http(s) or server-relative, or there's no back link. |
+| `vars.formUrl` | The form page. The back link goes there, and so does any intro link to that same address. **Back** closes the tab only when the form opened it: the URL carries `pszFrom=form` (the form's button adds it, `button.fromForm`) and the tab is still on its first page. That returns the user to the form with their answers intact. Otherwise (opened from anywhere else, navigated since, or a browser that refuses) it follows the link. Must be http(s) or server-relative, or there's no back link. |
 | `assignments` | `listTitle` or `listUrl`, `userColumn`, `labelColumn` required; `top` (default 500). |
-| `access` | `listTitle` or `listUrl`, `areaColumn`, `nameColumn`, `emailColumn` required; `top` (default 2,000 per 20 areas, at most 4,999). A cut-off read shows a warning. Areas are matched case- and outer-space-blind; a row for an area that isn't the user's never shows. |
+| `access` | `listTitle` or `listUrl`, `areaColumn`, `nameColumn`, `emailColumn` required; `top` (default 2,000 per 20 areas, at most 4,999). A cut-off read shows a warning. Areas are matched by SharePoint's `eq`: case-blind, but a leading or trailing space in either list means no match; a row for an area that isn't the user's never shows. |
 | `empty` | The "no areas assigned" screen. |
 | `strings` | Overrides for its engine messages (`accessLoading`, `accessLoadError`, `accessNoEmployees`, `accessCount`, `accessExpandAll`, …: `DEFAULT_STRINGS`). |
 | `errorLog`, `errorContact` | As on the form. A failed read logs kind `access` and offers the email link beside *Try again*. |

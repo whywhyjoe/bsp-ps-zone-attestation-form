@@ -7,6 +7,27 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.3.2: Codex review of the access list (xo turn 3)
+
+Codex reviewed 1.3.0's employee access list: no critical or high findings.
+All four fixed, each with a check shown to fail without its fix:
+
+- **Outer spaces in area names:** SharePoint's `eq` matches case-blind but
+  doesn't trim, so an Access row with a leading or trailing space never
+  showed, while the docs said spaces didn't matter and the mock trimmed
+  (hiding it). The mock now matches as SharePoint does, the docs say
+  spaces count, and the dev live run checks it on the real list (a
+  different-case row shows, a spaced one doesn't).
+- **Cut-off read with no usable area:** the page showed "No areas assigned"
+  without the cut-off warning; the warning now shows above it.
+- **Back closing the wrong tab:** Back closed any new tab still on its
+  first page. Now the form's button marks the URL (`button.fromForm` →
+  `pszFrom=form`) and Back closes only a tab carrying it.
+- **Prototype-named areas:** maps keyed by area name are null-prototype,
+  so an area called `constructor` or `toString` gets its panel.
+
+Suite 178/178; dev admin run 32/32.
+
 ## 2026-10-15 — engine 1.3.1: header who card and callout, access callout
 
 - `form.headerUser` puts the who card ("Confirmation by:") in the header

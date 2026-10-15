@@ -45,9 +45,10 @@
   ];
   // the access list: who can enter each area. Tower 10 has five people
   // (an odd count, for the two-column layout), the Podium two (one listed
-  // with different case and outer spaces in its area name, which must still
-  // match), Tower 37 none, and Hall B — someone else's area — one, which
-  // must never show.
+  // with its area name in other case, which SharePoint still matches),
+  // Tower 37 none — its one row has outer spaces in the area name, which
+  // SharePoint's eq does NOT match — and Hall B, someone else's area, one,
+  // which must never show.
   var ACCESS = [
     { AreaName: 'FCP - Tower 10', EmployeeName: 'Morgan Lee', EmployeeEmail: 'morgan.lee@example.com' },
     { AreaName: 'FCP - Tower 10', EmployeeName: 'Ana Diaz', EmployeeEmail: 'ana.diaz@example.com' },
@@ -55,7 +56,8 @@
     { AreaName: 'FCP - Tower 10', EmployeeName: 'Priya Natarajan', EmployeeEmail: 'priya.natarajan@example.com' },
     { AreaName: 'FCP - Tower 10', EmployeeName: 'Jordan Tremblay', EmployeeEmail: 'jordan.tremblay@example.com' },
     { AreaName: 'FCP - Concourse Podium', EmployeeName: 'Chris Wong', EmployeeEmail: 'chris.wong@example.com' },
-    { AreaName: ' fcp - concourse podium ', EmployeeName: 'Alex Martin', EmployeeEmail: 'alex.martin@example.com' },
+    { AreaName: 'fcp - CONCOURSE podium', EmployeeName: 'Alex Martin', EmployeeEmail: 'alex.martin@example.com' },
+    { AreaName: ' FCP - Tower 37 ', EmployeeName: 'Spaced Out', EmployeeEmail: 'spaced.out@example.com' },
     { AreaName: 'Data centre — Hall B', EmployeeName: 'Not Yours', EmployeeEmail: 'not.yours@example.com' }
   ];
   // per-list schemas for the doctor (window.PSZ_MOCK_FIELDS[listTitle] wins)
@@ -151,16 +153,16 @@
       return delay({ rows: rows.slice(0, max), more: rows.length > max }, 450);
     },
     // the access list: PSZ_MOCK_ACCESS (rows with the spec's area, name and
-    // email columns) for these areas. SharePoint's eq ignores case but not
-    // outer spaces; the mock is more forgiving so the engine's own matching
-    // (case- and trim-blind) is what's tested.
+    // email columns) for these areas, matched exactly as the real adapter's
+    // `AreaName eq '…'` filter is: case-blind, but outer spaces count. (An
+    // earlier mock trimmed here too, and hid that a spaced name never matches.)
     getAccess: function (spec, areas) {
       var fail = maybeFail('getAccess');
       if (fail) return fail;
       writes.push({ op: 'getAccess', list: spec.listUrl || spec.listTitle, areas: areas.slice() });
-      var want = areas.map(function (a) { return String(a).trim().toLowerCase(); });
+      var want = areas.map(function (a) { return String(a).toLowerCase(); });
       var rows = (window.PSZ_MOCK_ACCESS || ACCESS).filter(function (r) {
-        return want.indexOf(String(r[spec.areaColumn] || '').trim().toLowerCase()) > -1;
+        return want.indexOf(String(r[spec.areaColumn] || '').toLowerCase()) > -1;
       }).map(function (r) {
         return { area: String(r[spec.areaColumn] || ''), name: String(r[spec.nameColumn] || ''), email: String(r[spec.emailColumn] || '') };
       });

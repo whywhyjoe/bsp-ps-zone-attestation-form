@@ -1040,7 +1040,7 @@ async function testNotices(browser) {
   });
   check('the access list: a feature callout first in the body, its button {var:accessListUrl} in a new tab',
     callout && callout.first && callout.title === 'Who has access to your areas?' && callout.btn &&
-    /^Employee access list/.test(callout.btn[0]) && callout.btn[1] === new URL(ACCESS).pathname &&
+    /^Employee access list/.test(callout.btn[0]) && callout.btn[1] === new URL(ACCESS).pathname + '?pszFrom=form' &&
     callout.btn[2] === '_blank' && /noopener/.test(callout.btn[3]) && callout.btn[5], JSON.stringify(callout));
   const top = { link: callout && callout.btn };
   // SharePoint's in-place navigation ignores target="_blank" unless a link
@@ -1098,8 +1098,9 @@ async function testNotices(browser) {
 
 /* The employee access list ([data-psz-access], dev/access.html). Mock rows
    (mock-sp.js ACCESS): Tower 10 five people, the Podium two (one with its
-   area name in other case + outer spaces), Tower 37 none, and Hall B (not
-   the user's) one, "Not Yours". */
+   area name in other case), Tower 37 none (its one row has outer spaces in
+   the area name, which SharePoint's eq doesn't match), and Hall B (not the
+   user's) one, "Not Yours". The mock matches as the real filter does. */
 async function openAccess(browser, opts) {
   opts = opts || {};
   const ctx = await browser.newContext({ viewport: opts.viewport || { width: 1100, height: 1400 } });
@@ -1172,9 +1173,10 @@ async function testAccess(browser) {
   check('Tower 10: its five employees by name, each with a mailto email, in two columns',
     JSON.stringify(t10.people.map(p => p[0])) === '["Ana Diaz","Jordan Tremblay","Morgan Lee","Priya Natarajan","Sam Okafor"]' &&
     t10.people.every(p => /^mailto:[a-z.]+@example\.com$/.test(p[1])) && t10.count === '5 employee(s)' && t10.cols === 2, JSON.stringify(t10));
-  check('an access row whose area differs only in case / outer spaces still counts (Podium: 2)',
+  check('an access row whose area differs only in case still counts (Podium: 2)',
     JSON.stringify(a.areas[0].people.map(p => p[0])) === '["Alex Martin","Chris Wong"]', JSON.stringify(a.areas[0].people));
-  check('an area with nobody listed says so', a.areas[2].none && a.areas[2].people.length === 0 && a.areas[2].count === '0 employee(s)');
+  check('an area with nobody listed says so; a row with outer spaces in its area name doesn\'t match (as in SharePoint)',
+    a.areas[2].none && a.areas[2].people.length === 0 && a.areas[2].count === '0 employee(s)' && !/Spaced Out/.test(a.text));
   check('another user\'s area and its people never show', !/Not Yours|Hall B/.test(a.text));
   const reads = await page.evaluate(() => window.__PSZ_MOCK_WRITES__.filter(w => w.op === 'getAccess'));
   check('one access read, for exactly the user\'s areas',
@@ -1207,6 +1209,41 @@ async function testAccess(browser) {
   await page.locator('.psz-acc__back').click();
   await page.waitForURL(u => u.pathname === formPath, { timeout: 5000 }).catch(() => {});
   check('Back in a tab with history → goes to the form page', new URL(page.url()).pathname === formPath, page.url());
+  await ctx.close();
+
+  // Back in a new tab some OTHER page opened (no pszFrom=form marker): it
+  // must go to the form, not close that tab
+  ctx = await browser.newContext({ viewport: { width: 1100, height: 1200 } });
+  page = await ctx.newPage();
+  await page.setContent('<a id="x" href="' + ACCESS + '" target="_blank" rel="noopener">elsewhere</a>');
+  const [stray] = await Promise.all([ctx.waitForEvent('page'), page.locator('#x').click()]);
+  await stray.waitForSelector('.psz-acc__back', { timeout: 15000 });
+  const strayClosed = stray.waitForEvent('close', { timeout: 2500 }).then(() => true).catch(() => false);
+  await stray.locator('.psz-acc__back').click();
+  await stray.waitForURL(u => u.pathname === formPath, { timeout: 5000 }).catch(() => {});
+  check('Back in a new tab another page opened → goes to the form, the tab stays',
+    !(await strayClosed) && !stray.isClosed() && new URL(stray.url()).pathname === formPath, stray.isClosed() ? 'closed' : stray.url());
+  await ctx.close();
+
+  // area names that are Object.prototype keys still get their panels
+  ({ ctx, page } = await openAccess(browser, {
+    rows: [{ ID: 51, UserEmail: 'dev.tester@example.com', AreaName: 'constructor' }, { ID: 52, UserEmail: 'dev.tester@example.com', AreaName: 'toString' }],
+    access: [{ AreaName: 'constructor', EmployeeName: 'Pat Proto', EmployeeEmail: 'pat.proto@example.com' }]
+  }));
+  a = await accState(page);
+  check('areas named "constructor" and "toString" get their panels, open, with their people',
+    JSON.stringify(a.areas.map(x => [x.name, x.open, x.people.length])) === '[["constructor",true,1],["toString",true,0]]', JSON.stringify(a.areas));
+  await ctx.close();
+
+  // a cut-off assignments read whose rows had no usable area: the warning,
+  // not a bare "No areas assigned"
+  ({ ctx, page } = await openAccess(browser, {
+    rows: [{ ID: 61, UserEmail: 'dev.tester@example.com', AreaName: '' }, { ID: 62, UserEmail: 'dev.tester@example.com', AreaName: 'Z wing' }],
+    mutate: cfg => { cfg.assignments.top = 1; }
+  }));
+  check('cut-off read with only blank area names → the cut-off warning above the empty screen',
+    await page.locator('.psz-acc .msgbar--warning:has-text("Only part of the list")').isVisible() &&
+    await page.locator('.psz-acc .psz-done--empty').isVisible());
   await ctx.close();
 
   // French, then a switch keeps a collapsed panel collapsed

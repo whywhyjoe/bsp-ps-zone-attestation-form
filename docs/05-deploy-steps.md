@@ -252,7 +252,7 @@ Add a row for yourself too, so you can test in step 7.
 `PS_Zone-Attestation-Access`:
 
 - `AreaName`: the area, spelled **exactly** as in the Assignments list
-  (capitals and spaces at either end don't matter; anything else does).
+  (capitals don't matter; anything else does, **including a space at either end**, which is easy to paste in from Excel).
 - `EmployeeName`, `EmployeeEmail`: the employee with access.
 
 An area with no rows shows "No employees are listed for this area".
@@ -334,7 +334,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-form data-validate data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.1"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.2"></script>
    ```
 
    It's the snippet in `webpart/ps-zone-attestation.webpart.html`, plus
@@ -344,7 +344,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.1"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.2"></script>
    ```
 
    It's `webpart/ps-zone-attestation-resources.webpart.html`. Both web parts
@@ -360,7 +360,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-access data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.access.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.1"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.2"></script>
    ```
 
    It's `webpart/ps-zone-attestation-access.webpart.html`.
@@ -421,7 +421,7 @@ the date and `?v=` you deployed in `STATE.md`.
   1. Download the two deployed files first (for rollback).
   2. Upload the new ones over them.
   3. In **all three** web parts (two on the form page, one on the access
-     list page), change `?v=1.3.1` to the new version (the `VERSION` line
+     list page), change `?v=1.3.2` to the new version (the `VERSION` line
      near the top of `ps-zone-attestation.js`). Without this, browsers may
      keep the old code.
   4. Repeat step 7's checks 2, 5, 6 and 7.
