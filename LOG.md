@@ -7,6 +7,22 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.4.5: header and submit-button layout
+
+From a production screenshot:
+- The header's "changes will be reviewed" callout was wider than the intro
+  above it (the intro was capped at 64ch). With the who card beside it,
+  the intro now spans the column, so the two match.
+- The "Confirmation by" card stretched to 340px; it's now only as wide as
+  its content (up to 340px).
+- Zone descriptions were capped at 72ch; they now fill the card.
+- New `form.appearance.submit: "prominent"` (on in this form): the submit
+  button large (48px), centred, with a checkmark icon; full width on a
+  narrow page.
+
+Four layout checks (two at production width) fail against the 1.4.4 CSS.
+Suite 262/262; dev admin run 33/33.
+
 ## 2026-10-15 — engine 1.4.4: refused links keep a typed \*
 
 Codex's re-review of 1.4.3 (xo turn 10) closed the turn-9 security finding

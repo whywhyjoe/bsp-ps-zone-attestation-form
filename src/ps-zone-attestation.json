@@ -7,7 +7,7 @@
       "fr": "[Texte provisoire] Une brève description de cette confirmation : de quoi il s'agit, pourquoi c'est important et la date limite."
     },
     "languages": ["en", "fr"],
-    "appearance": { "frame": "card", "header": "band", "tint": "sky" },
+    "appearance": { "frame": "card", "header": "band", "tint": "sky", "submit": "prominent" },
     "headerNote": {
       "style": "info",
       "text": {

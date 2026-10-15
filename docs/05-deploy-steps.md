@@ -349,7 +349,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-form data-validate data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.4"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.5"></script>
    ```
 
    It's the snippet in `webpart/ps-zone-attestation.webpart.html`, plus
@@ -359,7 +359,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.4"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.5"></script>
    ```
 
    It's `webpart/ps-zone-attestation-resources.webpart.html`. Both web parts
@@ -375,7 +375,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-access data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.access.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.4"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.5"></script>
    ```
 
    It's `webpart/ps-zone-attestation-access.webpart.html`.
@@ -436,7 +436,7 @@ the date and `?v=` you deployed in `STATE.md`.
   1. Download the two deployed files first (for rollback).
   2. Upload the new ones over them.
   3. In **all three** web parts (two on the form page, one on the access
-     list page), change `?v=1.4.4` to the new version (the `VERSION` line
+     list page), change `?v=1.4.5` to the new version (the `VERSION` line
      near the top of `ps-zone-attestation.js`). Without this, browsers may
      keep the old code.
   4. Repeat step 7's checks 2, 5, 6 and 7.

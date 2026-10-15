@@ -89,7 +89,7 @@ as-is to the other BSP parts that adopt the same subset, so they all agree.
 | Key | In this form | Notes |
 | --- | --- | --- |
 | `title`, `intro` | EN/FR pairs | Title "Physical Security Work Zone Confirmation" (1.3.0). `intro` takes links, **bold** and *italic* (*Formatting*, above). |
-| `appearance` | card · band · sky | Frame, header band, band tint (`sky` `blue` `neutral`). |
+| `appearance` | card · band · sky · prominent | Frame, header band, band tint (`sky` `blue` `neutral`), and `submit`: `"standard"` (default) or `"prominent"` (1.4.5: the submit button large, centred, with a checkmark icon; full width on a narrow page). |
 | `headerNote` | `{ style: "info", text }` | 1.3.1. A callout in the header band, under the intro: "Any change to a zone will be reviewed…". `style` is `info` (default), `warning`, `success` or `danger`; `text` takes links and `{var:…}`. |
 | `headerUser` | `{ label: "Confirmation by:" }` | 1.3.1. The who card (photo or initials, name, email) as the header's right column. It replaces a `currentUser` field in the body; below ~720px it drops under the intro. |
 | `vars` | `accessListUrl` | Values for `{var:name}`. `accessListUrl` is the access list page, the access callout's button. `PSZ_FORM_SETTINGS.vars` on the page overrides them (the dev harness does). |

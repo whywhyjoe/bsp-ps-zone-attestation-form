@@ -335,6 +335,18 @@
    --------------------------------------------------------------------- */
 .psz-nav { display: flex; align-items: center; gap: var(--space-80); margin-top: var(--space-320); }
 .psz-nav__spacer { flex: 1; }
+/* appearance.submit "prominent": the submit button large and centred, with
+   an icon, so nobody misses it */
+.psz-nav--prominent { justify-content: center; padding-top: var(--space-200); padding-bottom: var(--space-200); }
+.psz-nav--prominent .psz-nav__spacer { display: none; }
+.psz-submit--prominent {
+  min-width: 280px; height: 48px; padding: 0 var(--space-320);
+  gap: var(--space-100); font: var(--type-subtitle2);
+}
+.psz-submit__icon { display: inline-flex; flex: none; }
+@container psz (max-width: 539px) {
+  .psz-submit--prominent { width: 100%; min-width: 0; }
+}
 /* Footer variant used by the card frame — the .panel__foot register. */
 .psz-nav--foot {
   margin-top: 0;
@@ -586,9 +598,14 @@ a.psz-acc__email { color: var(--accent-rest); }
 
 /* In the header (form.headerUser): the who card as the band's right
    column, on a raised surface so it reads against the tint. */
-.psz__head-aside { flex: 0 1 340px; min-width: 0; }
+/* as wide as the name needs, no wider (up to 340px), so the intro keeps the room */
+.psz__head-aside { flex: 0 0 auto; max-width: 340px; min-width: 0; }
 .psz__head-aside .psz-who { margin: 0; }
-.psz__head-aside .psz-who__card { background: var(--surface-raised); box-shadow: var(--shadow-4); max-width: none; }
+.psz__head-aside .psz-who__card { background: var(--surface-raised); box-shadow: var(--shadow-4); width: fit-content; max-width: 100%; }
+.psz__head-aside .psz-who__id { flex: 0 1 auto; }
+/* with the who card beside it, the intro and the callout share one width:
+   the whole left column */
+.psz__head--hasuser .psz__intro { max-width: none; }
 /* The header callout (form.headerNote): under the intro, on a raised
    surface so it doesn't melt into the tinted band. */
 .psz__head-note { margin-top: var(--space-80); background: var(--surface-raised); }
@@ -742,7 +759,8 @@ a.psz-acc__email { color: var(--accent-rest); }
 .psz-asg__zone.is-replaced .psz-asg__zonename { text-decoration: line-through; }
 .psz-asg__zone.is-replaced .psz-dot { width: 14px; height: 14px; filter: grayscale(1); opacity: .45; }
 .psz-asg__arrow { display: inline-flex; color: var(--fg-secondary); }
-.psz-asg__desc { margin: 0; max-width: 72ch; font: var(--type-body1); color: var(--fg-secondary); }
+/* zone descriptions run long: they take the card's full width */
+.psz-asg__desc { margin: 0; font: var(--type-body1); color: var(--fg-secondary); }
 
 /* the answer band. Unanswered: an accent tint and an accent rule, so the
    action reads as "to do"; answered: it settles to neutral. */

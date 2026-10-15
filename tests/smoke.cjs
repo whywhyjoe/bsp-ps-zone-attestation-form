@@ -515,7 +515,8 @@ async function testZoneAttestation(browser) {
     ['changedColumn = a rowColumns target → error card', cfg => { cfg.pages[0].sections[1].fields[0].changedColumn = 'AreaName'; }],
     ['feature note whose button url is javascript: → error card', cfg => { cfg.pages[0].sections[0].fields[0].button.url = 'javascript:alert(1)'; }],
     ['note with an unknown style → error card', cfg => { cfg.pages[0].sections[0].fields[0].style = 'shout'; }],
-    ['form.headerNote without text → error card', cfg => { cfg.form.headerNote = { style: 'info' }; }]
+    ['form.headerNote without text → error card', cfg => { cfg.form.headerNote = { style: 'info' }; }],
+    ['form.appearance.submit "huge" → error card', cfg => { cfg.form.appearance.submit = 'huge'; }]
   ]) {
     ({ ctx, page } = await openZone(browser, { mutate }));
     const state = await page.getAttribute('[data-psz-form]', 'data-psz-state');
@@ -1031,6 +1032,50 @@ async function testNotices(browser) {
     /^Any change to a zone will be reviewed, and Physical Security will contact you\.$/.test(head.note) && head.afterIntro, JSON.stringify(head));
   check('header: "Confirmation by:" + the user as its right column; no who card in the body',
     head.label === 'Confirmation by:' && head.name === 'Dev Tester' && head.rightOfCopy && head.whoInBody === 0, JSON.stringify(head));
+  // layout (1.4.5): intro and callout share one width; the who card is only
+  // as wide as it needs; zone descriptions fill their card; the submit
+  // button is large, centred and has an icon
+  const lay = await page.evaluate(() => {
+    const r = s => document.querySelector(s).getBoundingClientRect();
+    const intro = r('.psz__intro'), note = r('.psz__head-note'), aside = r('.psz__head-aside'), card = r('.psz__head-aside .psz-who__card');
+    const id = r('.psz__head-aside .psz-who__id'), av = r('.psz__head-aside .psz-who__avatar');
+    const desc = [...document.querySelectorAll('.psz-asg__desc')].find(d => d.offsetParent);
+    const body = desc.closest('.psz-asg__body'), pad = parseFloat(getComputedStyle(body).paddingLeft) + parseFloat(getComputedStyle(body).paddingRight);
+    const btn = document.querySelector('.psz__body button[type="submit"]'), b = btn.getBoundingClientRect(), nav = btn.closest('.psz-nav').getBoundingClientRect();
+    return { introW: intro.width, noteW: note.width, asideW: aside.width, cardW: card.width, contentW: av.width + id.width,
+      descW: desc.getBoundingClientRect().width, bodyInner: body.getBoundingClientRect().width - pad,
+      btnH: b.height, btnW: b.width, off: Math.abs((b.left + b.width / 2) - (nav.left + nav.width / 2)), icon: !!btn.querySelector('.psz-submit__icon use') };
+  });
+  // the header at production width (the form ~1,200px wide, as on the portal
+  // page): that's where the old layout left the callout wider than the
+  // intro and the who card stretched
+  const wide = await (async () => {
+    const c = await browser.newContext({ viewport: { width: 1500, height: 900 } });
+    const p = await c.newPage();
+    await p.goto(BASE);
+    await p.evaluate(() => { document.querySelector('.harness-canvas').style.maxWidth = '1240px'; });
+    await p.waitForSelector('.psz__head-aside .psz-who__name', { timeout: 15000 });
+    await p.waitForFunction(() => document.querySelector('.psz-who__name').textContent === 'Dev Tester', null, { timeout: 15000 }).catch(() => {});
+    const out = await p.evaluate(() => {
+      const r = s => document.querySelector(s).getBoundingClientRect();
+      // the card against its content's natural width: the photo plus the
+      // wider of the two text runs (measured as text, so a stretched box
+      // around them can't hide the waste)
+      const text = s => { const rg = document.createRange(); rg.selectNodeContents(document.querySelector(s)); return rg.getBoundingClientRect().width; };
+      const card = r('.psz__head-aside .psz-who__card'), av = r('.psz__head-aside .psz-who__avatar');
+      return { formW: r('[data-psz-form] .psz').width, introW: r('.psz__intro').width, noteW: r('.psz__head-note').width,
+        cardW: card.width, contentW: av.width + Math.max(text('.psz__head-aside .psz-who__name'), text('.psz__head-aside .psz-who__mail')) };
+    });
+    await c.close();
+    return out;
+  })();
+  check('header (production width): the intro and the "changes reviewed" callout are the same width',
+    wide.formW > 1100 && Math.abs(wide.introW - wide.noteW) < 2, JSON.stringify(wide));
+  check('header (production width): the who card is only as wide as its content (no wasted space)',
+    wide.cardW < wide.contentW + 70, JSON.stringify(wide)); // + padding, gap, border
+  check('zone descriptions use the card\'s full width', lay.descW >= lay.bodyInner - 2, JSON.stringify(lay));
+  check('submit: large (≥ 44px tall, ≥ 240px wide), centred, with an icon',
+    lay.btnH >= 44 && lay.btnW >= 240 && lay.off < 2 && lay.icon, JSON.stringify(lay));
   const callout = await page.evaluate(() => {
     const c = document.querySelector('[data-psz-form] .psz__body .psz-callout');
     const a = c && c.querySelector('a.psz-callout__btn');

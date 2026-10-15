@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.4.4 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.4.5 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.4"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.5"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.4';
+  var VERSION = '1.4.5';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1138,8 +1138,11 @@
     // URL that differs between the dev harness, dev and prod
     if (settings.vars && typeof settings.vars === 'object') cfg.form.vars = Object.assign({}, cfg.form.vars || {}, settings.vars);
     cfg.form.appearance = Object.assign(
-      { frame: 'card', header: 'band', tint: 'sky', icon: null },
+      { frame: 'card', header: 'band', tint: 'sky', icon: null, submit: 'standard' },
       cfg.form.appearance || {});
+    if (['standard', 'prominent'].indexOf(cfg.form.appearance.submit) < 0) {
+      errors.push('form.appearance.submit must be "standard" or "prominent"');
+    }
     cfg.strings = Object.assign({}, DEFAULT_STRINGS, lang === 'fr' ? DEFAULT_STRINGS_FR : {}, cfg.strings || {});
     var hc = cfg.form.headerCard;
     if (hc != null && (typeof hc !== 'object' || !hc.title || !hc.url)) {
@@ -2129,7 +2132,7 @@
     var hu = cfg.form.headerUser, hn = cfg.form.headerNote;
     if ((cfg.form.title && cfg.form.showTitle !== false) || cfg.form.intro || ap.icon || hcHref || hu || hn) {
       var headCls = 'psz__head' + (ap.header === 'band' ? ' psz__head--band psz__head--' + esc(ap.tint || 'sky') : '') +
-        (hcHref || hu ? ' psz__head--hascard' : '');
+        (hcHref || hu ? ' psz__head--hascard' : '') + (hu ? ' psz__head--hasuser' : '');
       h += '<header class="' + headCls + '">';
       h += '<div class="psz__head-copy">';
       if (cfg.form.title && cfg.form.showTitle !== false) h += '<h2 class="psz__title">' + esc(cfg.form.title) + '</h2>';
@@ -2219,12 +2222,17 @@
 
     h += '</fieldset></div>'; // .psz__lock, .psz__content
 
-    h += '<div class="psz-nav' + (card ? ' psz-nav--foot' : '') + '">';
+    // appearance.submit "prominent": the submit button large, centred, with
+    // a checkmark icon (the spinner takes the icon's place while saving)
+    var big = ap.submit === 'prominent';
+    h += '<div class="psz-nav' + (card ? ' psz-nav--foot' : '') + (big ? ' psz-nav--prominent' : '') + '">';
     h += '<button type="button" class="btn" x-show="page>0" x-cloak @click="prev()">' + esc(S.back) + '</button>';
     h += '<span class="psz-nav__spacer"></span>';
     if (last > 0) h += '<button type="button" class="btn btn--primary" x-show="page<' + last + '" @click="next()">' + esc(S.next) + '</button>';
-    h += '<button type="submit" class="btn btn--primary" x-show="page===' + last + '"' + (last > 0 ? ' x-cloak' : '') + ' :disabled="busy">' +
-      '<span class="spinner spinner--16 spinner--on-accent" x-show="busy" x-cloak aria-hidden="true"></span>' +
+    h += '<button type="submit" class="btn btn--primary' + (big ? ' btn--lg psz-submit--prominent' : '') + '" x-show="page===' + last + '"' +
+      (last > 0 ? ' x-cloak' : '') + ' :disabled="busy">' +
+      '<span class="spinner' + (big ? '' : ' spinner--16') + ' spinner--on-accent" x-show="busy" x-cloak aria-hidden="true"></span>' +
+      (big ? '<span class="psz-submit__icon" x-show="!busy">' + icon('ic-fluent-checkmark-circle-24-regular', 20) + '</span>' : '') +
       '<span x-text="busy ? ' + esc(jstr(S.submitting)) + ' : ' + esc(jstr(S.submit)) + '"></span></button>';
     h += '</div></form>';
 
