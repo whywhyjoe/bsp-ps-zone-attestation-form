@@ -7,6 +7,21 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.3.4: Codex turn-5 findings
+
+- **Opener only by the engine:** a config could set the button's internal
+  `_keepOpener` and keep `window.opener` for another origin. Normalization
+  now resets it before the same-origin check.
+- **Back needs a started form:** an empty `[data-psz-form]` div on a
+  same-origin page no longer counts; the opener must have a ready form
+  mount in its `PSZoneForm._defs`. A same-origin page faking the engine's
+  globals could still pass; same origin can do far more than close a tab.
+- **Audit matches the page:** `audit-access` flags a row with neither
+  `EmployeeName` nor `EmployeeEmail` (the page drops it) and no longer
+  counts it as covering its area.
+
+Suite 182/182; dev admin run 32/32.
+
 ## 2026-10-15 — engine 1.3.3: Codex re-review follow-ups (xo turn 4)
 
 Codex's re-review closed two of turn 3's findings (cut-off warning,

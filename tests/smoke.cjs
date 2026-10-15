@@ -1050,6 +1050,14 @@ async function testNotices(browser) {
     const offRel = await o.page.getAttribute('[data-psz-form] a.psz-callout__btn', 'rel');
     check('fromForm to another origin → still rel="noopener noreferrer"', offRel === 'noopener noreferrer', String(offRel));
     await o.ctx.close();
+    // the engine's own flag can't be set from the config
+    const p = await openZone(browser, { mutate: cfg => {
+      const b = cfg.pages[0].sections[0].fields[0].button;
+      b.url = 'https://example.com/access'; delete b.fromForm; b._keepOpener = true;
+    } });
+    const forcedRel = await p.page.getAttribute('[data-psz-form] a.psz-callout__btn', 'rel');
+    check('a config "_keepOpener": true to another origin → still rel="noopener noreferrer"', forcedRel === 'noopener noreferrer', String(forcedRel));
+    await p.ctx.close();
   }
   // SharePoint's in-place navigation ignores target="_blank" unless a link
   // opts out (found on the dev tenant); the harness can't reproduce that, so
@@ -1223,14 +1231,19 @@ async function testAccess(browser) {
   // that tab: one with no opener; one whose opener is a same-origin page
   // without a form, and which also puts the old 1.3.2 URL flag in the link
   // (any page can, so it proves nothing)
-  for (const [name, rel, spoof] of [['no opener', 'noopener', ''], ['a same-origin page without a form, URL flag spoofed', 'opener', '?pszFrom=form']]) {
+  for (const [name, rel, spoof, fakeMount] of [
+    ['no opener', 'noopener', '', false],
+    ['a same-origin page without a form, URL flag spoofed', 'opener', '?pszFrom=form', false],
+    ['a same-origin page with an empty data-psz-form div', 'opener', '', true]
+  ]) {
     ctx = await browser.newContext({ viewport: { width: 1100, height: 1200 } });
     page = await ctx.newPage();
     await page.goto(new URL('/', BASE).href); // the server's directory listing: same origin, no form
-    await page.evaluate(({ href, rel }) => {
+    await page.evaluate(({ href, rel, fakeMount }) => {
+      if (fakeMount) document.body.insertAdjacentHTML('beforeend', '<div data-psz-form data-psz-state="ready"></div>');
       document.body.insertAdjacentHTML('beforeend', '<a id="x" target="_blank">elsewhere</a>');
       const x = document.getElementById('x'); x.href = href; x.rel = rel;
-    }, { href: ACCESS + spoof, rel });
+    }, { href: ACCESS + spoof, rel, fakeMount });
     const [stray] = await Promise.all([ctx.waitForEvent('page'), page.locator('#x').click()]);
     await stray.waitForSelector('.psz-acc__back', { timeout: 15000 });
     const hasOpener = await stray.evaluate(() => !!window.opener);

@@ -261,7 +261,8 @@ An area with no rows shows "No employees are listed for this area".
 ✅ **Check the area names:** run the DCSPad setup script with
 `MODE = "audit-access"` (it changes nothing). It lists every access row
 that will **never show**: a space at either end of `AreaName`, a blank
-`AreaName`, or an area that isn't in the Assignments list (a typo). Fix
+`AreaName`, a row with neither `EmployeeName` nor `EmployeeEmail`, or an
+area that isn't in the Assignments list (a typo). Fix
 those rows in the list and run it again until it reports 0. It also lists
 the assigned areas with nobody listed, in case that's a gap. Run it again
 whenever the access list is reloaded.
@@ -343,7 +344,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-form data-validate data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.3"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.4"></script>
    ```
 
    It's the snippet in `webpart/ps-zone-attestation.webpart.html`, plus
@@ -353,7 +354,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.3"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.4"></script>
    ```
 
    It's `webpart/ps-zone-attestation-resources.webpart.html`. Both web parts
@@ -369,7 +370,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-access data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.access.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.3"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.4"></script>
    ```
 
    It's `webpart/ps-zone-attestation-access.webpart.html`.
@@ -430,7 +431,7 @@ the date and `?v=` you deployed in `STATE.md`.
   1. Download the two deployed files first (for rollback).
   2. Upload the new ones over them.
   3. In **all three** web parts (two on the form page, one on the access
-     list page), change `?v=1.3.3` to the new version (the `VERSION` line
+     list page), change `?v=1.3.4` to the new version (the `VERSION` line
      near the top of `ps-zone-attestation.js`). Without this, browsers may
      keep the old code.
   4. Repeat step 7's checks 2, 5, 6 and 7.

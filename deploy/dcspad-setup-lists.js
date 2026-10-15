@@ -197,13 +197,14 @@
   // assignment area names with SharePoint's `eq`, which ignores capitals but
   // nothing else. So an access row shows only if its AreaName equals an
   // assignment's AreaName exactly, give or take capitals, with no space at
-  // either end. Lists every row that will never show, and why.
+  // either end; and the page drops a row with neither a name nor an email.
+  // Lists every row that will never show, and why.
   if (MODE === "audit-access") {
     for (const title of [ASSIGNMENTS, ACCESS]) {
       if (!(await call("GET", `${listPath(title)}?$select=Id`))) throw new Error(`${title} not found on ${web}. Run MODE = "setup" first.`);
     }
     const assigned = await allItems(ASSIGNMENTS, "Id,AreaName");
-    const access = await allItems(ACCESS, "Id,AreaName,EmployeeName");
+    const access = await allItems(ACCESS, "Id,AreaName,EmployeeName,EmployeeEmail");
     const known = new Map(); // lower-cased trimmed name → the name as written
     for (const a of assigned) {
       const n = String(a.AreaName || "").trim();
@@ -214,7 +215,10 @@
     for (const row of access) {
       const raw = String(row.AreaName == null ? "" : row.AreaName);
       const label = `${ACCESS} #${row.Id} "${raw}" ← ${row.EmployeeName || "(no name)"}`;
+      // the page drops a row with neither a name nor an email (accessGroups)
+      const nobody = !String(row.EmployeeName || "").trim() && !String(row.EmployeeEmail || "").trim();
       if (!raw.trim()) { note(label, "NEVER SHOWS: no AreaName"); bad++; }
+      else if (nobody) { note(label, "NEVER SHOWS: no EmployeeName and no EmployeeEmail"); bad++; }
       else if (raw !== raw.trim()) {
         note(label, `NEVER SHOWS: a space at the ${raw.startsWith(" ") ? (raw.endsWith(" ") ? "start and end" : "start") : "end"} of AreaName; remove it`);
         bad++;

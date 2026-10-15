@@ -55,7 +55,7 @@ some other form must not be able to break it.
 
 ```
 page web part:  <div data-psz-form data-config=".../ps-zone-attestation.json">
-                <script src=".../ps-zone-attestation.js?v=1.3.3">
+                <script src=".../ps-zone-attestation.js?v=1.3.4">
                         │
 ps-zone-attestation.js ─┼─ injects design/colors_and_type.css, design/components.css,
                         │  ps-zone-attestation.css (?v=) and the design/ sprite

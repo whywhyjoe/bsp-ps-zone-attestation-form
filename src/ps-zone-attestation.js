@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.3.3 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.3.4 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.3"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.4"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.3.3';
+  var VERSION = '1.3.4';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1381,6 +1381,8 @@
       if (f.text) f.text = fillVars(f.text, cfg);
       if (f.style === 'feature') {
         var b = f.button = Object.assign({}, f.button || {});
+        // engine-set only: a config can't ask for the opener directly
+        b._keepOpener = false;
         b.url = safeHref(fillVars(b.url, cfg));
         if (!b.text || !b.url) errors.push('field "' + f.id + '": a feature note needs button.text and an http(s) or server-relative button.url');
         // fromForm: the tab this button opens keeps window.opener (no
@@ -3729,17 +3731,27 @@
   // maps keyed by area name: no prototype, so an area called "constructor"
   // or "toString" isn't already "there"
   function keyMap() { return Object.create(null); }
-  // The tab that opened this one, when it's a page of ours with the form on
-  // it: the form's access-list button (button.fromForm) keeps window.opener
-  // for exactly this. Reading another origin's opener throws, so only a
-  // same-origin page with a [data-psz-form] mount counts. Not a URL flag:
-  // any page can put one of those in a link.
+  // The tab that opened this one, when it's a page of ours with a started
+  // form on it: the form's access-list button (button.fromForm) keeps
+  // window.opener for exactly this. Reading another origin's opener throws,
+  // so only a same-origin page counts, and only one where this engine
+  // mounted a form (a def in its PSZoneForm._defs, its mount still in that
+  // page and ready) — an empty [data-psz-form] div isn't enough. Not a URL
+  // flag: any page can put one in a link. A same-origin page scripting a
+  // fake PSZoneForm could still pass; same origin can do far more than
+  // close a tab, so that's out of scope.
   function formOpener() {
     try {
       var o = window.opener;
       if (!o || o.closed || o === window) return null;
       if (o.location.origin !== location.origin) return null;
-      return o.document.querySelector('[data-psz-form]') ? o : null;
+      var defs = o.PSZoneForm && o.PSZoneForm._defs;
+      if (!defs) return null;
+      return Object.keys(defs).some(function (k) {
+        var m = defs[k] && defs[k].mount;
+        return !!(m && m.isConnected && m.ownerDocument === o.document && m.hasAttribute('data-psz-form') &&
+          m.getAttribute('data-psz-state') === 'ready');
+      }) ? o : null;
     } catch (e) { return null; }
   }
   function normalizeAccess(raw, lang) {
