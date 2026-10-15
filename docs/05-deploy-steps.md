@@ -295,6 +295,11 @@ document links, information text and a contact):
   While a `url` is empty the item still shows, just not as a link.
 - Replace the `[Placeholder]` texts and the contact's `name` and `email`.
 
+To have someone else supply the wording, send them
+[`PS-Work-Zone-Confirmation-wording.docx`](PS-Work-Zone-Confirmation-wording.docx):
+every string in English and French with blank columns for new text, and the
+location in these files for whoever applies it.
+
 You can also do all of this later, in the uploaded copies.
 `docs/03-config.md` describes every key.
 

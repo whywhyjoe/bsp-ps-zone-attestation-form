@@ -16,6 +16,7 @@ touches. Each file is sized to be read whole.
 | [`03-config.md`](03-config.md) | You're changing wording, notices, zones, the side panel, the access list page, or list names in the `src/*.json` configs. |
 | [`04-vendoring.md`](04-vendoring.md) | You're refreshing a vendored file or porting a fix from BSP Forms. Holds the provenance and hash table. |
 | [`05-deploy-steps.md`](05-deploy-steps.md) | **You're deploying to production**, or helping someone who is. Step by step, with a check after each step and a troubleshooting table. Written for a developer new to the project, and for Copilot. |
+| [`PS-Work-Zone-Confirmation-wording.docx`](PS-Work-Zone-Confirmation-wording.docx) | A subject-matter expert is reviewing the wording. Word document: every string the pages show, current English and French, blank columns for new wording, and each row's location in the config so the filled-in copy can be applied to the JSON. Generated from `src/` by `deploy/make-wording-doc.py`; rebuild it after any wording change rather than editing it by hand. |
 
 **Known gaps:** [`../STATE.md`](../STATE.md) is the register of deferred work
 and decisions awaiting a human. Check there before assuming an oversight.
