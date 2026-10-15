@@ -26,10 +26,11 @@ function J([string]$s) { $b = [char]92; $s.Replace('<', "${b}u003C").Replace('>'
 
 # --- Phase 1: preflight (read-only on the tenant; only a local temp file is written) ---
 # The config targets PROD's list site (/teams/FCUWebDatastores); on dev the twin lists are on the
-# tenant root site (live-zone-lists.js), so both siteUrl lines swap to "/".
+# tenant root site (live-zone-lists.js), so all three siteUrl lines (target, source, errorLog)
+# swap to "/".
 $cfgText = Get-Content (Join-Path $src $cfgName) -Raw
 $prodStore = '"siteUrl": "/teams/FCUWebDatastores"'
-if (([regex]::Matches($cfgText, [regex]::Escape($prodStore))).Count -ne 2) { throw "$cfgName no longer has two $prodStore lines - update live-deploy.ps1" }
+if (([regex]::Matches($cfgText, [regex]::Escape($prodStore))).Count -ne 3) { throw "$cfgName no longer has three $prodStore lines - update live-deploy.ps1" }
 $cfgText = $cfgText.Replace($prodStore, '"siteUrl": "/"')
 # The resources panel: the job aid (the first "url") becomes the dev site's home page, so it shows
 # as a link; the other placeholders stay unlinked.

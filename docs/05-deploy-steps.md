@@ -72,9 +72,9 @@ Answers go to the stand-in, not SharePoint, and a reload starts fresh.
 ## Shortcut for steps 1 and 3: the DCSPad setup script
 
 [`deploy/dcspad-setup-lists.js`](../deploy/dcspad-setup-lists.js) creates
-both lists with every column (step 1) and adds **test data** for four test
-attesters (step 3's rows, for testing only). It doesn't set permissions:
-step 2 is still by hand.
+all three lists with every column (step 1) and adds **test data** for four test
+attesters (step 3's rows, for testing only). It doesn't set permissions or
+the email rule: steps 2 and 2b are still by hand.
 
 1. Open DCSPad on the portal. Either **File → Load project** and pick
    [`deploy/ps-zone-attestation-list-setup.dcspad.json`](../deploy/ps-zone-attestation-list-setup.dcspad.json),
@@ -107,9 +107,9 @@ answers. Then add the real assignments (step 3).
 If you use the script, skip to step 2, then come back to step 3 for the
 real rows.
 
-## Step 1 — Create the two lists
+## Step 1 — Create the three lists
 
-On `/teams/FCUWebDatastores`, create two **custom lists** with these exact
+On `/teams/FCUWebDatastores`, create three **custom lists** with these exact
 names. For each column: *Add column* → the type shown → type the name
 **exactly** as written (capitals, no spaces). The name you type first is the
 one the form uses. Rename the display name afterwards if you like.
@@ -140,7 +140,21 @@ Then List settings → `Title` column → Required: **No**.
 | `Attestation` | Single line of text | |
 | `AttestationTime` | Date and Time | Include time: **Yes** |
 
-✅ **Check:** both lists exist, with every column named exactly as above.
+**List 3: `PS_Zone-Attestation-Errors`** (the error log: one item per
+failure a user hits; step 2b makes it email you)
+
+| Column | Type | Settings |
+| --- | --- | --- |
+| `ErrorKind` | Single line of text | `init`, `load` or `save` |
+| `Message` | Multiple lines of text | Plain text |
+| `Detail` | Multiple lines of text | Plain text |
+| `UserEmail` | Single line of text | |
+| `EngineVersion` | Single line of text | |
+
+The form fills `Title` itself (`[kind] message`).
+
+✅ **Check:** all three lists exist, with every column named exactly as
+above.
 
 ## Step 2 — Set permissions
 
@@ -157,8 +171,35 @@ Then List settings → `Title` column → Required: **No**.
    - Create and Edit access: **Create items and edit items that were created
      by the user**
 
-✅ **Check:** an ordinary attester can open both lists, can't edit the
+**Errors list:** same as the Responses list (stop inheriting; attesters get
+the "View and Add" level; Advanced settings: read and edit only their own
+items). Attesters must be able to **add** here, or a failure they hit can't
+be logged.
+
+✅ **Check:** an ordinary attester can open the lists, can't edit the
 assignments, and sees only their own responses.
+
+## Step 2b — Have errors emailed to you
+
+On the **Errors** list: *Automate* (top bar) → *Rules* → *Create a rule* →
+**A new item is created** → set *send an email to* **you** (or the admin
+group) → *Create*.
+
+That's all. No Power Automate. Each failure an attester hits (the form
+couldn't start, couldn't load their areas, or couldn't save) adds one item,
+and the rule emails you. A page sends at most one report per kind of
+failure, so a broken list can't flood your inbox.
+
+Then set who the **users** can email. When something fails, the form shows
+the user the error with an *Email the form administrator about this
+problem* link. That link opens their mail program with a subject and the
+diagnostic details already filled in. In `src/ps-zone-attestation.json`,
+put that address in `errorContact.email` (it ships as the placeholder
+`form.admin@example.com`). The subject is `errorContact.subject`, in both
+languages.
+
+✅ **Check:** add a test item to the Errors list by hand: the rule's email
+arrives. Delete the test item.
 
 ## Step 3 — Fill in the assignments
 
@@ -233,7 +274,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-form data-validate data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.1.0"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.0"></script>
    ```
 
    It's the snippet in `webpart/ps-zone-attestation.webpart.html`, plus
@@ -243,7 +284,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.1.0"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.0"></script>
    ```
 
    It's `webpart/ps-zone-attestation-resources.webpart.html`. Both web parts
@@ -290,7 +331,7 @@ the date and `?v=` you deployed in `STATE.md`.
 - **A new version of the form's code** (`ps-zone-attestation.js` or `.css`):
   1. Download the two deployed files first (for rollback).
   2. Upload the new ones over them.
-  3. In **both** web parts, change `?v=1.1.0` to the new version (the
+  3. In **both** web parts, change `?v=1.2.0` to the new version (the
      `VERSION` line near the top of `ps-zone-attestation.js`). Without this,
      browsers may keep the old code.
   4. Repeat step 7's checks 2, 4 and 5.
@@ -312,6 +353,8 @@ the date and `?v=` you deployed in `STATE.md`.
 | Broken image for the job aid icon or thank-you art | A `design/` file is missing | Re-upload `design/` (step 5) |
 | Old behaviour after uploading new code | Browser cache | Bump `?v=` in both web parts |
 | "This form couldn't be loaded" in the **side panel** only | Its `data-config` path is wrong, or the resources JSON is broken | Check the path; undo your last edit of `ps-zone-attestation.resources.json` |
+| No email when an error is logged | The Errors list has no rule, or attesters can't add to it | Step 2b (the rule) and step 2 (Add rights on the Errors list) |
+| The error's email link goes to `form.admin@example.com` | `errorContact.email` still holds the placeholder | Step 2b |
 | A side panel item that isn't clickable | Its `url` is empty, or isn't an `https://…` or `/sites/…` address | Fix the `url` (step 4) |
 
 Still stuck: don't change the code. Note what you see (screenshot, Console

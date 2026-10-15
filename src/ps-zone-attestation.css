@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.1.0 · ps-zone-attestation.css */
+/*! PS Zone Attestation · v1.2.0 · ps-zone-attestation.css */
 /* =====================================================================
    PS Zone Attestation — additive component layer for the form engine.
    A renamed fork of bsp-forms.css (BSP Forms 0.5.1, .bspf-* → .psz-*);
@@ -361,6 +361,22 @@
   font: var(--type-body1); color: var(--fg-secondary);
 }
 .psz-editnote code { font-family: var(--font-family-mono); font-size: 12px; background: none; padding: 0; }
+/* Saving overlay — full-page scrim + a small card while a submit runs */
+.psz-saving__card {
+  max-width: 420px;
+  align-items: center; text-align: center;
+  gap: var(--space-160);
+  padding: var(--space-320) var(--space-280);
+}
+.psz-saving__card:focus { outline: none; }
+.psz-saving__card:focus-visible { outline: var(--stroke-thick) solid var(--stroke-focus); outline-offset: 2px; }
+.psz-saving__title { font: var(--type-subtitle1); color: var(--fg-primary); margin: 0; }
+.psz-saving__msg { font: var(--type-body1); color: var(--fg-secondary); margin: 0; }
+
+/* "Email the form administrator" link in an error bar or the start-up error card */
+.psz-errmail { display: inline-block; margin-top: var(--space-60); font-weight: var(--weight-semibold); }
+.psz-asg__err .psz-errmail { flex-basis: 100%; }
+
 [data-psz-form].is-suspended .psz { display: none; }
 [data-psz-form]:not(.is-suspended) > .psz-editnote { display: none; }
 [data-psz-resources].is-suspended .psz-res { display: none; }

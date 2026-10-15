@@ -1,5 +1,6 @@
 /* =====================================================================
-   PS Zone Attestation — create the two SharePoint lists and add test data.
+   PS Zone Attestation — create the three SharePoint lists (assignments,
+   responses, error log) and add test data.
 
    Run it in DCSPad: paste this whole file into the JS pane and press Run
    (or File > Load project: ps-zone-attestation-list-setup.dcspad.json).
@@ -15,7 +16,8 @@
    4. Before go-live, set MODE = "remove-test-data" and run it (dry run
       first) to delete every test row from both lists.
 
-   It does NOT set permissions. Do docs/05-deploy-steps.md step 2 by hand.
+   It does NOT set permissions or the error log's email rule. Do
+   docs/05-deploy-steps.md step 2 by hand.
    ===================================================================== */
 (async () => {
   // ------------------------------- SETTINGS -------------------------------
@@ -40,6 +42,7 @@
   const TEST_PREFIX = "TEST - ";
   const ASSIGNMENTS = "PS_Zone-Attestation-Assignments";
   const RESPONSES = "PS_Zone-Attestation-Responses";
+  const ERRORS = "PS_Zone-Attestation-Errors";
 
   // What each test attester sees. CurrentZone "" = no zone set yet: the form
   // shows a dropdown instead of confirm / change.
@@ -93,6 +96,18 @@
         ZoneChanged: { type: "Boolean", xml: '<Field Type="Boolean" Name="ZoneChanged" StaticName="ZoneChanged" DisplayName="ZoneChanged" />' },
         Attestation: { type: "Text", xml: text("Attestation") },
         AttestationTime: { type: "DateTime", xml: '<Field Type="DateTime" Name="AttestationTime" StaticName="AttestationTime" DisplayName="AttestationTime" Format="DateTime" />' },
+      },
+    },
+    // the error log (config errorLog): one item per failure a user hits; a
+    // list rule on it emails the admin (docs/05-deploy-steps.md, step 2b)
+    [ERRORS]: {
+      settings: { ReadSecurity: 2, WriteSecurity: 2 },
+      fields: {
+        ErrorKind: { type: "Text", xml: text("ErrorKind") },
+        Message: { type: "Note", xml: '<Field Type="Note" Name="Message" StaticName="Message" DisplayName="Message" NumLines="6" RichText="FALSE" />' },
+        Detail: { type: "Note", xml: '<Field Type="Note" Name="Detail" StaticName="Detail" DisplayName="Detail" NumLines="10" RichText="FALSE" />' },
+        UserEmail: { type: "Text", xml: text("UserEmail") },
+        EngineVersion: { type: "Text", xml: text("EngineVersion") },
       },
     },
   };

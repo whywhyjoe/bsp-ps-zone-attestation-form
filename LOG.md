@@ -7,6 +7,25 @@ Newest first.
 
 ---
 
+## 2026-10-14 — engine 1.2.0: error reporting, saving overlay
+
+- **Error log:** a failure the user hits (`init` once the config has
+  loaded, `load` of their areas, `save`) adds one item to the
+  `PS_Zone-Attestation-Errors` list (config `errorLog`). A SharePoint list
+  rule there emails the admin, with no Power Automate. Plain REST, so a
+  failed pnp load is reportable too. Fire-and-forget, at most one per kind
+  and 5 per page load.
+- **Email link for the user:** the same errors show an *Email the form
+  administrator about this problem* `mailto:` (config `errorContact`), with
+  the configured subject and a body pre-filled with what happened plus
+  diagnostics. Never beside a validation message. EN/FR.
+- **Saving overlay:** a full-page scrim with a spinner while a submit runs
+  ("Submitting your attestation…", don't close, refresh or go back). It
+  blocks clicks, takes focus, and has a `beforeunload` guard.
+- The DCSPad setup script and the dev list script create the Errors list.
+  The deploy guide has the third list, its permissions, and step 2b (the
+  email rule). `errorContact.email` is a placeholder until prod.
+
 ## 2026-10-14 — engine 1.1.0: resources side panel; job aid off the form
 
 The job aid card is gone from the form's header, and the intro now spans

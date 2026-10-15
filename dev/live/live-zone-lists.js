@@ -45,6 +45,17 @@ const LISTS = {
       Attestation: text('Attestation'),
       AttestationTime: '<Field Type="DateTime" Name="AttestationTime" StaticName="AttestationTime" DisplayName="AttestationTime" Format="DateTime" />'
     }
+  },
+  // the error log (config errorLog); its email rule is set by hand in the list UI
+  'PS_Zone-Attestation-Errors': {
+    readSecurity: 2,
+    fields: {
+      ErrorKind: text('ErrorKind'),
+      Message: '<Field Type="Note" Name="Message" StaticName="Message" DisplayName="Message" NumLines="6" RichText="FALSE" />',
+      Detail: '<Field Type="Note" Name="Detail" StaticName="Detail" DisplayName="Detail" NumLines="10" RichText="FALSE" />',
+      UserEmail: text('UserEmail'),
+      EngineVersion: text('EngineVersion')
+    }
   }
 };
 

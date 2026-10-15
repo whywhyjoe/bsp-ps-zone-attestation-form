@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.1.0 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.2.0 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,11 +18,13 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.1.0"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.0"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
    resources config (webpart/ps-zone-attestation-resources.webpart.html).
+   1.2.0 adds error reporting (errorLog list + errorContact mailto) and the
+   full-page saving overlay.
 
    Every global, attribute, class and storage key is renamed (PSZoneForm,
    PSZ_FORM_SETTINGS, data-psz-*, .psz-*), so the shared BSP Forms engine
@@ -54,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -293,6 +295,12 @@
     assignKeep: 'Keep current',
     assignNewPlaceholder: 'Select a new value',
     assignConfirmed: 'Confirmed', assignChanged: 'Changed', assignSelected: 'Selected',
+    savingTitle: 'Submitting…',
+    savingMessage: 'Please wait. Don’t close this page, refresh it or go back until this is done.',
+    errorMailLink: 'Email the form administrator about this problem',
+    errorMailSubject: 'Problem with the form: {title}',
+    errorMailAsk: 'What were you doing when this happened?',
+    errorMailInfo: 'Diagnostic information (please leave this in the email):',
     assignEmptyTitle: 'Nothing to complete',
     assignEmptyMessage: 'There are no items assigned to you right now.',
     assignDoneTitle: 'Already submitted',
@@ -384,6 +392,12 @@
     assignProgress: '{n} sur {total} terminé(s)',
     assignSomeDone: '{n} de vos éléments ont déjà été soumis et ne sont pas affichés.',
     assignClear: 'Effacer la sélection',
+    savingTitle: 'Envoi en cours…',
+    savingMessage: 'Veuillez patienter. Ne fermez pas cette page, ne l’actualisez pas et ne revenez pas en arrière avant la fin de l’envoi.',
+    errorMailLink: 'Envoyer un courriel au responsable du formulaire au sujet de ce problème',
+    errorMailSubject: 'Problème avec le formulaire : {title}',
+    errorMailAsk: 'Que faisiez-vous quand le problème est survenu?',
+    errorMailInfo: 'Renseignements de diagnostic (veuillez les laisser dans le courriel) :',
     assignSaved: 'Enregistré',
     assignCurrent: 'Valeur actuelle',
     assignConfirm: 'Je confirme que c’est exact',
@@ -630,6 +644,92 @@
     if (!p) return p;
     if (/^https?:/i.test(p) || p.charAt(0) === '/') return p;
     return designBase + p;
+  }
+
+  /* ------------------------------------------------------------------
+     Error log — the config's errorLog { siteUrl?, listTitle } names a
+     list; a failure the user hits (init, loading their areas, saving)
+     adds one item there, and a SharePoint list rule on that list emails
+     the admin (docs/02-sharepoint-data.md). Plain REST with a digest, NOT
+     pnpjs: a pnp bundle that failed to load is itself worth reporting.
+     Fire-and-forget: a report never throws, never blocks the form, and a
+     failed report only warns in the console. At most one report per kind
+     and ERRLOG_MAX per page load, so a broken list can't flood the inbox.
+     The mock twin is settings.mockSp.logError (dev/mock-sp.js).
+     ------------------------------------------------------------------ */
+  var ERRLOG_MAX = 5;
+  var errLogSent = { count: 0, kinds: {} };
+  var MAIL_RE = /^[^\s@<>"?&]+@[^\s@<>"?&]+\.[^\s@<>"?&]+$/;
+  // the same diagnostic lines go to the error list and into the email body
+  function diagLines(kind, err, extra, lang) {
+    var u = {};
+    try { u = getUserInfo() || {}; } catch (e) { /* no user yet */ }
+    var lines = [
+      'error: ' + kind + ': ' + String(err && err.message ? err.message : err || 'unknown error'),
+      'when: ' + new Date().toISOString(),
+      'user: ' + (u.email || userEmails(u)[0] || '(unknown)'),
+      'page: ' + location.href,
+      'engine: ' + VERSION + (lang ? ' (' + lang + ')' : ''),
+      'browser: ' + navigator.userAgent
+    ];
+    Object.keys(extra || {}).forEach(function (k) { lines.push(k + ': ' + extra[k]); });
+    return lines;
+  }
+  /* The "email the administrator" link shown with an error (config
+     errorContact { email, subject }): a mailto with the configured subject
+     and a body that asks what the user was doing, then the diagnostic
+     lines. '' when there's no (valid) contact. Kept under ~1800 characters:
+     some mail clients cut longer mailto links. */
+  function errorMailHref(contact, title, S, kind, err, extra, lang) {
+    var email = contact && String(contact.email || '').trim();
+    if (!email || !MAIL_RE.test(email)) return '';
+    var subject = contact.subject || fmtStr(S.errorMailSubject, { title: title || '' });
+    var body = [S.errorMailAsk, '', '', '', S.errorMailInfo].concat(diagLines(kind, err, extra, lang)).join('\r\n');
+    if (body.length > 1500) body = body.slice(0, 1500) + '…';
+    return 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  }
+  function logErrorItem(spec, item) {
+    if (settings.mockSp) return settings.mockSp.logError ? settings.mockSp.logError(spec, item) : Promise.resolve();
+    var web = absUrl(spec.siteUrl || '') || getPageWebUrl() || '';
+    if (!web) return resolvePageWeb().then(function (u) { if (!u) throw new Error('no-context'); return logErrorItem({ siteUrl: u, listTitle: spec.listTitle }, item); });
+    web = web.replace(/\/$/, '');
+    var J = 'application/json;odata=nometadata';
+    return fetch(web + '/_api/contextinfo', { method: 'POST', credentials: 'same-origin', headers: { accept: J } })
+      .then(function (r) { if (!r.ok) throw new Error('contextinfo HTTP ' + r.status); return r.json(); })
+      .then(function (ci) {
+        // odata=nometadata: SharePoint uses the list's own item type (no
+        // __metadata, none of pnp's cached-type trouble)
+        return fetch(web + "/_api/web/lists/getbytitle('" + encodeURIComponent(String(spec.listTitle).replace(/'/g, "''")) + "')/items", {
+          method: 'POST', credentials: 'same-origin',
+          headers: { accept: J, 'content-type': J, 'X-RequestDigest': ci.FormDigestValue },
+          body: JSON.stringify(item)
+        });
+      })
+      .then(function (r) { if (!r.ok) throw new Error('error log HTTP ' + r.status); });
+  }
+  // kind: 'init' | 'load' | 'save'. extra: plain { label: value } lines for Detail.
+  function reportError(errorLog, kind, err, extra) {
+    if (!errorLog || !errorLog.listTitle) return;
+    if (errLogSent.kinds[kind] || errLogSent.count >= ERRLOG_MAX) return;
+    errLogSent.kinds[kind] = true;
+    errLogSent.count++;
+    var msg = String(err && err.message ? err.message : err || 'unknown error');
+    var u = {};
+    try { u = getUserInfo() || {}; } catch (e) { /* no user yet */ }
+    var lines = diagLines(kind, err, extra);
+    var item = {
+      Title: ('[' + kind + '] ' + msg).slice(0, 255),
+      ErrorKind: kind,
+      Message: msg.slice(0, 4000),
+      Detail: lines.join('\n').slice(0, 4000),
+      UserEmail: (u.email || userEmails(u)[0] || '').slice(0, 255),
+      EngineVersion: VERSION
+    };
+    try {
+      Promise.resolve(logErrorItem(errorLog, item)).catch(function (e) {
+        console.warn('[PS Zone Form] error log write failed (the error itself is above):', e);
+      });
+    } catch (e) { console.warn('[PS Zone Form] error log write failed:', e); }
   }
 
   /* ------------------------------------------------------------------
@@ -997,6 +1097,12 @@
     cfg.target = cfg.target || {};
     if (!cfg.target.listTitle && !cfg.target.listId && !cfg.target.listUrl) {
       errors.push('target.listTitle, target.listUrl or target.listId is required');
+    }
+    if (cfg.errorLog != null && (typeof cfg.errorLog !== 'object' || !cfg.errorLog.listTitle)) {
+      errors.push('errorLog needs a listTitle (and optionally siteUrl)');
+    }
+    if (cfg.errorContact != null && (typeof cfg.errorContact !== 'object' || !MAIL_RE.test(String(cfg.errorContact.email || '')))) {
+      errors.push('errorContact needs an email address (and optionally a subject)');
     }
     cfg.confirmation = Object.assign({ title: null, message: null, allowAnother: true }, cfg.confirmation || {});
     cfg.attachments = Object.assign({
@@ -1586,7 +1692,8 @@
     h += '<div class="msgbar msgbar--danger" role="alert" x-show="asg.state===\'error\'" x-cloak>' +
       icon(ICONS.danger, 20).replace('class="icon', 'class="msgbar__icon icon') +
       '<div class="msgbar__body psz-asg__err"><span x-text="asg.msg"></span>' +
-      '<button type="button" class="btn btn--sm" @click="loadAssignments()">' + esc(S.assignRetry) + '</button></div></div>';
+      '<button type="button" class="btn btn--sm" @click="loadAssignments()">' + esc(S.assignRetry) + '</button>' +
+      '<a class="psz-errmail" x-show="failMail.load" :href="failMail.load">' + esc(S.errorMailLink) + '</a></div></div>';
     // a cut-off read (too many rows / earlier responses) — shown, never silent
     h += '<template x-for="(w, wi) in asg.warn" :key="wi">' +
       '<div class="msgbar msgbar--warning psz-asg__warn" role="status" x-show="asg.state===\'ready\'">' +
@@ -1880,9 +1987,11 @@
       h += '</div>';
     });
 
+    // a save failure (not a validation message) also offers the admin email link
     h += '<div class="msgbar msgbar--danger psz__pageerror" role="alert" x-show="pageError" x-cloak>' +
       icon(ICONS.danger, 20).replace('class="icon', 'class="msgbar__icon icon') +
-      '<div class="msgbar__body" x-text="pageError"></div></div>';
+      '<div class="msgbar__body"><span x-text="pageError"></span>' +
+      '<a class="psz-errmail" x-show="failMail.save" :href="failMail.save">' + esc(S.errorMailLink) + '</a></div></div>';
 
     h += '</fieldset></div>'; // .psz__lock, .psz__content
 
@@ -1941,6 +2050,19 @@
         '<button type="button" class="btn btn--primary psz-dialog__ok" @click="dlgConfirm()" x-text="dlg.ok"></button>' +
         '</div></div></div>';
     }
+
+    // Saving overlay: a submit can take a few seconds (one save per row), so
+    // while it runs a full-page scrim with a spinner says so, asks the user
+    // not to leave, and blocks clicks. A beforeunload guard backs it up
+    // (installUnloadGuard). Same design-system .scrim + .dialog as above.
+    var savingId = uid + '-saving';
+    h += '<div class="scrim psz-saving" x-show="busy" x-cloak>' +
+      '<div class="dialog psz-saving__card" role="alertdialog" aria-modal="true" aria-live="assertive" tabindex="-1"' +
+      ' aria-labelledby="' + esc(savingId) + '-t" aria-describedby="' + esc(savingId) + '-m">' +
+      '<span class="spinner spinner--48" aria-hidden="true"></span>' +
+      '<h2 class="psz-saving__title" id="' + esc(savingId) + '-t">' + esc(S.savingTitle) + '</h2>' +
+      '<p class="psz-saving__msg" id="' + esc(savingId) + '-m">' + esc(S.savingMessage) + '</p>' +
+      '</div></div>';
 
     // Result view (afterSubmit found/notFound, queryError). Everything dynamic
     // is x-text / :href; result.html is prose() output (escaped first).
@@ -2028,6 +2150,8 @@
       photoFail: {},
       filesMeta: [], dragging: false,
       pageError: '',
+      // the "email the administrator" mailto for a failed load / save ('' = none)
+      failMail: { load: '', save: '' },
       // date prompt dialog; promptAck[k] = the value the user already answered for
       dlg: { open: false, mode: 'prompt', k: null, title: '', html: '', ok: '', alt: '' },
       promptAck: {},
@@ -2047,7 +2171,7 @@
         def.carry = null;
         if (carry) {
           Object.keys(carry.values).forEach(function (k) { if (k in self.values) self.values[k] = carry.values[k]; });
-          ['page', 'view', 'filesMeta', 'promptAck', 'asg', 'me', 'result'].forEach(function (p) {
+          ['page', 'view', 'filesMeta', 'promptAck', 'asg', 'me', 'result', 'failMail'].forEach(function (p) {
             if (carry[p] !== undefined) self[p] = carry[p];
           });
           if (cfg._asg) (this.values[cfg._asg.k] || []).forEach(function (r) { r.open = false; });
@@ -2082,7 +2206,7 @@
       },
       loadAssignments: function () {
         var self = this, f = cfg._asg, k = f.k, src = f.source;
-        this.asg.state = 'loading'; this.asg.msg = ''; this.asg.warn = []; this.errors[k] = '';
+        this.asg.state = 'loading'; this.asg.msg = ''; this.asg.warn = []; this.errors[k] = ''; this.failMail.load = '';
         adapter.ready().then(function () {
           var emails = userEmails(self.readMe());
           if (!emails.length) throw new Error('no-user');
@@ -2133,6 +2257,9 @@
           else self.asg.state = 'ready';
         }).catch(function (e) {
           console.error('[PS Zone Form] assignments load failed:', e);
+          var loadInfo = { list: src.listTitle || src.listUrl };
+          reportError(cfg.errorLog, 'load', e, Object.assign({ language: cfg._lang }, loadInfo));
+          self.failMail.load = errorMailHref(cfg.errorContact, cfg.form.title, S, 'load', e, loadInfo, cfg._lang);
           self.asg.state = 'error';
           self.asg.msg = e && e.message === 'no-user' ? S.assignNoUser
             : e && e.message === 'no-context' ? S.noContext : S.assignLoadError;
@@ -2969,6 +3096,9 @@
       submitForm: function (confirmed) {
         var self = this;
         if (this.busy) return;
+        // a new attempt: the last failure's email link goes (a validation
+        // message in the same bar must never carry it)
+        this.failMail.save = '';
         // an unanswered date prompt (e.g. the form sat open overnight) is
         // asked first; the user then submits again
         var pk = this.pendingPrompt(null);
@@ -2977,6 +3107,16 @@
         if (!this.validateAll()) return;
         if (cfg.submitConfirm && confirmed !== true) { this.openSubmitConfirm(); return; }
         this.busy = true; this.pageError = '';
+        // the saving overlay takes focus, so a screen reader announces it.
+        // x-show reveals it on the next animation frame, so retry briefly
+        // until it's actually displayed (a hidden element can't take focus)
+        var focusTries = 0;
+        (function focusSaving() {
+          var card = self.$root && self.$root.querySelector('.psz-saving__card');
+          if (!card || !self.busy) return;
+          if (card.offsetParent !== null || getComputedStyle(card.parentNode).display !== 'none') { card.focus(); return; }
+          if (++focusTries < 40) setTimeout(focusSaving, 25);
+        })();
         store.submitAt = new Date(nowMs()).toISOString();
         // what was validated and confirmed is what gets saved (see buildPayload)
         store.snap = JSON.parse(JSON.stringify(this.values));
@@ -3008,6 +3148,10 @@
           var detail = e && e.message ? ' ' + fmtStr(S.submitFailedDetail, { detail: trimErr(e.message) }) : '';
           var rows = cfg._asg ? self.values[cfg._asg.k] : [];
           var saved = rows.filter(function (r) { return r.saved; }).length;
+          var saveInfo = { list: cfg.target.listTitle || cfg.target.listUrl || cfg.target.listId,
+            'rows saved': cfg._asg ? saved + ' of ' + rows.length : 'n/a' };
+          reportError(cfg.errorLog, 'save', e, Object.assign({ language: cfg._lang }, saveInfo));
+          self.failMail.save = errorMailHref(cfg.errorContact, cfg.form.title, S, 'save', e, saveInfo, cfg._lang);
           // a failed add may still have landed: the next attempt checks first
           if (cfg._asg) store.rowsUncertain = true;
           self.pageError = (e && e.message === 'no-context') ? S.noContext
@@ -3445,6 +3589,26 @@
     return note;
   }
 
+  // While any form on the page is saving, closing, reloading or leaving the
+  // page asks first (the browser's own "Leave site?" prompt; its wording
+  // can't be set). A SharePoint in-page (SPA) navigation doesn't fire this,
+  // which is what the saving overlay's click-blocking scrim is for.
+  var unloadGuardInstalled = false;
+  function installUnloadGuard() {
+    if (unloadGuardInstalled) return;
+    unloadGuardInstalled = true;
+    window.addEventListener('beforeunload', function (ev) {
+      var saving = Object.keys(NS._defs).some(function (uid) {
+        var st = NS._defs[uid].store.state;
+        return st && st.busy;
+      });
+      if (!saving) return;
+      ev.preventDefault();
+      ev.returnValue = '';
+      return '';
+    });
+  }
+
   var navWatcherInstalled = false;
   function installNavWatcher() {
     if (navWatcherInstalled) return;
@@ -3468,7 +3632,7 @@
     });
   }
 
-  function fatalCard(mount, S, detail) {
+  function fatalCard(mount, S, detail, mailHref) {
     // engine-owned failure UI: tagged so retries can clear it cleanly
     mount.querySelectorAll('[data-psz-fatal]').forEach(function (n) { n.remove(); });
     var bar = el('div', 'msgbar msgbar--danger');
@@ -3476,7 +3640,8 @@
     bar.setAttribute('role', 'alert');
     bar.innerHTML = icon(ICONS.danger, 20).replace('class="icon', 'class="msgbar__icon icon') +
       '<div class="msgbar__body">' + esc(S.configLoadError) +
-      (detail ? '<br><small>' + esc(fmtStr(S.configLoadDetail, { detail: trimErr(detail) })) + '</small>' : '') + '</div>';
+      (detail ? '<br><small>' + esc(fmtStr(S.configLoadDetail, { detail: trimErr(detail) })) + '</small>' : '') +
+      (mailHref ? '<br><a class="psz-errmail" href="' + esc(mailHref) + '">' + esc(S.errorMailLink) + '</a>' : '') + '</div>';
     mount.appendChild(bar);
   }
 
@@ -3518,7 +3683,7 @@
   function snapshotState(st) {
     var out = {};
     // plain-data copies (answers, rows, result text); open menus/dialogs don't carry
-    ['values', 'page', 'view', 'filesMeta', 'promptAck', 'asg', 'me', 'result'].forEach(function (p) {
+    ['values', 'page', 'view', 'filesMeta', 'promptAck', 'asg', 'me', 'result', 'failMail'].forEach(function (p) {
       out[p] = st[p] === undefined ? undefined : JSON.parse(JSON.stringify(st[p]));
     });
     return out;
@@ -3550,6 +3715,7 @@
   function initMount(mount) {
     ensureStyles();
     installNavWatcher();
+    installUnloadGuard();
     var configUrl = mount.getAttribute('data-config') || '';
 
     if (inEditMode()) {
@@ -3604,11 +3770,23 @@
       });
     }).catch(function (e) {
       console.error('[PS Zone Form] init failed:', e);
+      // reportable once the config has loaded (it names the error list); a
+      // config that can't be fetched at all shows on the page and console only
+      if (rawCfg && rawCfg.errorLog) reportError(rawCfg.errorLog, 'init', e, { config: configUrl });
+      var lang = rawCfg ? activeLang(rawCfg) : 'en';
+      var S0 = resStrings(lang);
+      var mail = '';
+      try {
+        if (rawCfg && rawCfg.errorContact) {
+          mail = errorMailHref(localize(rawCfg.errorContact, lang), localize(rawCfg.form && rawCfg.form.title, lang),
+            S0, 'init', e, { config: configUrl }, lang);
+        }
+      } catch (x) { /* a malformed errorContact must not hide the real error */ }
       // config fetches and library loads can fail transiently — leave the
       // mount retryable by the next scan / script re-evaluation
       mount.__pszInit = false;
       mount.setAttribute('data-psz-state', 'error');
-      fatalCard(mount, DEFAULT_STRINGS, e && e.message);
+      fatalCard(mount, S0, e && e.message, mail);
     });
   }
 

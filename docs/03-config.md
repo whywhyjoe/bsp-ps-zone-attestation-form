@@ -131,6 +131,53 @@ Two tabs submitting at the same instant could still save a row twice. Only a
 uniqueness rule on the list would stop that, and it would also block the next
 attestation round.
 
+## When something fails — `errorLog`, `errorContact`
+
+Two optional top-level keys in the form config. They're independent, and the
+form ships with both:
+
+```json
+"errorLog": { "siteUrl": "/teams/FCUWebDatastores", "listTitle": "PS_Zone-Attestation-Errors" },
+"errorContact": {
+  "email": "form.admin@example.com",
+  "subject": { "en": "PS Zone Attestation: problem report", "fr": "…" }
+}
+```
+
+- **`errorLog`**: a failure the user hits adds one item to this list. The
+  failures are: the form couldn't start (`init`, once the config itself has
+  loaded), couldn't load their areas (`load`), or couldn't save (`save`). The
+  item carries `Title` (`[kind] message`), `ErrorKind`, `Message`, `Detail`
+  (engine version, page, browser, time, user, list, rows saved), `UserEmail`
+  and `EngineVersion`. A **SharePoint list rule** on that list emails the
+  admin, with no Power Automate (`05-deploy-steps.md`, step 2b). The write is
+  plain REST, so it works even when pnpjs failed to load. It's
+  fire-and-forget: a failed write only warns in the console. At most one
+  report per kind and 5 per page load. Needs `listTitle`; `siteUrl`
+  defaults to the page's site. Attesters need **Add** on the list.
+- **`errorContact`**: with any of those errors, the user also sees an
+  *Email the form administrator about this problem* link (French when the
+  page is French). It's a `mailto:` to `email`, with `subject` (default
+  "Problem with the form: {form title}"), and a body that asks what they
+  were doing, then lists the same diagnostic lines. It's kept under ~1,800
+  characters, because some mail clients cut longer links. A
+  validation message never carries the link. `email` must be an address, or
+  the config is refused. **It ships as a placeholder
+  (`form.admin@example.com`): set it before go-live.**
+- Not covered: a config that can't be fetched at all (the page shows the
+  error card, and the console has the details), and the resources panel
+  (static content).
+
+## While saving — the overlay
+
+From the confirmed submit until the save finishes (one item per area, so a
+few seconds), a full-page scrim with a spinner covers the page. It says
+"Submitting…" and asks the user not to close, refresh or go back. It blocks
+clicks, takes focus (screen readers announce it), and the browser asks
+before the page is closed or reloaded. Its wording is the strings
+`savingTitle` and `savingMessage`, overridable in `strings` (EN/FR) like any
+other. The form sets `savingTitle` to "Submitting your attestation…".
+
 ## The resources panel — `src/ps-zone-attestation.resources.json`
 
 A second web part for the page's narrow (right) column, mounted by the same

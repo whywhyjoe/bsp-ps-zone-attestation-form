@@ -47,6 +47,25 @@ or put the area name in it.
 
 The form fills `Title` itself (`<area> — <email>`).
 
+**PS_Zone-Attestation-Errors** (the error log, config `errorLog`; one item
+per failure a user hits):
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `Title` | Single line of text | `[kind] message`, filled by the form. |
+| `ErrorKind` | Single line of text | `init` (couldn't start), `load` (couldn't load the user's areas), `save` (couldn't save). |
+| `Message` | Multiple lines, plain text | The error's message. |
+| `Detail` | Multiple lines, plain text | One `label: value` per line: when, user, page, engine and language, browser, the list involved, rows saved. |
+| `UserEmail` | Single line of text | The user who hit it, when known. |
+| `EngineVersion` | Single line of text | The engine's `VERSION`. |
+
+`Created` says when. **The email to the admin is a SharePoint list rule**
+on this list ("A new item is created" → send an email), set by hand in the
+list UI (*Automate → Rules*). There's no flow. The engine writes the item
+with plain REST and a request digest, not pnpjs, so a failed pnp load can
+still be reported. It's fire-and-forget: a write that fails only warns in
+the console. At most one report per kind and 5 per page load.
+
 ## Permissions
 
 - **Assignments:** Read for everyone who takes the attestation.
@@ -54,6 +73,9 @@ The form fills `Title` itself (`<area> — <email>`).
   Items, Add Items, Open, View Pages** and no Edit or Delete (dev calls it
   "View and Add"). Advanced settings: **Read items that were created by the
   user** and **Create items and edit items that were created by the user**.
+- **Errors:** set up like Responses: attesters can **add** (or a failure
+  they hit can't be logged) and read only their own items. The admin who
+  owns the email rule needs to read everything.
 - Owners keep Full Control. Granting on the lists gives Limited Access to
   the site automatically.
 

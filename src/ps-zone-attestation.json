@@ -1,5 +1,5 @@
 {
-  "$comment": "Physical Security Zones Attestation. Rows come from PS_Zone-Attestation-Assignments (filtered to the signed-in user's email). Each row shows the area's current zone (CurrentZone) to confirm, or to change through the dropdown, and saves one item to PS_Zone-Attestation-Responses: ZoneSelection = the answer, PreviousZone = the current zone, ZoneChanged = whether they differ. An area with no CurrentZone gets the dropdown straight away. Both lists live on /teams/FCUWebDatastores (target.siteUrl and source.siteUrl); the page runs on /sites/FCUPortal. Users need read on the Assignments list and Add + View (own items only) on Responses. The job aid and other links live in the resources panel (ps-zone-attestation.resources.json), not here. Bilingual: every { en, fr } pair follows the language from bilingual/intl.js. Zone VALUES (Public, Public Plus, Standards, Secure Restricted, High Security) are saved in English whatever the language, and CurrentZone must hold them spelled exactly so; only the labels are translated. The French zone names and all the zone descriptions are drafts, to be replaced.",
+  "$comment": "Physical Security Zones Attestation. Rows come from PS_Zone-Attestation-Assignments (filtered to the signed-in user's email). Each row shows the area's current zone (CurrentZone) to confirm, or to change through the dropdown, and saves one item to PS_Zone-Attestation-Responses: ZoneSelection = the answer, PreviousZone = the current zone, ZoneChanged = whether they differ. An area with no CurrentZone gets the dropdown straight away. Both lists live on /teams/FCUWebDatastores (target.siteUrl and source.siteUrl); the page runs on /sites/FCUPortal. Users need read on the Assignments list and Add + View (own items only) on Responses. errorLog names the list a failed load, save or start-up writes one item to; a SharePoint list rule there emails the admin (docs/02-sharepoint-data.md). The job aid and other links live in the resources panel (ps-zone-attestation.resources.json), not here. Bilingual: every { en, fr } pair follows the language from bilingual/intl.js. Zone VALUES (Public, Public Plus, Standards, Secure Restricted, High Security) are saved in English whatever the language, and CurrentZone must hold them spelled exactly so; only the labels are translated. The French zone names and all the zone descriptions are drafts, to be replaced.",
   "form": {
     "title": { "en": "Physical Security Zones Attestation", "fr": "Attestation des zones de sécurité physique" },
     "intro": {
@@ -18,6 +18,14 @@
       "UserEmail": "{user:email}",
       "AttestationTime": "{now}"
     }
+  },
+  "errorLog": {
+    "siteUrl": "/teams/FCUWebDatastores",
+    "listTitle": "PS_Zone-Attestation-Errors"
+  },
+  "errorContact": {
+    "email": "form.admin@example.com",
+    "subject": { "en": "PS Zone Attestation: problem report", "fr": "Attestation des zones de sécurité : signalement d'un problème" }
   },
   "submitConfirm": {
     "title": { "en": "Submit your attestation?", "fr": "Soumettre votre attestation?" },
@@ -39,6 +47,7 @@
   },
   "strings": {
     "submit": { "en": "Submit attestation", "fr": "Soumettre l'attestation" },
+    "savingTitle": { "en": "Submitting your attestation…", "fr": "Envoi de votre attestation…" },
     "assignLoading": { "en": "Loading your assigned areas…", "fr": "Chargement des zones qui vous sont attribuées…" },
     "assignLoadError": {
       "en": "Your assigned areas couldn't be loaded. Try again in a moment.",

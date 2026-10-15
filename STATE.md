@@ -10,7 +10,7 @@ the `project-state` skill.
 
 | | |
 | --- | --- |
-| **Version** | engine 1.1.0 (fork of BSP Forms 0.5.1, plus the resources panel) |
+| **Version** | engine 1.2.0 (fork of BSP Forms 0.5.1, plus the resources panel, error reporting, saving overlay) |
 | **Deployed** | **Dev** (2026-10-14, `?v=1.1.0`, form + resources panel; live run 24/24): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, page `SitePages/ps-zone-attestation-test.aspx`, lists on the tenant root. **Prod:** not yet. |
 | **Last shipped** | — (repo created 2026-10-14; two review rounds since; harness suite 100/100 green) |
 
@@ -25,6 +25,9 @@ dev before prod.
 - [ ] Non-admin dev run green (above).
 - [ ] Real zone descriptions and the official French zone names (form JSON
       only; today they're `[Placeholder]` drafts).
+- [ ] The real admin address for `errorContact.email` in the form config
+      (a placeholder, `form.admin@example.com`, today), the Errors list on
+      prod, and its email rule (`docs/05-deploy-steps.md`, step 2b).
 - [ ] Resources panel content (`src/ps-zone-attestation.resources.json`): the
       job aid and standards document URLs, the information text, the contact.
       All placeholders today.

@@ -10,7 +10,7 @@
    Every write is recorded on window.__PSZ_MOCK_WRITES__ so a test (or
    you, in devtools) can assert exactly what would have hit SharePoint.
    Knobs (set before the page loads, or in devtools):
-     PSZ_MOCK_FAIL = { addItem | getAssignments | getRowKeys | … : true,
+     PSZ_MOCK_FAIL = { addItem | getAssignments | getRowKeys | logError | … : true,
                        addItemAfter: n, addItemLostAfter: n }
      PSZ_MOCK_ASSIGNMENTS = [rows]   replaces the default rows below
      PSZ_MOCK_DONE = ['12', …]       keys already in the Responses list
@@ -97,6 +97,14 @@
       console.info('[mock-sp] addItem #' + id, payload);
       var ms = window.PSZ_MOCK_ADD_MS != null ? window.PSZ_MOCK_ADD_MS : 500;
       return delay({ id: id, item: { __mockItemId: id, attachmentFiles: { add: function () { } } } }, ms);
+    },
+    // the error log (config errorLog): one item per reported failure.
+    // PSZ_MOCK_FAIL.logError makes the report itself fail.
+    logError: function (spec, item) {
+      var fail = maybeFail('logError');
+      if (fail) return fail;
+      writes.push({ op: 'logError', list: spec.listTitle, site: spec.siteUrl || '', item: JSON.parse(JSON.stringify(item)) });
+      return delay(null, 100);
     },
     getListFields: function (spec) {
       var name = spec ? (spec.listTitle || spec.listUrl) : TARGET;

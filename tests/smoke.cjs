@@ -399,7 +399,21 @@ async function testZoneAttestation(browser) {
   check('mid-save: busy, fieldset + checkbox disabled', mid.busy && mid.fieldset && mid.cbDisabled, JSON.stringify(mid));
   check('mid-save: clearing a row is refused', mid.r3 === 'High Security', mid.r3);
   check('mid-save: keep / change are refused', JSON.stringify(mid.r1) === '["change","Secure Restricted"]', JSON.stringify(mid.r1));
+  // the saving overlay: a full-page scrim with a spinner and a don't-leave
+  // message, focused; leaving the page asks first
+  const leaveGuard = () => page.evaluate(() => { const e = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; });
+  const scrim = await page.evaluate(() => {
+    const s = document.querySelector('.psz-saving'), r = s.getBoundingClientRect();
+    return { shown: getComputedStyle(s).display !== 'none', covers: r.top <= 0 && r.left <= 0 && r.bottom >= innerHeight - 1 && r.right >= innerWidth - 20,
+      text: s.textContent, spinner: !!s.querySelector('.spinner'), focused: document.activeElement === s.querySelector('.psz-saving__card') };
+  });
+  check('mid-save: a full-page scrim with a spinner says "Submitting your attestation…" and not to leave; it has focus',
+    scrim.shown && scrim.covers && scrim.spinner && /Submitting your attestation…/.test(scrim.text) && /Don’t close this page, refresh it or go back/.test(scrim.text) && scrim.focused,
+    JSON.stringify(scrim));
+  check('mid-save: leaving the page asks first (beforeunload)', await leaveGuard());
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 8000 });
+  check('saved: the scrim is gone and leaving no longer asks',
+    (await page.evaluate(() => getComputedStyle(document.querySelector('.psz-saving')).display === 'none')) && !(await leaveGuard()));
   let saved = await zoneAdds(page);
   const zb = Object.fromEntries(saved.map(p => [p.LookupID, p]));
   check('saved what was confirmed, not what changed mid-save',
@@ -507,6 +521,104 @@ async function testZoneAttestation(browser) {
     ['previousColumn without source.currentColumn → error card', cfg => { delete cfg.pages[0].sections[1].fields[0].source.currentColumn; }],
     ['previousColumn = column → error card', cfg => { cfg.pages[0].sections[1].fields[0].previousColumn = 'ZoneSelection'; }],
     ['changedColumn = a rowColumns target → error card', cfg => { cfg.pages[0].sections[1].fields[0].changedColumn = 'AreaName'; }]
+  ]) {
+    ({ ctx, page } = await openZone(browser, { mutate }));
+    const state = await page.getAttribute('[data-psz-form]', 'data-psz-state');
+    check(name, state === 'error' && await page.locator('[data-psz-fatal]').isVisible(), 'state=' + state);
+    await ctx.close();
+  }
+}
+
+/* Error reporting: a failure the user hits writes one item to the errorLog
+   list (a SharePoint list rule there emails the admin) and shows a mailto
+   link to errorContact with a subject and the diagnostic lines. */
+const logWrites = page => page.evaluate(() => window.__PSZ_MOCK_WRITES__.filter(w => w.op === 'logError'));
+function parseMail(href) {
+  if (!href) return null;
+  const m = /^mailto:([^?]+)\?subject=([^&]*)&body=(.*)$/.exec(href);
+  return m ? { to: m[1], subject: decodeURIComponent(m[2]), body: decodeURIComponent(m[3]) } : { bad: href };
+}
+async function testErrorReporting(browser) {
+  console.log('error reporting:');
+  const mailIn = (page, sel) => page.evaluate(s => { const a = document.querySelector(s); return a && a.offsetParent !== null ? a.getAttribute('href') : null; }, sel);
+
+  // a failed load: one list item, and the email link in the error bar
+  let { ctx, page } = await openZone(browser, { fail: { getAssignments: true } });
+  const ver = await page.evaluate(() => window.PSZoneForm.version);
+  let logs = await logWrites(page);
+  check('failed load → one error-log item (list, kind, title, message, user, version)',
+    logs.length === 1 && logs[0].list === 'PS_Zone-Attestation-Errors' && logs[0].item.ErrorKind === 'load' &&
+    /^\[load\] mock getAssignments failure/.test(logs[0].item.Title) && /getAssignments/.test(logs[0].item.Message) &&
+    logs[0].item.UserEmail === 'dev.tester@example.com' && logs[0].item.EngineVersion === ver, JSON.stringify(logs));
+  check('…its Detail carries the diagnostics (engine, page, browser, list)',
+    logs[0].item.Detail.includes('engine: ' + ver) && /page: http/.test(logs[0].item.Detail) &&
+    /browser: /.test(logs[0].item.Detail) && /list: PS_Zone-Attestation-Assignments/.test(logs[0].item.Detail), logs[0].item.Detail);
+  let mail = parseMail(await mailIn(page, '[data-psz-field="zones"] .psz-errmail'));
+  check('failed load → mailto link to the contact, with the configured subject',
+    mail && mail.to === 'form.admin@example.com' && mail.subject === 'PS Zone Attestation: problem report', JSON.stringify(mail));
+  check('…and a body asking what happened, then the diagnostics',
+    /^What were you doing/.test(mail.body) && /error: load: mock getAssignments failure/.test(mail.body) &&
+    /user: dev\.tester@example\.com/.test(mail.body) && mail.body.includes('engine: ' + ver + ' (en)') && mail.body.length < 1600, mail.body);
+  await page.locator('[data-psz-field="zones"] .msgbar button').click();   // Try again, still failing
+  await page.waitForTimeout(900);
+  check('failing again → no second report of the same kind; link still offered',
+    (await logWrites(page)).length === 1 && !!(await mailIn(page, '[data-psz-field="zones"] .psz-errmail')));
+  check('no page errors (error reporting, load)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // a failed save: a report and the link in the page error; a validation
+  // message in the same bar never carries the link
+  ({ ctx, page } = await openZone(browser, { fail: { addItem: true } }));
+  await zonePick(page, 0, L.pub); await zonePick(page, 1, L.pub); await zonePick(page, 2, L.plus);
+  await page.locator('[data-psz-field="attestation"] input').check();
+  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Confirm');
+  await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
+  await page.waitForTimeout(300);
+  logs = await logWrites(page);
+  mail = parseMail(await mailIn(page, '.psz__pageerror .psz-errmail'));
+  check('failed save → a "save" report, rows saved in the detail',
+    logs.length === 1 && logs[0].item.ErrorKind === 'save' && /rows saved: 0 of 3/.test(logs[0].item.Detail), JSON.stringify(logs.map(l => l.item.Detail)));
+  check('failed save → the page error offers the email link', !!mail && /error: save: /.test(mail.body), JSON.stringify(mail));
+  await page.locator('[data-psz-field="attestation"] input').uncheck();
+  await navClick(page, 'Submit attestation'); await page.waitForTimeout(250);
+  check('a validation message in the same bar → no email link',
+    await page.locator('.psz__pageerror').isVisible() && !(await mailIn(page, '.psz__pageerror .psz-errmail')));
+  await ctx.close();
+
+  // a start-up failure (here a bad config): the error card has the link, and it's reported
+  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.form.languages = ['de']; } }));
+  logs = await logWrites(page);
+  mail = parseMail(await mailIn(page, '[data-psz-fatal] .psz-errmail'));
+  check('start-up failure → "init" report + email link on the error card',
+    logs.length === 1 && logs[0].item.ErrorKind === 'init' && !!mail && /error: init: /.test(mail.body), JSON.stringify([logs.length, mail]));
+  await ctx.close();
+
+  // French: link text and subject follow the language
+  ({ ctx, page } = await openZone(browser, { fail: { getAssignments: true }, query: '&lang=fr' }));
+  mail = parseMail(await mailIn(page, '[data-psz-field="zones"] .psz-errmail'));
+  check('French: link text, subject and body in French',
+    (await page.locator('[data-psz-field="zones"] .psz-errmail').textContent()).startsWith('Envoyer un courriel') &&
+    /^Attestation des zones/.test(mail.subject) && /^Que faisiez-vous/.test(mail.body) && /\(fr\)/.test(mail.body), JSON.stringify(mail));
+  await ctx.close();
+
+  // a report that itself fails never breaks the form
+  ({ ctx, page } = await openZone(browser, { fail: { getAssignments: true, logError: true } }));
+  check('error-log write fails → the error and link still show, no page errors',
+    await page.locator('[data-psz-field="zones"] .msgbar--danger').isVisible() &&
+    !!(await mailIn(page, '[data-psz-field="zones"] .psz-errmail')) && page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // neither configured: no report, no link
+  ({ ctx, page } = await openZone(browser, { fail: { getAssignments: true }, mutate: cfg => { delete cfg.errorLog; delete cfg.errorContact; } }));
+  check('no errorLog / errorContact → no report, no link',
+    (await logWrites(page)).length === 0 && !(await mailIn(page, '[data-psz-field="zones"] .psz-errmail')));
+  await ctx.close();
+
+  // config errors
+  for (const [name, mutate] of [
+    ['errorLog without listTitle → error card', cfg => { delete cfg.errorLog.listTitle; }],
+    ['errorContact with a bad email → error card', cfg => { cfg.errorContact.email = 'not an address'; }]
   ]) {
     ({ ctx, page } = await openZone(browser, { mutate }));
     const state = await page.getAttribute('[data-psz-form]', 'data-psz-state');
@@ -877,6 +989,7 @@ async function testResources(browser) {
   try {
     await testEditMode(browser);
     await testZoneAttestation(browser);
+    await testErrorReporting(browser);
     await testStandalone(browser);
     await testResources(browser);
   } finally {
