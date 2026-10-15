@@ -1,0 +1,40 @@
+{
+  "$comment": "Employee access list: a page of its own, linked from the zone form's notice (form.vars.accessListUrl) and opened in a new tab. It shows each of the signed-in user's areas (their rows in PS_Zone-Attestation-Assignments, matched on UserEmail) with the employees listed for that area in PS_Zone-Attestation-Access (AreaName must match the Assignments AreaName exactly; case and outer spaces don't matter). For information only: nothing is saved. Users need read on both lists. vars.formUrl is the zone form's page: the back link, and the link in the intro, return there (closing this tab when it was opened from the form). The French texts are drafts.",
+  "languages": ["en", "fr"],
+  "title": { "en": "Employee access to your work zones", "fr": "Accès des employés à vos zones de travail" },
+  "back": { "en": "Back to confirmation form", "fr": "Retour au formulaire de confirmation" },
+  "intro": {
+    "en": "This list is for your information only. There is no need to confirm this employee access list. Please confirm work zones using the [zone confirmation tool]({var:formUrl}).",
+    "fr": "Cette liste vous est fournie à titre d'information seulement. Vous n'avez pas à confirmer cette liste des accès des employés. Veuillez confirmer les zones de travail au moyen de l'[outil de confirmation des zones]({var:formUrl})."
+  },
+  "vars": { "formUrl": "/sites/FCUPortal/SitePages/PS-Work-Zone-Confirmation.aspx" },
+  "assignments": {
+    "siteUrl": "/teams/FCUWebDatastores",
+    "listTitle": "PS_Zone-Attestation-Assignments",
+    "userColumn": "UserEmail",
+    "labelColumn": "AreaName",
+    "orderBy": "AreaName"
+  },
+  "access": {
+    "siteUrl": "/teams/FCUWebDatastores",
+    "listTitle": "PS_Zone-Attestation-Access",
+    "areaColumn": "AreaName",
+    "nameColumn": "EmployeeName",
+    "emailColumn": "EmployeeEmail"
+  },
+  "empty": {
+    "title": { "en": "No areas assigned", "fr": "Aucun emplacement attribué" },
+    "message": {
+      "en": "There are no areas assigned to you. If you think that's wrong, contact your Physical Security team.",
+      "fr": "Aucun emplacement ne vous est attribué. Si vous pensez qu'il s'agit d'une erreur, communiquez avec votre équipe de la sécurité physique."
+    }
+  },
+  "errorLog": {
+    "siteUrl": "/teams/FCUWebDatastores",
+    "listTitle": "PS_Zone-Attestation-Errors"
+  },
+  "errorContact": {
+    "email": "form.admin@example.com",
+    "subject": { "en": "PS Work Zone access list: problem report", "fr": "Liste des accès aux zones de travail : signalement d'un problème" }
+  }
+}

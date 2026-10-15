@@ -35,11 +35,14 @@
 <body>
   <div class="harness-bar">PS Zone Attestation · page harness <small>— form + resources panel, mock SharePoint</small>
     <button type="button" onclick="window.intl && intl.setLang('en')">EN</button><button type="button" onclick="window.intl && intl.setLang('fr')">FR</button>
-    <a href="index.html" onclick="this.href = 'index.html' + location.search">← Form only</a></div>
+    <a href="index.html" onclick="this.href = 'index.html' + location.search">← Form only</a>
+    <a href="access.html" onclick="this.href = 'access.html' + location.search">Access list →</a></div>
 
   <script src="mock-sp.js"></script>
   <script>
-    window.PSZ_FORM_SETTINGS = { mockSp: window.PSZ_MOCK_SP };
+    // vars: the access-list link points at the harness page beside this one
+    window.PSZ_FORM_SETTINGS = { mockSp: window.PSZ_MOCK_SP,
+      vars: { accessListUrl: location.pathname.replace(/[^/]*$/, '') + 'access.html' } };
   </script>
   <div class="harness-page">
     <!-- web part 1: the form (¾ column) -->

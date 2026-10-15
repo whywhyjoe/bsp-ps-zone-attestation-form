@@ -1,0 +1,17 @@
+<!-- =====================================================================
+  Physical Security Work Zone Confirmation — employee access list snippet
+  ---------------------------------------------------------------------
+  The access list page: each of the signed-in user's areas with the
+  employees who have access to it. For information only. Paste into a
+  Modern Script Editor web part on a page of its own (one full-width
+  column), the page the form's notice links to (form.vars.accessListUrl
+  in ps-zone-attestation.json). TENANT is the tenant host.
+
+  Same engine script as the form, with the same ?v=. Its wording, lists
+  and the link back to the form (vars.formUrl) are in
+  ps-zone-attestation.access.json (fetched uncached: live on the next
+  page load, no ?v= bump).
+  ===================================================================== -->
+
+<div data-psz-access data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.access.json"></div>
+<script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.0"></script>

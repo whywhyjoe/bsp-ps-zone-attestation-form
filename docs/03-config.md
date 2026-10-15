@@ -1,20 +1,23 @@
-# The configs — `src/ps-zone-attestation.json` and `.resources.json`
+# The configs — `src/ps-zone-attestation.json`, `.resources.json`, `.access.json`
 
-Everything a business owner might ask to change lives in two JSON files:
+Everything a business owner might ask to change lives in three JSON files:
 
 - `ps-zone-attestation.json`, **the form**: wording in both languages, the
-  five zones and their descriptions, the list names.
+  notices, the five zones and their descriptions, the list names.
 - `ps-zone-attestation.resources.json`, **the side panel**: the job aid and
   document links, the information text and the contact (see *The resources
-  panel* at the end).
+  panel*).
+- `ps-zone-attestation.access.json`, **the employee access list page** (see
+  *The employee access list* at the end).
 
-Both are fetched uncached (`cache: 'no-cache'`), so an edit to the
+All are fetched uncached (`cache: 'no-cache'`), so an edit to the
 **deployed** copy is live on the next page load, with no `?v=` bump.
 
 **Keep the hand formatting.** `dev/live/live-deploy.ps1` finds exact text in
-them: `"siteUrl": "/teams/FCUWebDatastores"` twice in the form config, and the
-first `"url": ""` in the resources config. Edit them as text, never
-round-trip them through a JSON serializer.
+them: `"siteUrl": "/teams/FCUWebDatastores"` three times in the form config
+and three times in the access config, the `accessListUrl` and `formUrl`
+lines, and the first `"url": ""` in the resources config. Edit them as text,
+never round-trip them through a JSON serializer.
 
 This page covers the keys this form uses. The engine accepts more (other
 field types, attachments, business time…), inherited from BSP Forms 0.5.1,
@@ -40,8 +43,15 @@ hold values spelled exactly as in `choices`.
 
 | Key | In this form | Notes |
 | --- | --- | --- |
-| `title`, `intro` | EN/FR pairs | `intro` takes `[text](url)` links (http(s), mailto, `/…`, `#…`; anything else stays literal). |
+| `title`, `intro` | EN/FR pairs | Title "Physical Security Work Zone Confirmation" (1.3.0). `intro` takes `[text](url)` links (http(s), mailto, `/…`, `#…`; anything else stays literal). |
 | `appearance` | card · band · sky | Frame, header band, band tint (`sky` `blue` `neutral`). |
+| `vars` | `accessListUrl` | Values for `{var:name}`. `accessListUrl` is the access list page, used by the notice link. `PSZ_FORM_SETTINGS.vars` on the page overrides them (the dev harness does). |
+
+Links in config text that leave the page (`http(s)`, `mailto:`, `/…`) open in
+a new tab and carry `data-interception="off"`. Without that attribute a
+modern SharePoint page catches the click on a same-tenant link and navigates
+**in place**, whatever the `target`, which would replace a half-filled form
+(found on the dev tenant with 1.3.0).
 
 Since 1.1.0 the form has **no header card**: the job aid moved to the
 resources panel, and the intro uses the full header width. The engine still
@@ -69,7 +79,7 @@ when editing on the tenant.
 | `siteUrl` | `/teams/FCUWebDatastores` | The lists' site; the page is on `/sites/FCUPortal`. |
 | `listTitle` | `PS_Zone-Attestation-Responses` | `listUrl` (survives a rename) or `listId` may replace it. |
 | `titleTemplate` | `{row:AreaName} — {user:email}` | Fills `Title`. |
-| `set` | `UserName`, `UserEmail`, `AttestationTime` | `{user:name}`, `{user:email}`, `{now}` (one ISO UTC instant shared by every row of a submit; SharePoint shows it in the site's time zone). |
+| `set` | `UserName`, `UserEmail`, `AttestationTime`, `Attestation` | `{user:name}`, `{user:email}`, `{now}` (one ISO UTC instant shared by every row of a submit; SharePoint shows it in the site's time zone), and the literal `Confirmed`: submitting is the confirmation (1.3.0; it was a checkbox before). |
 
 ## `submitConfirm`, `confirmation`, `strings`
 
@@ -110,16 +120,31 @@ target, two assignments fields, `previousColumn` without
 `source.currentColumn`, `previousColumn` equal to `column`, `changedColumn`
 equal to a `rowColumns` target, and a language other than `en`/`fr`.
 
-## The attestation checkbox
+## The notices (`type: "note"`)
 
-`attestation` is a `boolean` with `control: "checkbox"`, `required`, and
-`values: { "on": "Confirmed", "off": "" }` saved to `Attestation` on every
-row's item. Its section has `tint: "blue"`.
+Since 1.3.0 there's no attestation checkbox. Four info bars (`style: "info"`)
+carry the messages instead, in the `notices` section (first) and the
+`closing` section (last):
+
+| `id` | Where | Says |
+| --- | --- | --- |
+| `reviewNotice` | top | Any change to a zone will be reviewed, and Physical Security will contact you. |
+| `accessNotice` | top | A link to the employee access list, `[employee access list]({var:accessListUrl})`. |
+| `changeNotice` | bottom | The review message again, **only while some row is changed**: `visibleWhen: { "field": "zones", "op": "anyChanged" }`. |
+| `contactNotice` | bottom | "If you have questions or concerns, contact … at …", with a `mailto:` link. **Placeholder: set before go-live.** |
+
+`{var:name}` in a note's text is filled from `form.vars` when the config is
+read. `anyChanged` (1.3.0) is a rule op for an `assignments` field: true when
+some row's answer differs from its current zone, counting a first zone on a
+row that had none (the same test as `ZoneChanged`). Confirming a zone or
+*Keep current zone* doesn't count. The validator refuses `anyChanged` on any
+other field type.
 
 ## Submit, step by step
 
-1. Validate every row and the checkbox; focus goes to the first problem.
-2. `submitConfirm` asks. Nothing is saved until Confirm.
+1. Validate every row; focus goes to the first problem.
+2. `submitConfirm` asks ("Submit your confirmations?"). Nothing is saved
+   until Confirm.
 3. The answers are snapshotted and the form locks.
 4. If an earlier attempt failed, the list is asked first which of the unsaved
    rows already landed (`reconcileRows`), and those are skipped.
@@ -129,7 +154,7 @@ row's item. Its section has `tint: "blue"`.
 
 Two tabs submitting at the same instant could still save a row twice. Only a
 uniqueness rule on the list would stop that, and it would also block the next
-attestation round.
+confirmation round.
 
 ## When something fails — `errorLog`, `errorContact`
 
@@ -140,7 +165,7 @@ form ships with both:
 "errorLog": { "siteUrl": "/teams/FCUWebDatastores", "listTitle": "PS_Zone-Attestation-Errors" },
 "errorContact": {
   "email": "form.admin@example.com",
-  "subject": { "en": "PS Zone Attestation: problem report", "fr": "…" }
+  "subject": { "en": "PS Work Zone Confirmation: problem report", "fr": "…" }
 }
 ```
 
@@ -154,7 +179,8 @@ form ships with both:
   plain REST, so it works even when pnpjs failed to load. It's
   fire-and-forget: a failed write only warns in the console. At most one
   report per kind and 5 per page load. Needs `listTitle`; `siteUrl`
-  defaults to the page's site. Attesters need **Add** on the list.
+  defaults to the page's site. Users need **Add** on the list. The access
+  list page reports its own failures the same way, as kind `access`.
 - **`errorContact`**: with any of those errors, the user also sees an
   *Email the form administrator about this problem* link (French when the
   page is French). It's a `mailto:` to `email`, with `subject` (default
@@ -176,7 +202,7 @@ few seconds), a full-page scrim with a spinner covers the page. It says
 clicks, takes focus (screen readers announce it), and the browser asks
 before the page is closed or reloaded. Its wording is the strings
 `savingTitle` and `savingMessage`, overridable in `strings` (EN/FR) like any
-other. The form sets `savingTitle` to "Submitting your attestation…".
+other. The form sets `savingTitle` to "Submitting your confirmations…".
 
 ## The resources panel — `src/ps-zone-attestation.resources.json`
 
@@ -217,3 +243,51 @@ with it.
   `feature`/`link`/`text` without `title`, a `contact` without `name`, a
   language other than `en`/`fr`. A contact `email` that isn't an address is
   shown without a mailto link.
+
+## The employee access list — `src/ps-zone-attestation.access.json`
+
+A third web part, on a **page of its own**, mounted by the same engine:
+`<div data-psz-access data-config="…/ps-zone-attestation.access.json">`
+(snippet: `webpart/ps-zone-attestation-access.webpart.html`). The form's
+`accessNotice` links to it, and it opens in a new tab. For information only:
+nothing on it is saved.
+
+It reads the signed-in user's rows from the Assignments list (the same
+user match as the form: profile email or UPN, any case), then the Access
+list's rows for those areas, and shows one **accordion panel per area**
+(native `<details>`, all expanded, sorted by area). Each panel lists the
+area's employees by name, in **two columns** of name + email (a mailto link;
+one column when the page is narrow). *Expand all* / *Collapse all* appear
+when there's more than one area.
+
+```json
+{
+  "languages": ["en", "fr"],
+  "title": …, "back": …, "intro": "… [zone confirmation tool]({var:formUrl}).",
+  "vars": { "formUrl": "/sites/FCUPortal/SitePages/PS-Work-Zone-Confirmation.aspx" },
+  "assignments": { "siteUrl": "/teams/FCUWebDatastores", "listTitle": "PS_Zone-Attestation-Assignments",
+                   "userColumn": "UserEmail", "labelColumn": "AreaName", "orderBy": "AreaName" },
+  "access": { "siteUrl": "/teams/FCUWebDatastores", "listTitle": "PS_Zone-Attestation-Access",
+              "areaColumn": "AreaName", "nameColumn": "EmployeeName", "emailColumn": "EmployeeEmail" },
+  "empty": { "title": …, "message": … },
+  "errorLog": { … }, "errorContact": { … }
+}
+```
+
+| Key | Notes |
+| --- | --- |
+| `title`, `back`, `intro` | EN/FR pairs. `back` is the link above the card (default "Back"). `intro` is the info bar. |
+| `vars.formUrl` | The form page. The back link goes there, and so does any intro link to that same address. **Back** closes the tab when it's a tab of its own (one history entry: how the form's link opens it), which returns the user to the form with their answers intact; otherwise it follows the link. Must be http(s) or server-relative, or there's no back link. |
+| `assignments` | `listTitle` or `listUrl`, `userColumn`, `labelColumn` required; `top` (default 500). |
+| `access` | `listTitle` or `listUrl`, `areaColumn`, `nameColumn`, `emailColumn` required; `top` (default 2,000 per 20 areas, at most 4,999). A cut-off read shows a warning. Areas are matched case- and outer-space-blind; a row for an area that isn't the user's never shows. |
+| `empty` | The "no areas assigned" screen. |
+| `strings` | Overrides for its engine messages (`accessLoading`, `accessLoadError`, `accessNoEmployees`, `accessCount`, `accessExpandAll`, …: `DEFAULT_STRINGS`). |
+| `errorLog`, `errorContact` | As on the form. A failed read logs kind `access` and offers the email link beside *Try again*. |
+
+The validator refuses (an error card on the page): a missing list or column
+key, a language other than `en`/`fr`. The Access list's `AreaName` should be
+indexed, or the filter fails once the list passes 5,000 rows.
+
+**Privacy:** the page shows each user only their own areas, but it reads with
+the user's own rights, so everyone who uses it needs **Read** on the whole
+Access list (`05-deploy-steps.md`, step 2).

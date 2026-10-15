@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.2.1 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.3.0 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.2.1"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.0"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.2.1';
+  var VERSION = '1.3.0';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -311,7 +311,19 @@
     assignKeysMore: 'More than {max} earlier responses were found, so some items you already answered may show again.',
     submitConfirmTitle: 'Please confirm', submitConfirmOk: 'Confirm', submitConfirmCancel: 'Go back',
     userLoading: 'Identifying you…',
-    opensNewTab: '(opens in a new tab)'
+    opensNewTab: '(opens in a new tab)',
+    // the access list ([data-psz-access])
+    accessBack: 'Back',
+    accessLoading: 'Loading your areas…',
+    accessLoadError: 'The access list couldn’t be loaded. Try again in a moment.',
+    accessNoUser: 'Your account couldn’t be identified, so your areas can’t be loaded.',
+    accessEmptyTitle: 'No areas assigned',
+    accessEmptyMessage: 'There are no areas assigned to you.',
+    accessNoEmployees: 'No employees are listed for this area.',
+    accessCount: '{n} employee(s)',
+    accessExpandAll: 'Expand all',
+    accessCollapseAll: 'Collapse all',
+    accessMore: 'Only part of the list could be shown. Contact Physical Security for the full list.'
   };
 
   /* French defaults (form.languages includes "fr"). Same keys as above;
@@ -415,7 +427,18 @@
     assignKeysMore: 'Plus de {max} réponses antérieures ont été trouvées; certains éléments auxquels vous avez déjà répondu pourraient donc réapparaître.',
     submitConfirmTitle: 'Veuillez confirmer', submitConfirmOk: 'Confirmer', submitConfirmCancel: 'Revenir',
     userLoading: 'Identification en cours…',
-    opensNewTab: '(s’ouvre dans un nouvel onglet)'
+    opensNewTab: '(s’ouvre dans un nouvel onglet)',
+    accessBack: 'Retour',
+    accessLoading: 'Chargement de vos emplacements…',
+    accessLoadError: 'Impossible de charger la liste des accès. Réessayez dans un moment.',
+    accessNoUser: 'Votre compte n’a pas pu être identifié; vos emplacements ne peuvent donc pas être chargés.',
+    accessEmptyTitle: 'Aucun emplacement attribué',
+    accessEmptyMessage: 'Aucun emplacement ne vous est attribué.',
+    accessNoEmployees: 'Aucun employé n’est inscrit pour cet emplacement.',
+    accessCount: '{n} employé(s)',
+    accessExpandAll: 'Tout développer',
+    accessCollapseAll: 'Tout réduire',
+    accessMore: 'Seule une partie de la liste a pu être affichée. Communiquez avec la sécurité physique pour obtenir la liste complète.'
   };
 
   /* ------------------------------------------------------------------
@@ -570,6 +593,7 @@
     window.intl.onChange(function () {
       Object.keys(NS._defs).forEach(function (uid) { relocalize(NS._defs[uid]); });
       Object.keys(NS._res).forEach(function (uid) { relocalizeResources(NS._res[uid]); });
+      Object.keys(NS._acc).forEach(function (uid) { relocalizeAccess(NS._acc[uid]); });
     });
   }
 
@@ -910,6 +934,38 @@
           };
         });
       },
+      // the access list ([data-psz-access]): the rows whose areaColumn is one
+      // of these area names, as { rows: [{ area, name, email }], more }.
+      // Chunks of 20 areas keep the URL short; more = a chunk hit its cap.
+      // On a list past 5,000 items areaColumn must be indexed.
+      getAccess: function (spec, areas) {
+        var max = Math.min(spec.top || 2000, 4999);
+        var chunks = [];
+        for (var i = 0; i < areas.length; i += 20) chunks.push(areas.slice(i, i + 20));
+        return whenCtx().then(function () {
+          return Promise.all(chunks.map(function (part) {
+            return listOf(spec).items
+              .select(spec.areaColumn, spec.nameColumn, spec.emailColumn)
+              .filter(part.map(function (a) { return spec.areaColumn + " eq '" + odataStr(a) + "'"; }).join(' or '))
+              .top(max + 1)
+              .get();
+          }));
+        }).then(function (pages) {
+          var more = false, rows = [];
+          pages.forEach(function (p) {
+            p = p || [];
+            if (p.length > max) more = true;
+            p.slice(0, max).forEach(function (it) {
+              rows.push({
+                area: String(it[spec.areaColumn] == null ? '' : it[spec.areaColumn]),
+                name: String(it[spec.nameColumn] == null ? '' : it[spec.nameColumn]),
+                email: String(it[spec.emailColumn] == null ? '' : it[spec.emailColumn])
+              });
+            });
+          });
+          return { rows: rows, more: more };
+        });
+      },
       // keyColumn values of the rows this user already saved to the target
       // list (assignments.responses) — those source rows aren't shown again.
       // { keys: [string], more: bool } — more = the read hit its cap.
@@ -1072,6 +1128,9 @@
     cfg._multiLang = !!langs && langs.length > 1;
 
     cfg.form = cfg.form || {};
+    // a page may override form.vars (PSZ_FORM_SETTINGS.vars), e.g. a page
+    // URL that differs between the dev harness, dev and prod
+    if (settings.vars && typeof settings.vars === 'object') cfg.form.vars = Object.assign({}, cfg.form.vars || {}, settings.vars);
     cfg.form.appearance = Object.assign(
       { frame: 'card', header: 'band', tint: 'sky', icon: null },
       cfg.form.appearance || {});
@@ -1189,6 +1248,9 @@
       if (rule.not) return checkRuleRefs(rule.not, where);
       if (rule.field && !keyOfId[rule.field]) errors.push(where + ': rule references unknown field "' + rule.field + '"');
       if (rule.op === 'withinBusinessDays' && !cfg._bh) errors.push(where + ': withinBusinessDays needs form.businessHours');
+      if (rule.op === 'anyChanged' && rule.field && keyOfId[rule.field] && byKey[keyOfId[rule.field]].type !== 'assignments') {
+        errors.push(where + ': anyChanged is for an assignments field');
+      }
       if (rule.compareTo && rule.compareTo !== '@today' && !keyOfId[rule.compareTo]) {
         errors.push(where + ': rule compares to unknown field "' + rule.compareTo + '"');
       }
@@ -1305,6 +1367,8 @@
     });
     cfg._sharedColumns = shared; cfg._colFields = colFields;
 
+    // a note's text may carry {var:name} (e.g. a link to another page)
+    ordered.forEach(function (f) { if (f.type === 'note' && f.text) f.text = fillVars(f.text, cfg); });
     cfg._byKey = byKey; cfg._ordered = ordered; cfg._keyOfId = keyOfId;
     cfg._sectionsById = sectionsById;
     return { cfg: cfg, errors: errors };
@@ -1358,6 +1422,9 @@
       case 'isEmpty': return isEmptyVal(v);
       case 'notEmpty': return !isEmptyVal(v);
       case 'withinBusinessDays': return !!bh && !isEmptyVal(v) && bizWithin(bh, v, +rule.value, nowMs());
+      // assignments: some row's answer differs from its current value (the
+      // same test as changedColumn: a first value on a row with none counts)
+      case 'anyChanged': return Array.isArray(v) && v.some(function (r) { return r && r.value && r.value !== (r.current || ''); });
       default: return false;
     }
   }
@@ -1397,12 +1464,15 @@
   // Author prose (intro, descriptions, hints, notes, confirmation): escaped,
   // then [text](url) becomes a link. Only http(s), mailto, server-relative
   // and #anchor targets. Off-page links open in a new tab so a half-filled
-  // form isn't lost.
+  // form isn't lost. data-interception="off" on every such link: a modern
+  // SharePoint page otherwise catches a click on a same-tenant link (at the
+  // window, before any handler of ours) and navigates IN PLACE, target or
+  // not, replacing the form (seen on the dev tenant with 1.3.0).
   var LINK_RE = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:|\/|#)[^)\s]*)\)/g;
   function prose(s) {
     return esc(s).replace(LINK_RE, function (m, text, href) {
       var ext = href.charAt(0) !== '#';
-      return '<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + text + '</a>';
+      return '<a href="' + href + '"' + (ext ? ' target="_blank" rel="noopener noreferrer" data-interception="off"' : '') + '>' + text + '</a>';
     });
   }
 
@@ -1932,7 +2002,7 @@
         var hcIcon = !hc.icon ? icon('ic-fluent-info-24-regular', 24)
           : /[./]/.test(hc.icon) ? '<img src="' + esc(resolveAsset(hc.icon)) + '" alt="">'
             : icon('ic-fluent-' + esc(hc.icon) + '-24-regular', 24);
-        h += '<a class="psz-tipcard lift" href="' + esc(hcHref) + '" target="_blank" rel="noopener noreferrer">' +
+        h += '<a class="psz-tipcard lift" href="' + esc(hcHref) + '" target="_blank" rel="noopener noreferrer" data-interception="off">' +
           '<span class="psz-tipcard__icon">' + hcIcon + '</span>' +
           '<span class="psz-tipcard__copy"><span class="psz-tipcard__title">' + esc(hc.title) + '</span>' +
           (hc.text ? '<span class="psz-tipcard__text">' + esc(hc.text) + '</span>' : '') + '</span>' +
@@ -3483,7 +3553,7 @@
     var href = safeHref(String(it.url == null ? '' : it.url).trim().replace(/ /g, '%20'));
     if (it.url && !href) console.warn('[PS Zone Form] resources: "' + it.title + '" isn\'t linked: its url isn\'t http(s) or server-relative');
     if (!href) return '<div class="' + cls + ' is-unlinked">' + inner + '</div>';
-    return '<a class="' + cls + ' lift" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + inner +
+    return '<a class="' + cls + ' lift" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-interception="off">' + inner +
       icon('ic-fluent-open-24-regular', 16).replace('class="icon', 'class="psz-tipcard__go icon') +
       '<span class="psz-sr">' + esc(S.opensNewTab) + '</span></a>';
   }
@@ -3582,15 +3652,308 @@
   }
 
   /* ------------------------------------------------------------------
+     Employee access list ([data-psz-access]) — a page of its own, opened
+     in a new tab from the form's notice: each of the user's areas (their
+     rows in the Assignments list) as an open accordion panel listing the
+     employees with access to it (the Access list). For information only:
+     nothing is saved. Native <details> panels, no Alpine. Config:
+     ps-zone-attestation.access.json (docs/03-config.md). "Back" closes
+     the tab when it was opened as a tab of its own, which returns the
+     user to the form with their answers intact.
+     ------------------------------------------------------------------ */
+  NS._acc = {};
+  function normKey(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
+  function normalizeAccess(raw, lang) {
+    var errors = [];
+    var cfg = localize(raw || {}, lang);
+    (resLangs(raw) || []).forEach(function (l) {
+      if (LANGS.indexOf(l) < 0) errors.push('languages: "' + l + '" isn\'t supported (use ' + LANGS.join(', ') + ')');
+    });
+    var a = cfg.assignments = Object.assign({}, cfg.assignments || {});
+    var x = cfg.access = Object.assign({}, cfg.access || {});
+    if (!a.listTitle && !a.listUrl) errors.push('assignments: listTitle or listUrl is required');
+    ['userColumn', 'labelColumn'].forEach(function (c) { if (!a[c]) errors.push('assignments.' + c + ' is required'); });
+    if (!x.listTitle && !x.listUrl) errors.push('access: listTitle or listUrl is required');
+    ['areaColumn', 'nameColumn', 'emailColumn'].forEach(function (c) { if (!x[c]) errors.push('access.' + c + ' is required'); });
+    a._cols = a.labelColumn ? [a.labelColumn] : [];
+    // {var:formUrl} in the intro; PSZ_FORM_SETTINGS.vars overrides (the dev harness)
+    var vars = Object.assign({}, cfg.vars || {}, settings.vars || {});
+    cfg.intro = cfg.intro ? fillVars(cfg.intro, { form: { vars: vars } }) : '';
+    cfg.formUrl = safeHref(vars.formUrl);
+    if (vars.formUrl && !cfg.formUrl) console.warn('[PS Zone Form] access: vars.formUrl isn\'t http(s) or server-relative, so there\'s no back link');
+    cfg._lang = lang;
+    cfg._S = Object.assign(resStrings(lang), cfg.strings || {});
+    return { cfg: cfg, errors: errors };
+  }
+  // the user's areas (in the order read, de-duplicated) with the employees
+  // listed for each, sorted by name. A row for an area that isn't one of
+  // the user's is never shown.
+  function accessGroups(areas, rows) {
+    var groups = [], byKey = {};
+    areas.forEach(function (a) {
+      var k = normKey(a);
+      if (!k || byKey[k]) return;
+      groups.push(byKey[k] = { area: String(a).trim(), people: [] });
+    });
+    rows.forEach(function (r) {
+      var g = byKey[normKey(r.area)];
+      var name = String(r.name || '').trim(), email = String(r.email || '').trim();
+      if (!g || (!name && !email)) return;
+      if (g.people.some(function (p) { return normKey(p.name) === normKey(name) && normKey(p.email) === normKey(email); })) return;
+      g.people.push({ name: name, email: email });
+    });
+    groups.forEach(function (g) {
+      g.people.sort(function (p, q) { return (p.name || p.email).localeCompare(q.name || q.email); });
+    });
+    return groups;
+  }
+  function accessBody(def, closed) {
+    var cfg = def.cfg, S = cfg._S, v = def.view;
+    if (v.state === 'loading') {
+      return '<div class="psz-asg__state psz-acc__state" role="status"><span class="spinner spinner--16" aria-hidden="true"></span><span>' +
+        esc(S.accessLoading) + '</span></div>';
+    }
+    if (v.state === 'error') {
+      var mail = '';
+      try {
+        mail = errorMailHref(cfg.errorContact, cfg.title, S, 'access', v.err, { config: def.configUrl }, cfg._lang);
+      } catch (x) { /* a malformed errorContact must not hide the real error */ }
+      return '<div class="msgbar msgbar--danger" role="alert">' +
+        icon(ICONS.danger, 20).replace('class="icon', 'class="msgbar__icon icon') +
+        '<div class="msgbar__body psz-asg__err"><span>' + esc(v.noUser ? S.accessNoUser : S.accessLoadError) + '</span>' +
+        '<button type="button" class="btn btn--sm" data-psz-acc-retry>' + esc(S.assignRetry) + '</button>' +
+        (mail ? '<a class="psz-errmail" href="' + esc(mail) + '">' + esc(S.errorMailLink) + '</a>' : '') + '</div></div>';
+    }
+    var groups = accessGroups(def.data.areas, def.data.rows);
+    if (!groups.length) {
+      var em = cfg.empty || {};
+      return '<div class="psz-done psz-done--empty">' +
+        '<svg class="icon icon--48 psz-done__icon psz-done__icon--info" aria-hidden="true"><use href="#ic-fluent-info-24-regular"/></svg>' +
+        '<h3 class="psz-done__title">' + esc(em.title || S.accessEmptyTitle) + '</h3>' +
+        '<p class="psz-done__msg">' + prose(em.message || S.accessEmptyMessage) + '</p></div>';
+    }
+    var h = '';
+    if (def.data.more) {
+      h += '<div class="msgbar msgbar--warning" role="status">' +
+        icon(ICONS.warning, 20).replace('class="icon', 'class="msgbar__icon icon') +
+        '<div class="msgbar__body">' + esc(S.accessMore) + '</div></div>';
+    }
+    if (groups.length > 1) {
+      h += '<div class="psz-acc__tools">' +
+        '<button type="button" class="btn btn--sm btn--ghost" data-psz-acc-all="open">' + esc(S.accessExpandAll) + '</button>' +
+        '<button type="button" class="btn btn--sm btn--ghost" data-psz-acc-all="close">' + esc(S.accessCollapseAll) + '</button></div>';
+    }
+    h += '<div class="psz-acc__areas">';
+    groups.forEach(function (g) {
+      var k = normKey(g.area);
+      h += '<details class="psz-acc__area" data-psz-area="' + esc(k) + '"' + (closed[k] ? '' : ' open') + '>' +
+        '<summary class="psz-acc__summary">' +
+        icon('ic-fluent-chevron-down-24-regular', 16).replace('class="icon', 'class="psz-acc__chev icon') +
+        '<span class="psz-acc__area-name">' + esc(g.area) + '</span>' +
+        '<span class="psz-acc__count">' + esc(fmtStr(S.accessCount, { n: g.people.length })) + '</span></summary>';
+      if (!g.people.length) {
+        h += '<p class="psz-acc__none">' + esc(S.accessNoEmployees) + '</p>';
+      } else {
+        h += '<ul class="psz-acc__people">';
+        g.people.forEach(function (p) {
+          var mail = MAIL_RE.test(p.email) ? p.email : '';
+          h += '<li class="psz-acc__person"><span class="psz-acc__name">' + esc(p.name || p.email) + '</span>';
+          if (p.name && mail) h += '<a class="psz-acc__email" href="mailto:' + esc(mail) + '">' + esc(mail) + '</a>';
+          else if (p.name && p.email) h += '<span class="psz-acc__email">' + esc(p.email) + '</span>';
+          h += '</li>';
+        });
+        h += '</ul>';
+      }
+      h += '</details>';
+    });
+    return h + '</div>';
+  }
+  function renderAccess(def, closed) {
+    var cfg = def.cfg, S = cfg._S;
+    var h = '<div class="psz-acc lang-keep" lang="' + esc(cfg._lang) + '" data-psz-acc-uid="' + esc(def.uid) + '">';
+    if (cfg.formUrl) {
+      h += '<a class="psz-acc__back" href="' + esc(cfg.formUrl) + '" data-psz-back data-interception="off">' +
+        icon('ic-fluent-chevron-left-24-regular', 16) + '<span>' + esc(cfg.back || S.accessBack) + '</span></a>';
+    }
+    h += '<div class="psz psz--card">';
+    if (cfg.title) {
+      h += '<header class="psz__head psz__head--band psz__head--' + esc(TINTS.indexOf(cfg.tint) > -1 ? cfg.tint : 'sky') + '">' +
+        '<div class="psz__head-copy"><h2 class="psz__title">' + esc(cfg.title) + '</h2></div></header>';
+    }
+    h += '<div class="psz__body"><div class="psz__content psz-acc__content">';
+    if (cfg.intro) {
+      h += '<div class="msgbar msgbar--info psz-acc__intro" role="note">' +
+        icon(ICONS.info, 20).replace('class="icon', 'class="msgbar__icon icon') +
+        '<div class="msgbar__body">' + prose(cfg.intro) + '</div></div>';
+    }
+    h += '<div class="psz-acc__body" aria-live="polite">' + accessBody(def, closed) + '</div>';
+    return h + '</div></div></div></div>';
+  }
+  // panels the user collapsed stay collapsed through a re-render
+  function accessClosed(def) {
+    var closed = {};
+    if (def.root) def.root.querySelectorAll('details[data-psz-area]').forEach(function (d) {
+      if (!d.open) closed[d.getAttribute('data-psz-area')] = true;
+    });
+    return closed;
+  }
+  function paintAccess(def, full) {
+    var closed = accessClosed(def);
+    if (!full && def.root && def.root.isConnected) {
+      def.root.querySelector('.psz-acc__body').innerHTML = accessBody(def, closed);
+      return;
+    }
+    var host = document.createElement('div');
+    host.innerHTML = renderAccess(def, closed);
+    var root = host.firstChild;
+    // the intro's link to the form is a back link too
+    root.querySelectorAll('.psz-acc__intro a').forEach(function (a) {
+      if (!def.cfg.formUrl || a.getAttribute('href') !== def.cfg.formUrl) return;
+      a.removeAttribute('target');
+      a.removeAttribute('rel');
+      a.setAttribute('data-psz-back', '');
+      a.setAttribute('data-interception', 'off');
+    });
+    if (def.root && def.root.parentNode) def.root.parentNode.replaceChild(root, def.root);
+    else def.mount.appendChild(root);
+    def.root = root;
+  }
+  function loadAccess(def) {
+    var cfg = def.cfg;
+    var seq = def.seq = (def.seq || 0) + 1;
+    def.view = { state: 'loading' };
+    paintAccess(def);
+    var adapter = def.adapter;
+    adapter.ready().then(function () {
+      var emails = userEmails(adapter.userInfo ? adapter.userInfo() : getUserInfo());
+      if (!emails.length) throw new Error('no-user');
+      return adapter.getAssignments(cfg.assignments, emails);
+    }).then(function (asg) {
+      var seen = {}, areas = [];
+      (asg.rows || []).forEach(function (r) {
+        var a = String(r[cfg.assignments.labelColumn] == null ? '' : r[cfg.assignments.labelColumn]).trim();
+        if (a && !seen[normKey(a)]) { seen[normKey(a)] = true; areas.push(a); }
+      });
+      if (!areas.length) return { areas: [], rows: [], more: !!asg.more };
+      return adapter.getAccess(cfg.access, areas).then(function (acc) {
+        return { areas: areas, rows: acc.rows || [], more: !!(asg.more || acc.more) };
+      });
+    }).then(function (d) {
+      if (seq !== def.seq) return;
+      def.data = d;
+      def.view = { state: 'ready' };
+      paintAccess(def);
+      def.mount.setAttribute('data-psz-state', 'ready');
+    }).catch(function (e) {
+      if (seq !== def.seq) return;
+      console.error('[PS Zone Form] access list load failed:', e);
+      reportError(def.raw.errorLog, 'access', e, { config: def.configUrl });
+      def.view = { state: 'error', err: e, noUser: !!(e && e.message === 'no-user') };
+      paintAccess(def);
+      def.mount.setAttribute('data-psz-state', 'ready');
+    });
+  }
+  // Back: a tab of its own (one history entry, as the form's link opens
+  // it) closes, and the browser shows the form's tab again. Otherwise —
+  // or if the browser won't let the script close it — the link is followed.
+  function accessBack(ev, a) {
+    if (ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
+    if (history.length > 1) return;
+    ev.preventDefault();
+    var href = a.href;
+    try { window.close(); } catch (e) { /* not closable */ }
+    setTimeout(function () { location.href = href; }, 300);
+  }
+  function bindAccess(mount) {
+    if (mount.__pszAccBound) return;
+    mount.__pszAccBound = true;
+    mount.addEventListener('click', function (ev) {
+      var def = mount.__pszAcc;
+      var t = ev.target && ev.target.closest ? ev.target : null;
+      if (!def || !t) return;
+      var back = t.closest('[data-psz-back]');
+      if (back) { accessBack(ev, back); return; }
+      if (t.closest('[data-psz-acc-retry]')) { loadAccess(def); return; }
+      var all = t.closest('[data-psz-acc-all]');
+      if (all) {
+        var open = all.getAttribute('data-psz-acc-all') === 'open';
+        def.root.querySelectorAll('details[data-psz-area]').forEach(function (d) { d.open = open; });
+      }
+    });
+  }
+  function initAccess(mount) {
+    ensureStyles();
+    installNavWatcher();
+    var configUrl = mount.getAttribute('data-config') || '';
+    if (inEditMode()) {
+      mount.__pszDeferred = true;
+      mount.classList.add('is-suspended', 'is-edit-deferred');
+      if (!mount.querySelector('.psz-editnote')) mount.appendChild(editNote(configUrl, DEFAULT_STRINGS));
+      return;
+    }
+    mount.classList.remove('is-suspended', 'is-edit-deferred');
+    mount.querySelectorAll('[data-psz-fatal]').forEach(function (n) { n.remove(); });
+    mount.setAttribute('data-psz-state', 'initializing');
+    var spriteReady = ensureSprite();
+    var raw = null;
+    loadConfig(mount).then(function (r) {
+      raw = r;
+      return whenIntl(resLangCfg(r));
+    }).then(function () {
+      var norm = normalizeAccess(raw, activeLang(resLangCfg(raw)));
+      if (norm.errors.length) {
+        console.error('[PS Zone Form] access list config errors:', norm.errors);
+        throw new Error(norm.errors.join('; '));
+      }
+      var uid = nextUid();
+      var cfg = norm.cfg;
+      var def = NS._acc[uid] = mount.__pszAcc = {
+        uid: uid, raw: raw, mount: mount, cfg: cfg, root: null, configUrl: configUrl,
+        multiLang: (resLangs(raw) || []).length > 1, view: { state: 'loading' }, data: null,
+        adapter: makeAdapter({ target: { siteUrl: cfg.access.siteUrl || cfg.assignments.siteUrl || '' } })
+      };
+      if (def.multiLang) wireIntl();
+      bindAccess(mount);
+      return spriteReady.then(function () {
+        if (!mount.querySelector('.psz-editnote')) mount.appendChild(editNote(configUrl, cfg._S));
+        loadAccess(def);
+      });
+    }).catch(function (e) {
+      console.error('[PS Zone Form] access list init failed:', e);
+      if (raw && raw.errorLog) reportError(raw.errorLog, 'init', e, { config: configUrl });
+      var lang = raw ? activeLang(resLangCfg(raw)) : 'en';
+      var S0 = resStrings(lang), mail = '';
+      try {
+        if (raw && raw.errorContact) mail = errorMailHref(localize(raw.errorContact, lang), localize(raw.title, lang), S0, 'init', e, { config: configUrl }, lang);
+      } catch (x) { /* see initMount */ }
+      mount.__pszInit = false;
+      mount.setAttribute('data-psz-state', 'error');
+      fatalCard(mount, S0, e && e.message, mail);
+    });
+  }
+  function relocalizeAccess(def) {
+    if (!def.multiLang || !def.root || !def.root.isConnected) return;
+    var lang = activeLang(resLangCfg(def.raw));
+    if (lang === def.cfg._lang) return;
+    var norm = normalizeAccess(def.raw, lang);
+    if (norm.errors.length) { console.error('[PS Zone Form] access list config errors (' + lang + '):', norm.errors); return; }
+    def.cfg = norm.cfg;
+    paintAccess(def, true);
+  }
+
+  /* ------------------------------------------------------------------
      Edit mode + boot
      ------------------------------------------------------------------ */
   function inEditMode() {
     return /[?&]Mode=Edit\b/i.test(location.search) || location.pathname.indexOf('/_layouts/') > -1;
   }
-  // the two web parts this engine mounts: the form and its resources panel
-  var MOUNTS = '[data-psz-form], [data-psz-resources]';
+  // the web parts this engine mounts: the form, its resources panel and
+  // the employee access list
+  var MOUNTS = '[data-psz-form], [data-psz-resources], [data-psz-access]';
   function initAny(m) {
-    if (m.hasAttribute('data-psz-resources')) initResources(m); else initMount(m);
+    if (m.hasAttribute('data-psz-resources')) initResources(m);
+    else if (m.hasAttribute('data-psz-access')) initAccess(m);
+    else initMount(m);
   }
   function editNote(configUrl, S) {
     var note = el('div', 'psz-editnote');

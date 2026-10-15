@@ -4,7 +4,8 @@
 // twin of prod on the tenant ROOT site (prod: /teams/FCUWebDatastores), the page on the dev site.
 // Each run, as the signed-in test user: recycles that user's earlier responses, makes sure the
 // assignment rows exist (three for this user, one stored with different email casing, plus one
-// for someone else, which the form must not show), then:
+// for someone else, which the form must not show) and the access-list rows for them, then:
+//   the access list from the form's link (new tab; its areas and employees; Back closes it) →
 //   EN submit (row 1 confirmed as is, row 2 changed, row 3 had no current zone: picked) → read
 //   back, incl. PreviousZone / ZoneChanged → reload shows "already submitted" →
 //   one response recycled → FR shows only that row → FR change saves the English value.
@@ -30,6 +31,13 @@ const ROOT = tenants.dev.tenantRoot.replace(/\/$/, '');
 const listApi = name => ROOT + "/_api/web/lists/getbytitle('" + encodeURIComponent(name) + "')";
 const A = listApi('PS_Zone-Attestation-Assignments');
 const R = listApi('PS_Zone-Attestation-Responses');
+const X = listApi('PS_Zone-Attestation-Access');
+const ACCESS_PAGE = new URL(SITE).pathname + '/SitePages/ps-zone-attestation-access-test.aspx';
+// who has access to each of MINE (by index, after sorting); the third has nobody, and OTHER's
+// employee must never show
+const ACCESS = [['Live Employee Two', 'Live Employee One'], ['Live Employee Three', 'Live Employee Five', 'Live Employee Four'], []];
+const OTHER_EMPLOYEE = 'Live Employee Not Yours';
+const mailOf = n => n.toLowerCase().replace(/ /g, '.') + '@example.invalid';
 // the example areas (sorted: Concourse Podium, Tower 10, Tower 37). Quotes and accents in list data
 // are covered by the harness's hostile-text test.
 const MINE = ['FCP - Concourse Podium', 'FCP - Tower 10', 'FCP - Tower 37'];
@@ -101,7 +109,6 @@ async function clickBtn(page, text) {
   }, text);
 }
 async function submitAndConfirm(page, confirmText) {
-  await page.locator('[data-psz-field="attestation"] input').check();
   await clickBtn(page, (await page.locator('.psz button[type="submit"]').textContent()).trim());
   await page.waitForSelector('.psz-dialog', { state: 'visible', timeout: 5000 });
   await clickBtn(page, confirmText);
@@ -159,6 +166,14 @@ async function submitAndConfirm(page, confirmText) {
     if (!hit || (hit.CurrentZone || null) !== want) await rest(admin, 'MERGE', A + '/items(' + ids[MINE[i]] + ')', { CurrentZone: want });
   }
   const others = rows.filter(r => String(r.UserEmail).toLowerCase() !== me.Email.toLowerCase()).map(r => r.AreaName);
+  // the access list's rows (as admin): ACCESS for my areas, one for someone else's
+  const haveAcc = (await rest(admin, 'GET', X + '/items?$select=AreaName,EmployeeName&$top=500')).value;
+  const wantAcc = MINE.flatMap((n, i) => (ACCESS[i] || []).map(e => [n, e])).concat([[OTHER, OTHER_EMPLOYEE]]);
+  for (const [area, name] of wantAcc) {
+    if (haveAcc.some(x => x.AreaName === area && x.EmployeeName === name)) continue;
+    await rest(admin, 'POST', X + '/items', { Title: area, AreaName: area, EmployeeName: name, EmployeeEmail: mailOf(name) });
+    console.log('seeded access:', area, '←', name);
+  }
   await page.close();
 
   // ---- EN: load, doctor, rows, submit
@@ -171,7 +186,7 @@ async function submitAndConfirm(page, confirmText) {
   const labels = await page.$$eval('.psz-asg__label', els => els.map(e => e.textContent));
   check('my ' + MINE.length + ' rows shown' + (AS ? '' : ' (incl. the upper-cased email row)') + ', sorted', JSON.stringify(labels) === JSON.stringify(MINE.slice().sort()), JSON.stringify(labels));
   check("nobody else's rows shown", others.length > 0 && !labels.some(l => others.includes(l)));
-  check('Attestation by: my name + email', (await page.locator('.psz-who__name').textContent()) === me.Title &&
+  check('Confirmation by: my name + email', (await page.locator('.psz-who__name').textContent()) === me.Title &&
     (await page.locator('.psz-who__mail').textContent()).toLowerCase() === me.Email.toLowerCase());
   check('no job aid card on the form (it lives in the resources panel)', (await page.locator('[data-psz-form] .psz-tipcard').count()) === 0);
   await page.waitForSelector('[data-psz-resources][data-psz-state="ready"]', { timeout: 30000 });
@@ -182,15 +197,40 @@ async function submitAndConfirm(page, confirmText) {
   await page.locator('.psz').screenshot({ path: path.join(OUT, 'zone-form-empty.png') });
   check('row 1: its current zone with confirm + Change', (await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__zone:visible').textContent()) === 'High Security' &&
     await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__confirm input').isVisible());
+  // the employee access list: the notice's link opens it in a new tab; Back closes that tab
+  const accLink = page.locator('[data-psz-form] a', { hasText: 'employee access list' });
+  check('notice: the access-list link points at the access page, new tab',
+    (await accLink.getAttribute('href')) === ACCESS_PAGE && (await accLink.getAttribute('target')) === '_blank', await accLink.getAttribute('href'));
+  const [acc] = await Promise.all([ctx.waitForEvent('page'), accLink.click()]);
+  acc.__errors = [];
+  acc.on('pageerror', e => { if (e.message && e.message !== 'undefined') acc.__errors.push(e.message); });
+  await acc.waitForSelector('[data-psz-access][data-psz-state="ready"]', { timeout: 60000 }).catch(() => {});
+  await acc.waitForSelector('details.psz-acc__area, .psz-acc .msgbar--danger, .psz-acc .psz-done', { timeout: 30000 }).catch(() => {});
+  const accAreas = await acc.$$eval('details.psz-acc__area', ds => ds.map(d => [d.querySelector('.psz-acc__area-name').textContent, d.open,
+    [...d.querySelectorAll('.psz-acc__name')].map(n => n.textContent)]));
+  const wantAreas = MINE.map((n, i) => [n, true, (ACCESS[i] || []).slice().sort()]);
+  check('access list: my areas, all expanded, each with its employees by name (nobody on the third)',
+    JSON.stringify(accAreas) === JSON.stringify(wantAreas), JSON.stringify(accAreas));
+  const accText = await acc.locator('.psz-acc').textContent().catch(() => '');
+  check("access list: nobody else's area or employee", !accText.includes(OTHER) && !accText.includes(OTHER_EMPLOYEE));
+  await acc.screenshot({ path: path.join(OUT, 'zone-access.png'), fullPage: true });
+  check('no page errors (access list)', !acc.__errors.length, acc.__errors.join(' | '));
+  const accClosed = acc.waitForEvent('close', { timeout: 10000 }).then(() => true).catch(() => false);
+  await acc.locator('.psz-acc__back').click();
+  check('access list: "Back to confirmation form" closes its tab', await accClosed);
+
   // row 1 confirmed as is · row 2 changed · row 3 (no current zone) picked
   const ANSWER = ['High Security', 'Standards', 'Public'];
+  const changedBar = () => page.evaluate(() => [...document.querySelectorAll('[data-psz-form] .msgbar--info')]
+    .some(m => /^You changed at least one zone/.test(m.textContent.trim()) && getComputedStyle(m).display !== 'none'));
   await confirmRow(page, MINE[0]);
+  check('confirming a zone → no "you changed" notice', !(await changedBar()));
   await pick(page, MINE[1], 'Standards - Restricted Operation');
+  check('changing a zone → the "you changed" notice', await changedBar());
   if (MINE[2]) await pick(page, MINE[2], 'Public - General Access');
-  await page.locator('[data-psz-field="attestation"] input').check();
   await page.locator('.psz').screenshot({ path: path.join(OUT, 'zone-form-filled.png') });
   const before = Date.now();
-  await clickBtn(page, 'Submit attestation');
+  await clickBtn(page, 'Submit confirmations');
   await page.waitForSelector('.psz-dialog', { state: 'visible', timeout: 5000 });
   await page.screenshot({ path: path.join(OUT, 'zone-confirm.png') });
   await clickBtn(page, 'Confirm');
@@ -254,11 +294,11 @@ async function submitAndConfirm(page, confirmText) {
 
   // ---- FR: only the reopened row; French UI; English value saved
   page = await open(ctx, '?lang=fr');
-  check('FR: French title + zone labels', (await page.locator('.psz__title').textContent()) === 'Attestation des zones de sécurité physique' &&
+  check('FR: French title + zone labels', (await page.locator('.psz__title').textContent()) === 'Confirmation des zones de travail — sécurité physique' &&
     (await page.locator('.psz-asg__eyebrow:visible').textContent()) === 'Zone actuelle' &&
     (await page.locator('.psz-asg__zone:visible').textContent()) === 'Public Plus - Entrée autorisée');
   const frLabels = await page.$$eval('.psz-asg__label', els => els.map(e => e.textContent));
-  check('FR: only the reopened row, plus the "already attested" note', JSON.stringify(frLabels) === JSON.stringify([MINE[1]]) &&
+  check('FR: only the reopened row, plus the "already confirmed" note', JSON.stringify(frLabels) === JSON.stringify([MINE[1]]) &&
     new RegExp((MINE.length - 1) + ' de vos emplacements').test(await page.locator('[data-psz-field="zones"]').textContent()), JSON.stringify(frLabels));
   check('FR: form root lang="fr"', (await page.getAttribute('.psz', 'lang')) === 'fr');
   await pick(page, MINE[1], 'Haute sécurité');

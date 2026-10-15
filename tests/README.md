@@ -28,7 +28,7 @@ passed as the first argument.
 
 | Suite | Tier | Runtime | Checks | What it proves |
 | --- | --- | --- | --- | --- |
-| `node tests/smoke.cjs` | full | ~2 min | 132 | Edit-mode placeholder; the whole attestation lifecycle on the mock (load, filter, confirm/change/keep, validation and focus, confirm dialog, per-row payload, partial-save and lost-reply retries, already-answered rows, cut-off reads, EN/FR, frozen answers mid-save and the **saving overlay** (scrim, spinner, focus, leave-page guard), hostile text, config errors); **error reporting** (an error-log item per failed load / save / start-up with its diagnostics, one per kind, the mailto link with subject and body, never beside a validation message, French, a failing report that breaks nothing, nothing when unconfigured); the **standalone** guarantees: no request leaves `src/` beyond the harness page and its mock, the vendored files all load, every sprite reference resolves, the `.psz` layer applies, config asset paths resolve inside `design/`, the real (non-mock) loader fetches pnp from `lib/`, and **the real BSP Forms 0.5.1 engine** on the same page, loaded before or after this one, mounts only its own form and leaves the zone form's computed styles unchanged; and the **resources panel** (`dev/page.html`): both groups render beside the form, placeholders unlinked, real and space-containing URLs linked in a new tab, `javascript:` never linked, the contact card, EN/FR switching with the form, the edit-mode placeholder, and a broken panel config failing alone while the form still loads. |
+| `node tests/smoke.cjs` | full | ~2.5 min | 171 | Edit-mode placeholder; the whole confirmation lifecycle on the mock (load, filter, confirm/change/keep, validation and focus, confirm dialog, per-row payload, partial-save and lost-reply retries, already-answered rows, cut-off reads, EN/FR, frozen answers mid-save and the **saving overlay** (scrim, spinner, focus, leave-page guard), hostile text, config errors); **error reporting** (an error-log item per failed load / save / start-up with its diagnostics, one per kind, the mailto link with subject and body, never beside a validation message, French, a failing report that breaks nothing, nothing when unconfigured); the **standalone** guarantees: no request leaves `src/` beyond the harness page and its mock, the vendored files all load, every sprite reference resolves, the `.psz` layer applies, config asset paths resolve inside `design/`, the real (non-mock) loader fetches pnp from `lib/`, and **the real BSP Forms 0.5.1 engine** on the same page, loaded before or after this one, mounts only its own form and leaves the zone form's computed styles unchanged; and the **resources panel** (`dev/page.html`): both groups render beside the form, placeholders unlinked, real and space-containing URLs linked in a new tab, `javascript:` never linked, the contact card, EN/FR switching with the form, the edit-mode placeholder, and a broken panel config failing alone while the form still loads; the **form's notices** (1.3.0: no checkbox, the review and access-list bars on top, the "you changed" bar only while a row is changed, the contact bar, `Attestation = Confirmed` still saved, every new-tab link carrying `data-interception="off"`, the access list opening in a new tab whose Back closes it); and the **access list** (`dev/access.html`): the user's areas only, sorted and expanded, employees by name in two columns (one when narrow) with mailto links, area matching blind to case and outer spaces, "no employees", expand / collapse all and keyboard toggling, Back following the link in a tab with history, EN/FR keeping collapsed panels, a failed read (Try again, email link, an `access` error-log item), nothing assigned, a cut-off read, hostile text, edit mode, a broken config. |
 
 `tests/fixtures/bsp-forms-0.5.1/` holds that engine (`bsp-forms.js`,
 `bsp-forms.css`, copied from bsp-sp-parts `fe5c040`). It's test-only and
@@ -55,6 +55,18 @@ breaks (2026-10-14):
   than a vacuous match;
 - `opacity: 0 !important` on `.psz-asg__row` in the fixture CSS failed both
   style checks, on exactly the three rows.
+
+The 1.3.0 checks were shown to fail when what they guard breaks
+(2026-10-15): `anyChanged` always false failed both "you changed" checks;
+no `window.close()` failed the Back-closes-the-tab check; no back marker on
+the intro link failed its check; one grid column failed the two-columns
+check. Five failures, no others.
+
+What the harness **can't** reproduce: SharePoint's in-place navigation,
+which ignores `target="_blank"` on a same-tenant link unless it carries
+`data-interception="off"`. The suite checks the attribute;
+`dev/live/live-zone.js` checks the behaviour (the access list opens in a new
+tab, Back closes it).
 
 ## Browser-suite rules
 

@@ -6,7 +6,7 @@ One folder in the portal's `Code` library:
 
 ```
 /sites/FCUPortal/Code/ps-zone-attestation/     ← the contents of src/, as is
-├─ ps-zone-attestation.js · .css · .json · .resources.json
+├─ ps-zone-attestation.js · .css · .json · .resources.json · .access.json
 ├─ design/  (colors_and_type.css, components.css, fluent-basic-icons.svg,
 │            abacus-icons/light-bulb-48.svg, spot-illustrations/shield-checkmark-xs.svg)
 └─ lib/     (alpine.js, pnp2.bundle.js, intl.js)
@@ -18,17 +18,20 @@ Any library or path works. The engine derives every path from its own
 `libBase`, `alpineUrl`, `pnpUrl`, `intlUrl` or `webUrl`, but a normal deploy
 sets none of them. Overriding one back to a shared folder undoes the split.
 
-The **page** should be the attestation's own: no other custom-script parts on
-it. Alpine, `window.pnp`, `window.intl` and the icon sprite are page globals,
+The **pages** should be the form's own: no other custom-script parts on
+them. Alpine, `window.pnp`, `window.intl` and the icon sprite are page globals,
 and the engine reuses any that's already there (`00-overview.md`, *Page
-globals*). The SharePoint section layout (¾ form, ¼ resources) is the page's
-own and isn't set by the engine.
+globals*). There are two: the form page (the form and the resources panel; the
+¾ + ¼ section layout is the page's own, not the engine's) and the access list
+page. They link to each other through config `vars` (`accessListUrl` in the
+form config, `formUrl` in the access config), so renaming a page means
+editing one of those.
 
 ## Boot
 
 1. The script runs (idempotently: `PSZoneForm.__engineLoaded`), injects the
    tokens CSS, components CSS and its own layer (`?v=` from its own URL), and
-   scans for `[data-psz-form]`.
+   scans for `[data-psz-form]`, `[data-psz-resources]` and `[data-psz-access]`.
 2. **Edit mode:** an inert placeholder naming the config shows instead
    (`.is-suspended` stays on for the whole edit session). It mounts on
    return to view mode.
@@ -69,6 +72,8 @@ Responses item per area.
 run on prod): `live-zone-lists.js` creates the twin lists on the tenant
 root site, `live-zone-perms.js` copies the permission setup,
 `live-deploy.ps1 -Ver <n>` uploads `src/` to `<code root>/ps-zone-attestation/`
-and builds `SitePages/ps-zone-attestation-test.aspx`, and `live-zone.js
-[--as <profile>]` submits EN and FR and reads the items back. Because the
+and builds `SitePages/ps-zone-attestation-test.aspx` and
+`ps-zone-attestation-access-test.aspx` (swapping each config's `siteUrl`s and
+page links for dev), and `live-zone.js [--as <profile>]` opens the access list
+from the form, then submits EN and FR and reads the items back. Because the
 folder is the form's own, nothing else on dev needs backing up around a run.

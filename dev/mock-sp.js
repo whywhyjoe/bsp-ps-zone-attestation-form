@@ -17,6 +17,8 @@
      PSZ_MOCK_ADD_MS = ms            how long an add takes (default 500)
      PSZ_MOCK_KEYS_CAP = n           cut the earlier-responses read at n
      PSZ_MOCK_FIELDS = { listTitle: [field defs] }   doctor schema override
+     PSZ_MOCK_ACCESS = [rows]        replaces the default access-list rows
+     PSZ_MOCK_ACCESS_MORE = true     the access read reports itself cut off
    ===================================================================== */
 (function () {
   'use strict';
@@ -40,6 +42,21 @@
     { ID: 12, UserEmail: 'dev.tester@example.com', UserDescription: 'Branch manager', AreaName: 'FCP - Concourse Podium', CurrentZone: 'High Security' },
     { ID: 13, UserEmail: 'dev.tester@example.com', UserDescription: 'Branch manager', AreaName: 'FCP - Tower 37', CurrentZone: '' },
     { ID: 14, UserEmail: 'someone.else@example.com', UserDescription: 'Facilities', AreaName: 'Data centre — Hall B', CurrentZone: 'Public' }
+  ];
+  // the access list: who can enter each area. Tower 10 has five people
+  // (an odd count, for the two-column layout), the Podium two (one listed
+  // with different case and outer spaces in its area name, which must still
+  // match), Tower 37 none, and Hall B — someone else's area — one, which
+  // must never show.
+  var ACCESS = [
+    { AreaName: 'FCP - Tower 10', EmployeeName: 'Morgan Lee', EmployeeEmail: 'morgan.lee@example.com' },
+    { AreaName: 'FCP - Tower 10', EmployeeName: 'Ana Diaz', EmployeeEmail: 'ana.diaz@example.com' },
+    { AreaName: 'FCP - Tower 10', EmployeeName: 'Sam Okafor', EmployeeEmail: 'sam.okafor@example.com' },
+    { AreaName: 'FCP - Tower 10', EmployeeName: 'Priya Natarajan', EmployeeEmail: 'priya.natarajan@example.com' },
+    { AreaName: 'FCP - Tower 10', EmployeeName: 'Jordan Tremblay', EmployeeEmail: 'jordan.tremblay@example.com' },
+    { AreaName: 'FCP - Concourse Podium', EmployeeName: 'Chris Wong', EmployeeEmail: 'chris.wong@example.com' },
+    { AreaName: ' fcp - concourse podium ', EmployeeName: 'Alex Martin', EmployeeEmail: 'alex.martin@example.com' },
+    { AreaName: 'Data centre — Hall B', EmployeeName: 'Not Yours', EmployeeEmail: 'not.yours@example.com' }
   ];
   // per-list schemas for the doctor (window.PSZ_MOCK_FIELDS[listTitle] wins)
   var TARGET = 'PS_Zone-Attestation-Responses';
@@ -132,6 +149,22 @@
       });
       // same shape as the real adapter: cut at max, say if there were more
       return delay({ rows: rows.slice(0, max), more: rows.length > max }, 450);
+    },
+    // the access list: PSZ_MOCK_ACCESS (rows with the spec's area, name and
+    // email columns) for these areas. SharePoint's eq ignores case but not
+    // outer spaces; the mock is more forgiving so the engine's own matching
+    // (case- and trim-blind) is what's tested.
+    getAccess: function (spec, areas) {
+      var fail = maybeFail('getAccess');
+      if (fail) return fail;
+      writes.push({ op: 'getAccess', list: spec.listUrl || spec.listTitle, areas: areas.slice() });
+      var want = areas.map(function (a) { return String(a).trim().toLowerCase(); });
+      var rows = (window.PSZ_MOCK_ACCESS || ACCESS).filter(function (r) {
+        return want.indexOf(String(r[spec.areaColumn] || '').trim().toLowerCase()) > -1;
+      }).map(function (r) {
+        return { area: String(r[spec.areaColumn] || ''), name: String(r[spec.nameColumn] || ''), email: String(r[spec.emailColumn] || '') };
+      });
+      return delay({ rows: rows, more: !!window.PSZ_MOCK_ACCESS_MORE }, 350);
     },
     // keys already saved for this user: PSZ_MOCK_DONE plus every row this
     // page has saved through addItem (including a "lost" one).

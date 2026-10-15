@@ -1,6 +1,6 @@
 /* =====================================================================
-   PS Zone Attestation — create the three SharePoint lists (assignments,
-   responses, error log) and add test data.
+   PS Zone Attestation — create the four SharePoint lists (assignments,
+   responses, error log, employee access) and add test data.
 
    Run it in DCSPad: paste this whole file into the JS pane and press Run
    (or File > Load project: ps-zone-attestation-list-setup.dcspad.json).
@@ -14,7 +14,8 @@
    2. Run with DRY_RUN = true. Read the console: it lists what it WOULD do.
    3. Set DRY_RUN = false and run again to do it.
    4. Before go-live, set MODE = "remove-test-data" and run it (dry run
-      first) to delete every test row from both lists.
+      first) to delete every test row from the assignments, responses and
+      access lists.
 
    It does NOT set permissions or the error log's email rule. Do
    docs/05-deploy-steps.md step 2 by hand.
@@ -43,6 +44,7 @@
   const ASSIGNMENTS = "PS_Zone-Attestation-Assignments";
   const RESPONSES = "PS_Zone-Attestation-Responses";
   const ERRORS = "PS_Zone-Attestation-Errors";
+  const ACCESS = "PS_Zone-Attestation-Access";
 
   // What each test attester sees. CurrentZone "" = no zone set yet: the form
   // shows a dropdown instead of confirm / change.
@@ -66,8 +68,22 @@
     { user: "D", area: "Mail Room", zone: "Standards", upperCaseEmail: true,
       note: "email stored in capitals; the form must still match it" },
     { user: "D", area: "Training Centre", zone: "Public", answered: true,
-      note: "already answered: hidden, with an 'already attested' note" },
+      note: "already answered: hidden, with an 'already confirmed' note" },
   ];
+
+  // The employee access list page: who can enter each test area. Keyed by
+  // "<user> - <area>" as above. An area left out shows "No employees are
+  // listed" (A - Tower 37 is left out on purpose).
+  const TEST_ACCESS = {
+    "A - Concourse Podium": ["Test Employee 1", "Test Employee 2"],
+    "A - Tower 10": ["Test Employee 1", "Test Employee 3", "Test Employee 4", "Test Employee 5", "Test Employee 6"],
+    "B - Main Lobby": ["Test Employee 2"],
+    "B - Vault": ["Test Employee 7", "Test Employee 8"],
+    "C - Annex Storage": ["Test Employee 3"],
+    "D - Server Room": ["Test Employee 9"],
+    "D - Mail Room": ["Test Employee 4"],
+  };
+  const employeeEmail = (name) => name.toLowerCase().replace(/ /g, ".") + "@example.com";
 
   // The columns the form needs. Names are exact: the form reads these.
   const text = (name, extra = "") =>
@@ -108,6 +124,17 @@
         Detail: { type: "Note", xml: '<Field Type="Note" Name="Detail" StaticName="Detail" DisplayName="Detail" NumLines="10" RichText="FALSE" />' },
         UserEmail: { type: "Text", xml: text("UserEmail") },
         EngineVersion: { type: "Text", xml: text("EngineVersion") },
+      },
+    },
+    // the employee access list (ps-zone-attestation.access.json): one row
+    // per employee per area. AreaName matches the assignments' AreaName.
+    // Indexed so the page's filter keeps working past 5,000 rows.
+    [ACCESS]: {
+      titleOptional: true,
+      fields: {
+        AreaName: { type: "Text", xml: text("AreaName", 'Indexed="TRUE"') },
+        EmployeeName: { type: "Text", xml: text("EmployeeName") },
+        EmployeeEmail: { type: "Text", xml: text("EmployeeEmail") },
       },
     },
   };
@@ -161,7 +188,7 @@
 
   // ------------------------- remove-test-data mode ------------------------
   if (MODE === "remove-test-data") {
-    for (const title of [ASSIGNMENTS, RESPONSES]) {
+    for (const title of [ASSIGNMENTS, RESPONSES, ACCESS]) {
       if (!(await call("GET", `${listPath(title)}?$select=Id`))) { note(title, "list not found, nothing to remove"); continue; }
       const rows = (await allItems(title, "Id,AreaName")).filter((i) => String(i.AreaName || "").startsWith(TEST_PREFIX));
       for (const row of rows) {
@@ -254,6 +281,22 @@
           Attestation: "Confirmed", AttestationTime: new Date().toISOString(),
         });
         note(`${area} response`, "response added (counts as already answered)");
+      }
+    }
+  }
+
+  // the access rows
+  const accessRows = (await call("GET", `${listPath(ACCESS)}?$select=Id`)) ? await allItems(ACCESS, "Id,AreaName,EmployeeEmail") : [];
+  for (const [key, people] of Object.entries(TEST_ACCESS)) {
+    const area = `${TEST_PREFIX}${key}`;
+    for (const name of people) {
+      const email = employeeEmail(name);
+      const label = `${area} ← ${name}`;
+      if (accessRows.some((x) => x.AreaName === area && x.EmployeeEmail === email)) note(label, "access row exists");
+      else if (DRY_RUN) note(label, `${tag} add access row`);
+      else {
+        await call("POST", `${listPath(ACCESS)}/items`, { Title: area, AreaName: area, EmployeeName: name, EmployeeEmail: email });
+        note(label, "access row added");
       }
     }
   }

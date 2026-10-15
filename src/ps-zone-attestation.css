@@ -381,6 +381,8 @@
 [data-psz-form]:not(.is-suspended) > .psz-editnote { display: none; }
 [data-psz-resources].is-suspended .psz-res { display: none; }
 [data-psz-resources]:not(.is-suspended) > .psz-editnote { display: none; }
+[data-psz-access].is-suspended .psz-acc { display: none; }
+[data-psz-access]:not(.is-suspended) > .psz-editnote { display: none; }
 
 /* Doctor (config validation) report */
 .psz-doctor { margin-bottom: var(--space-240); display: flex; flex-direction: column; gap: var(--space-120); }
@@ -494,8 +496,65 @@
 .psz-res__contact-name { font: var(--type-body1-strong); color: var(--fg-primary); }
 .psz-res__contact-mail { font: var(--type-caption1); overflow-wrap: anywhere; }
 
+/* ---------------------------------------------------------------------
+   Employee access list ([data-psz-access]) — a page of its own: a back
+   link, the form's card and band, an info bar, then one open accordion
+   panel per area (native <details>), its employees in two columns of
+   name + email (one column when the card is narrow).
+   --------------------------------------------------------------------- */
+.psz-acc { display: flex; flex-direction: column; gap: var(--space-160); width: 100%; }
+.psz-acc *, .psz-acc *::before, .psz-acc *::after { box-sizing: border-box; }
+.psz-acc__back {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: var(--space-60);
+  font: var(--type-body1-strong); color: var(--accent-rest); text-decoration: none;
+}
+.psz-acc__back:hover, .psz-acc__back:focus-visible { color: var(--accent-hover); text-decoration: underline; }
+.psz-acc__back .icon { flex: none; transition: transform var(--motion-normal) var(--ease-out); }
+.psz-acc__back:hover .icon { transform: translateX(-2px); }
+.psz-acc__content { display: flex; flex-direction: column; gap: var(--space-200); }
+.psz-acc__intro a { font-weight: var(--weight-semibold); }
+.psz-acc__body { display: flex; flex-direction: column; gap: var(--space-160); }
+.psz-acc__tools { display: flex; justify-content: flex-end; gap: var(--space-80); }
+.psz-acc__areas { display: flex; flex-direction: column; gap: var(--space-120); }
+.psz-acc__area {
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-radius: var(--radius-large);
+  background: var(--surface-raised);
+}
+.psz-acc__summary {
+  display: flex; align-items: center; gap: var(--space-100);
+  padding: var(--space-120) var(--space-160);
+  cursor: pointer; list-style: none;
+  border-radius: var(--radius-large);
+}
+.psz-acc__summary::-webkit-details-marker { display: none; }
+.psz-acc__summary:hover { background: var(--surface-subtle); }
+.psz-acc__summary:focus-visible { outline: var(--stroke-thick) solid var(--stroke-focus); outline-offset: 2px; }
+.psz-acc__area[open] > .psz-acc__summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: var(--stroke-thin) solid var(--stroke-divider); }
+.psz-acc__chev { flex: none; color: var(--fg-secondary); transform: rotate(-90deg); transition: transform var(--motion-normal) var(--ease-out); }
+.psz-acc__area[open] .psz-acc__chev { transform: none; }
+.psz-acc__area-name { flex: 1; min-width: 0; font: var(--type-body1-strong); color: var(--fg-primary); }
+.psz-acc__count { flex: none; font: var(--type-caption1); color: var(--fg-secondary); }
+.psz-acc__people {
+  list-style: none; margin: 0; padding: var(--space-120) var(--space-160);
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-80) var(--space-240);
+}
+.psz-acc__person { display: flex; flex-direction: column; gap: var(--space-20); min-width: 0; padding: var(--space-60) 0; }
+.psz-acc__name { font: var(--type-body1); color: var(--fg-primary); overflow-wrap: anywhere; }
+.psz-acc__email { font: var(--type-caption1); color: var(--fg-secondary); overflow-wrap: anywhere; }
+a.psz-acc__email { color: var(--accent-rest); }
+.psz-acc__none { margin: 0; padding: var(--space-120) var(--space-160); font: var(--type-body1); color: var(--fg-secondary); }
+@container psz (max-width: 539px) {
+  .psz-acc__people { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .psz-acc__chev, .psz-acc__back .icon { transition: none; }
+  .psz-acc__back:hover .icon { transform: none; }
+}
+
 /* Tinted section (section.tint) — a soft panel that sets one section apart,
-   e.g. the attestation checkbox. Replaces the hairline between sections. */
+   e.g. a closing panel. Replaces the hairline between sections. */
 .psz-page .psz-section.psz-section--tint {
   padding: var(--space-200) var(--space-240);
   border: var(--stroke-thin) solid var(--stroke-divider);

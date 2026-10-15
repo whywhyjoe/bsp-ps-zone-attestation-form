@@ -2,14 +2,17 @@
 
 ## What this is
 
-The Physical Security Zones Attestation for the FCU Portal. Each employee
-sees the areas assigned to them (from the list
+The **Physical Security Work Zone Confirmation** for the FCU Portal (called
+the "Zones Attestation" until 1.3.0; the repo, file and list names keep that
+word). Each employee sees the areas assigned to them (from the list
 `PS_Zone-Attestation-Assignments`), confirms each area's current zone or
-changes it, ticks one attestation box and submits. The form saves one item
-per area to `PS_Zone-Attestation-Responses`, with the zone, the previous
-zone, whether it changed, who answered and when. It runs in English and
-French. An area already answered drops out. When every area is done, the
-form says the attestation is already submitted.
+changes it, and submits; submitting is the confirmation (there's no checkbox
+since 1.3.0). The form saves one item per area to
+`PS_Zone-Attestation-Responses`, with the zone, the previous zone, whether it
+changed, who answered and when. It runs in English and French. An area
+already answered drops out. When every area is done, the form says the
+confirmation is already submitted. Info bars say changes will be reviewed
+(again at the bottom once a zone is changed) and whom to contact.
 
 Beside the form, in the page's narrow right column, a **resources panel**
 (engine 1.1.0) lists the job aid and other guides, some information text and
@@ -17,6 +20,12 @@ a contact. It's a second web part mounted by the same engine
 (`data-psz-resources`), from its own config
 (`ps-zone-attestation.resources.json`), and it switches language with the
 form.
+
+On a page of its own, the **employee access list** (engine 1.3.0,
+`data-psz-access`, `ps-zone-attestation.access.json`) shows each of the
+user's areas with the employees who have access to it, from
+`PS_Zone-Attestation-Access`. The form links to it in a new tab; its *Back*
+closes that tab. For information only.
 
 It began as one config (`forms/ps-zone-attestation.json`) of the shared BSP
 Forms engine in `bsp-sp-parts`. It was split out on 2026-10-14 because it's
@@ -46,7 +55,7 @@ some other form must not be able to break it.
 
 ```
 page web part:  <div data-psz-form data-config=".../ps-zone-attestation.json">
-                <script src=".../ps-zone-attestation.js?v=1.2.1">
+                <script src=".../ps-zone-attestation.js?v=1.3.0">
                         │
 ps-zone-attestation.js ─┼─ injects design/colors_and_type.css, design/components.css,
                         │  ps-zone-attestation.css (?v=) and the design/ sprite
@@ -61,6 +70,12 @@ second web part: <div data-psz-resources data-config=".../ps-zone-attestation.re
                  (same script; it runs once and mounts both)
                         └─ fetches its config, localize() → normalizeResources() → static
                            markup (no Alpine, no lists); re-rendered on a language switch
+
+access list page: <div data-psz-access data-config=".../ps-zone-attestation.access.json">
+                  (same script, its own page)
+                        └─ fetches its config, normalizeAccess() → the user's Assignments
+                           rows → their Access rows (adapter.getAccess) → <details> panels
+                           (no Alpine); re-rendered on a language switch
 ```
 
 The engine is the whole BSP Forms engine: it still supports field types and

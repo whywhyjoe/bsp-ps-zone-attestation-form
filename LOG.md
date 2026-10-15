@@ -7,6 +7,36 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.3.0: Work Zone Confirmation, notices, employee access list
+
+- **Wording:** the form is now the *Physical Security Work Zone
+  Confirmation* (EN + FR draft). The page's "attestation" wording became
+  "confirmation": the submit button, the "Submit your confirmations?"
+  dialog, the saving overlay, the thank-you and already-submitted screens,
+  "Confirmation by:". List and column names are unchanged.
+- **No checkbox:** submitting is the confirmation; every response still
+  saves `Attestation = Confirmed` (`target.set`).
+- **Notices:** info bars at the top (changes will be reviewed; a link to
+  the access list in a new tab), and at the bottom a contact message and,
+  only while some zone is changed, the review message again. New rule op
+  `anyChanged` for an assignments field; `{var:…}` in note text, with
+  `PSZ_FORM_SETTINGS.vars` overriding `form.vars`.
+- **Employee access list:** a third web part (`data-psz-access`,
+  `ps-zone-attestation.access.json`) on a page of its own: the user's areas
+  from Assignments, each an open `<details>` panel listing its employees
+  from the new `PS_Zone-Attestation-Access` list, by name, two columns of
+  name + mailto email. Expand/collapse all, back link (closes the tab when
+  opened from the form), EN/FR, error log kind `access` with the email
+  link, edit-mode placeholder. Adapter `getAccess` + mock twin.
+- **Found on the dev tenant:** a modern SharePoint page navigates a
+  same-tenant link in place, ignoring `target="_blank"`, which would have
+  replaced a half-filled form. Every new-tab link (and the back links) now
+  carries `data-interception="off"`; this also fixes the resources panel's
+  and the config prose's same-tenant links.
+- Setup script, dev scripts and docs cover the fourth list and second page.
+  Suite 171/171 (each new check shown to fail when what it guards breaks);
+  dev admin run 31/31.
+
 ## 2026-10-15 — engine 1.2.1: icons under VS Code Live Server
 
 Live Server injects its reload script before every `</svg>` in an `.svg`,

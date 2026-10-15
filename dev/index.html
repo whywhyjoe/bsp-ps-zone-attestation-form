@@ -44,7 +44,9 @@
     <!-- ============ the actual web part insert, dev-configured ============ -->
     <script src="mock-sp.js"></script>
     <script>
-      window.PSZ_FORM_SETTINGS = { mockSp: window.PSZ_MOCK_SP };
+      // vars: the access-list link points at the harness page beside this one
+      window.PSZ_FORM_SETTINGS = { mockSp: window.PSZ_MOCK_SP,
+        vars: { accessListUrl: location.pathname.replace(/[^/]*$/, '') + 'access.html' } };
     </script>
     <div data-psz-form data-config="../src/ps-zone-attestation.json"></div>
     <script>

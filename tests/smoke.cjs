@@ -140,14 +140,16 @@ async function testZoneAttestation(browser) {
     doctor.filter(r => r[4] !== 'OK').map(r => r.join('|')).join('; '));
 
   // empty submit: every row + the checkbox flagged, no dialog, nothing saved
-  await navClick(page, 'Submit attestation');
+  await navClick(page, 'Submit confirmations');
   await page.waitForTimeout(200);
   check('empty submit → an error on every row', (await page.locator('.psz-asg__row.is-error').count()) === 3);
   const rowErrs = await page.$$eval('.psz-asg__row .psz-asg__foot > .field__error', ps => ps.map(p => p.textContent));
   check('row errors: "confirm or choose" where there is a current zone, "choose" where there is none',
     JSON.stringify(rowErrs) === JSON.stringify(['Confirm this zone or choose a new one.', 'Confirm this zone or choose a new one.', 'Choose a zone for this area.']),
     JSON.stringify(rowErrs));
-  check('empty submit → checkbox error', await page.locator('[data-psz-field="attestation"] .field__error').isVisible());
+  check('no attestation checkbox (submitting is the confirmation)',
+    (await page.locator('[data-psz-field="attestation"]').count()) === 0 &&
+    (await page.locator('.psz input[type="checkbox"]').evaluateAll(els => els.every(e => e.closest('.psz-asg__confirm')))));
   check('empty submit → no dialog, nothing saved', !(await page.locator('.psz-dialog').isVisible()) && (await zoneAdds(page)).length === 0);
 
   // pick, clear, re-pick; the progress meter follows
@@ -170,10 +172,9 @@ async function testZoneAttestation(browser) {
   await zonePick(page, 1, L.pub);
   await zonePick(page, 2, L.high);
   check('progress reads 3 of 3', /3 of 3/.test(await page.locator('.psz-asg__progress').textContent()));
-  await page.locator('[data-psz-field="attestation"] input').check();
 
   // confirmation: Escape goes back; Confirm saves one item per row
-  await navClick(page, 'Submit attestation');
+  await navClick(page, 'Submit confirmations');
   await page.waitForTimeout(250);
   check('submit → confirmation dialog with the warning text',
     await page.locator('.psz-dialog').isVisible() && /will not be able to return and change them/.test(await page.locator('.psz-dialog').textContent()));
@@ -181,7 +182,7 @@ async function testZoneAttestation(browser) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(150);
   check('Escape → dialog closed, nothing saved', !(await page.locator('.psz-dialog').isVisible()) && (await zoneAdds(page)).length === 0);
-  await navClick(page, 'Submit attestation');
+  await navClick(page, 'Submit confirmations');
   await page.waitForTimeout(250);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
@@ -255,8 +256,7 @@ async function testZoneAttestation(browser) {
   await page.locator('.psz-asg__row').nth(1).locator('.psz-asg__confirm button').click();
   await page.waitForTimeout(100);
   await page.keyboard.press('Escape');
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation');
+  await navClick(page, 'Submit confirmations');
   await page.waitForTimeout(300);
   const inv = await page.evaluate(() => {
     const vis = el => !!el.offsetParent;
@@ -270,7 +270,7 @@ async function testZoneAttestation(browser) {
   await page.locator('.psz-asg__row').nth(1).locator('.psz-asg__keep').click();
   await page.waitForTimeout(80);
   await zoneConfirm(page, 1); await zonePick(page, 2, L.sec);
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(250);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(250);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const cAdds = Object.fromEntries((await zoneAdds(page)).map(p => [p.LookupID, p]));
@@ -281,10 +281,9 @@ async function testZoneAttestation(browser) {
   check('no page errors (confirm / change)', page.__errors.length === 0, page.__errors.join(' | '));
   await ctx.close();
   // previousColumn named Title wins over target.titleTemplate (it isn't overwritten)
-  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[1].fields[0].previousColumn = 'Title'; } }));
+  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[2].fields[0].previousColumn = 'Title'; } }));
   await zoneConfirm(page, 0); await zoneConfirm(page, 1); await zonePick(page, 2, L.sec);
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(250);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(250);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const tAdds = Object.fromEntries((await zoneAdds(page)).map(p => [p.LookupID, p]));
@@ -303,8 +302,7 @@ async function testZoneAttestation(browser) {
   // a failure mid-save: saved rows are kept and never saved twice
   ({ ctx, page } = await openZone(browser, { fail: { addItemAfter: 1 } }));
   await zonePick(page, 0, L.pub); await zonePick(page, 1, L.pub); await zonePick(page, 2, L.plus);
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   check('partial save → "1 of 3 areas are confirmed saved" message', /1 of 3 areas are confirmed saved/.test(await page.locator('.psz__pageerror').textContent()));
@@ -313,7 +311,7 @@ async function testZoneAttestation(browser) {
     (await page.locator('.psz-asg__row.is-saved .psz-asg__keep').isHidden()) &&
     (await page.locator('.psz-asg__row.is-saved .psz-asg__status').textContent()).trim() === 'Saved');
   await page.evaluate(() => { window.PSZ_MOCK_FAIL = {}; });
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const ids = (await zoneAdds(page)).map(p => p.LookupID).sort();
@@ -323,7 +321,7 @@ async function testZoneAttestation(browser) {
   // rows already answered (responses list) aren't shown again
   ({ ctx, page } = await openZone(browser, { done: ['12'] }));
   check('one row already submitted → 2 rows + a note', (await page.locator('.psz-asg__row').count()) === 2 &&
-    /1 of your areas were already attested/.test(await page.locator('[data-psz-field="zones"]').textContent()));
+    /1 of your areas were already confirmed/.test(await page.locator('[data-psz-field="zones"]').textContent()));
   await ctx.close();
   ({ ctx, page } = await openZone(browser, { done: ['11', '12', '13'] }));
   check('everything submitted → "already submitted" screen, no form',
@@ -345,11 +343,11 @@ async function testZoneAttestation(browser) {
   // French: config pairs + engine strings; switching keeps answers; values stay English
   ({ ctx, page } = await openZone(browser, { query: '&lang=fr' }));
   check('?lang=fr → French title, labels, button',
-    (await page.locator('.psz__title').textContent()) === 'Attestation des zones de sécurité physique' &&
+    (await page.locator('.psz__title').textContent()) === 'Confirmation des zones de travail — sécurité physique' &&
     (await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__eyebrow:visible').textContent()) === 'Zone actuelle' &&
     (await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__zone:visible').textContent()) === 'Haute sécurité' &&
     (await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__confirm').textContent()).includes('Je confirme que c\'est la bonne zone') &&
-    await page.locator('button[type="submit"]:has-text("Soumettre l\'attestation")').isVisible());
+    await page.locator('button[type="submit"]:has-text("Soumettre les confirmations")').isVisible());
   check('form root lang="fr" (lang-keep)', (await page.getAttribute('.psz', 'lang')) === 'fr' &&
     (await page.getAttribute('.psz', 'class')).includes('lang-keep'));
   await zonePick(page, 0, 'Public - Accès général');
@@ -359,11 +357,10 @@ async function testZoneAttestation(browser) {
     (await page.locator('.psz-asg__row').nth(0).locator('.psz-zone:visible').textContent()).trim() === L.pub &&
     (await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__zone.is-replaced:visible').textContent()) === L.high &&
     await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__keep').isVisible() &&
-    (await page.locator('.psz__title').textContent()) === 'Physical Security Zones Attestation');
+    (await page.locator('.psz__title').textContent()) === 'Physical Security Work Zone Confirmation');
   await page.evaluate(() => window.intl.setLang('fr'));
   await page.waitForTimeout(500);
   await zonePick(page, 1, 'Normes - Fonctionnement restreint'); await zonePick(page, 2, 'Haute sécurité');
-  await page.locator('[data-psz-field="attestation"] input').check();
   await navClick(page, 'Soumettre'); await page.waitForTimeout(200);
   check('French confirmation dialog', /Une fois soumises/.test(await page.locator('.psz-dialog').textContent()));
   await navClick(page, 'Confirmer');
@@ -376,8 +373,7 @@ async function testZoneAttestation(browser) {
   // answers are frozen once confirmed: a slow save, edits attempted mid-save
   ({ ctx, page } = await openZone(browser, { addMs: 900 }));
   await zonePick(page, 0, L.sec); await zonePick(page, 1, L.pub); await zonePick(page, 2, L.high);
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForTimeout(250); // row 1 is saving
   const mid = await page.evaluate(() => {
@@ -388,11 +384,10 @@ async function testZoneAttestation(browser) {
     st.rowPick('zones', st.values.zones[2], '');    // method path: guarded
     st.rowKeep('zones', st.values.zones[0]);        // guarded too
     st.rowChange('zones', st.values.zones[0]);
-    const cb = document.querySelector('[data-psz-field="attestation"] input');
+    const cb = document.querySelectorAll('.psz-asg__row')[1].querySelector('.psz-asg__confirm input');
     const cbDisabled = cb.matches(':disabled'); cb.click(); // disabled via the fieldset: ignores the click
     const busy = st.busy;
     st.values.zones[1].value = '';                  // bypass every guard: the snapshot must win
-    st.values.attestation = false;
     return { busy, cbDisabled, fieldset: document.querySelector('fieldset.psz__lock').disabled, r3: st.values.zones[2].value,
       r1: [st.values.zones[0].mode, st.values.zones[0].value] };
   });
@@ -407,8 +402,8 @@ async function testZoneAttestation(browser) {
     return { shown: getComputedStyle(s).display !== 'none', covers: r.top <= 0 && r.left <= 0 && r.bottom >= innerHeight - 1 && r.right >= innerWidth - 20,
       text: s.textContent, spinner: !!s.querySelector('.spinner'), focused: document.activeElement === s.querySelector('.psz-saving__card') };
   });
-  check('mid-save: a full-page scrim with a spinner says "Submitting your attestation…" and not to leave; it has focus',
-    scrim.shown && scrim.covers && scrim.spinner && /Submitting your attestation…/.test(scrim.text) && /Don’t close this page, refresh it or go back/.test(scrim.text) && scrim.focused,
+  check('mid-save: a full-page scrim with a spinner says "Submitting your confirmations…" and not to leave; it has focus',
+    scrim.shown && scrim.covers && scrim.spinner && /Submitting your confirmations…/.test(scrim.text) && /Don’t close this page, refresh it or go back/.test(scrim.text) && scrim.focused,
     JSON.stringify(scrim));
   check('mid-save: leaving the page asks first (beforeunload)', await leaveGuard());
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 8000 });
@@ -424,14 +419,13 @@ async function testZoneAttestation(browser) {
   // an add that LANDS but whose reply is lost: the retry checks the list first
   ({ ctx, page } = await openZone(browser, { fail: { addItemLostAfter: 1 } }));
   await zonePick(page, 0, L.pub); await zonePick(page, 1, L.std); await zonePick(page, 2, L.high);
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   check('lost reply → "1 of 3 areas are confirmed saved" (the rest only "may not be")',
     /1 of 3 areas are confirmed saved; the rest may not be/.test(await page.locator('.psz__pageerror').textContent()));
   await page.evaluate(() => { window.PSZ_MOCK_FAIL = {}; });
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const lostWrites = await page.evaluate(() => window.__PSZ_MOCK_WRITES__);
@@ -445,12 +439,11 @@ async function testZoneAttestation(browser) {
   // check must still find the landed row (the cap doesn't apply to it)
   ({ ctx, page } = await openZone(browser, { fail: { addItemLostAfter: 1 }, keysCap: 0 }));
   await zonePick(page, 0, L.pub); await zonePick(page, 1, L.std); await zonePick(page, 2, L.high);
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   await page.evaluate(() => { window.PSZ_MOCK_FAIL = {}; });
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   const capIds = (await zoneAdds(page)).map(p => p.LookupID).sort();
@@ -459,8 +452,7 @@ async function testZoneAttestation(browser) {
   // lost on the very first add: no "nothing was saved" promise
   ({ ctx, page } = await openZone(browser, { fail: { addItemLostAfter: 0 } }));
   await zonePick(page, 0, L.pub); await zonePick(page, 1, L.pub); await zonePick(page, 2, L.pub);
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   const firstLost = await page.locator('.psz__pageerror').textContent();
@@ -473,13 +465,12 @@ async function testZoneAttestation(browser) {
   const EVIL_ZONE = 'O"Brien\'s <b>zone</b> {{x}}';
   ({ ctx, page } = await openZone(browser, {
     rows: [{ ID: 21, UserEmail: 'dev.tester@example.com', UserDescription: '<script>window.__xss=2</script>', AreaName: EVIL_AREA }],
-    mutate: cfg => { cfg.pages[0].sections[1].fields[0].choices.push({ value: EVIL_ZONE, label: EVIL_ZONE, color: 'blue' }); }
+    mutate: cfg => { cfg.pages[0].sections[2].fields[0].choices.push({ value: EVIL_ZONE, label: EVIL_ZONE, color: 'blue' }); }
   }));
   check('hostile area name shown as text', (await page.locator('.psz-asg__label').textContent()) === EVIL_AREA);
   await zonePick(page, 0, EVIL_ZONE);
   check('hostile choice shown as text in the control', (await page.locator('.psz-asg__row .psz-zone:visible').textContent()).trim() === EVIL_ZONE);
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
   saved = await zoneAdds(page);
@@ -490,11 +481,11 @@ async function testZoneAttestation(browser) {
   await ctx.close();
 
   // cut-off reads are said out loud
-  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[1].fields[0].source.top = 2; } }));
+  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[2].fields[0].source.top = 2; } }));
   check('more rows than source.top → 2 rows + "Only the first 2" warning',
     (await page.locator('.psz-asg__row').count()) === 2 && await page.locator('.psz-asg__warn:has-text("Only the first 2")').isVisible());
   await ctx.close();
-  ({ ctx, page } = await openZone(browser, { done: ['12', '11'], mutate: cfg => { cfg.pages[0].sections[1].fields[0].source.top = 2; } }));
+  ({ ctx, page } = await openZone(browser, { done: ['12', '11'], mutate: cfg => { cfg.pages[0].sections[2].fields[0].source.top = 2; } }));
   check('first page all done but more exist → a warning, not "already submitted"',
     !(await page.locator('.psz-done--allDone').isVisible()) &&
     await page.locator('[data-psz-field="zones"] .msgbar--danger:has-text("Only the first 2")').isVisible());
@@ -511,16 +502,16 @@ async function testZoneAttestation(browser) {
 
   // config errors
   for (const [name, mutate] of [
-    ['assignments without source.userColumn → error card', cfg => { delete cfg.pages[0].sections[1].fields[0].source.userColumn; }],
-    ['responses.keyColumn not in rowColumns → error card', cfg => { cfg.pages[0].sections[1].fields[0].responses.keyColumn = 'Nope'; }],
+    ['assignments without source.userColumn → error card', cfg => { delete cfg.pages[0].sections[2].fields[0].source.userColumn; }],
+    ['responses.keyColumn not in rowColumns → error card', cfg => { cfg.pages[0].sections[2].fields[0].responses.keyColumn = 'Nope'; }],
     ['two assignments fields → error card', cfg => {
-      const f = JSON.parse(JSON.stringify(cfg.pages[0].sections[1].fields[0])); f.id = 'zones2';
-      cfg.pages[0].sections[1].fields.push(f);
+      const f = JSON.parse(JSON.stringify(cfg.pages[0].sections[2].fields[0])); f.id = 'zones2';
+      cfg.pages[0].sections[2].fields.push(f);
     }],
     ['form.languages ["de"] → error card', cfg => { cfg.form.languages = ['de']; }],
-    ['previousColumn without source.currentColumn → error card', cfg => { delete cfg.pages[0].sections[1].fields[0].source.currentColumn; }],
-    ['previousColumn = column → error card', cfg => { cfg.pages[0].sections[1].fields[0].previousColumn = 'ZoneSelection'; }],
-    ['changedColumn = a rowColumns target → error card', cfg => { cfg.pages[0].sections[1].fields[0].changedColumn = 'AreaName'; }]
+    ['previousColumn without source.currentColumn → error card', cfg => { delete cfg.pages[0].sections[2].fields[0].source.currentColumn; }],
+    ['previousColumn = column → error card', cfg => { cfg.pages[0].sections[2].fields[0].previousColumn = 'ZoneSelection'; }],
+    ['changedColumn = a rowColumns target → error card', cfg => { cfg.pages[0].sections[2].fields[0].changedColumn = 'AreaName'; }]
   ]) {
     ({ ctx, page } = await openZone(browser, { mutate }));
     const state = await page.getAttribute('[data-psz-form]', 'data-psz-state');
@@ -555,7 +546,7 @@ async function testErrorReporting(browser) {
     /browser: /.test(logs[0].item.Detail) && /list: PS_Zone-Attestation-Assignments/.test(logs[0].item.Detail), logs[0].item.Detail);
   let mail = parseMail(await mailIn(page, '[data-psz-field="zones"] .psz-errmail'));
   check('failed load → mailto link to the contact, with the configured subject',
-    mail && mail.to === 'form.admin@example.com' && mail.subject === 'PS Zone Attestation: problem report', JSON.stringify(mail));
+    mail && mail.to === 'form.admin@example.com' && mail.subject === 'PS Work Zone Confirmation: problem report', JSON.stringify(mail));
   check('…and a body asking what happened, then the diagnostics',
     /^What were you doing/.test(mail.body) && /error: load: mock getAssignments failure/.test(mail.body) &&
     /user: dev\.tester@example\.com/.test(mail.body) && mail.body.includes('engine: ' + ver + ' (en)') && mail.body.length < 1600, mail.body);
@@ -570,8 +561,7 @@ async function testErrorReporting(browser) {
   // message in the same bar never carries the link
   ({ ctx, page } = await openZone(browser, { fail: { addItem: true } }));
   await zonePick(page, 0, L.pub); await zonePick(page, 1, L.pub); await zonePick(page, 2, L.plus);
-  await page.locator('[data-psz-field="attestation"] input').check();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(200);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(200);
   await navClick(page, 'Confirm');
   await page.waitForSelector('.psz__pageerror', { state: 'visible', timeout: 15000 });
   await page.waitForTimeout(300);
@@ -580,8 +570,8 @@ async function testErrorReporting(browser) {
   check('failed save → a "save" report, rows saved in the detail',
     logs.length === 1 && logs[0].item.ErrorKind === 'save' && /rows saved: 0 of 3/.test(logs[0].item.Detail), JSON.stringify(logs.map(l => l.item.Detail)));
   check('failed save → the page error offers the email link', !!mail && /error: save: /.test(mail.body), JSON.stringify(mail));
-  await page.locator('[data-psz-field="attestation"] input').uncheck();
-  await navClick(page, 'Submit attestation'); await page.waitForTimeout(250);
+  await page.locator('.psz-asg__row').nth(2).locator('.psz-combo__clear').click();   // an unanswered row again
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(250);
   check('a validation message in the same bar → no email link',
     await page.locator('.psz__pageerror').isVisible() && !(await mailIn(page, '.psz__pageerror .psz-errmail')));
   await ctx.close();
@@ -599,7 +589,7 @@ async function testErrorReporting(browser) {
   mail = parseMail(await mailIn(page, '[data-psz-field="zones"] .psz-errmail'));
   check('French: link text, subject and body in French',
     (await page.locator('[data-psz-field="zones"] .psz-errmail').textContent()).startsWith('Envoyer un courriel') &&
-    /^Attestation des zones/.test(mail.subject) && /^Que faisiez-vous/.test(mail.body) && /\(fr\)/.test(mail.body), JSON.stringify(mail));
+    /^Confirmation des zones de travail/.test(mail.subject) && /^Que faisiez-vous/.test(mail.body) && /\(fr\)/.test(mail.body), JSON.stringify(mail));
   await ctx.close();
 
   // a report that itself fails never breaks the form
@@ -983,7 +973,7 @@ async function testResources(browser) {
   r = await res(page);
   check('intl.setLang("en") → panel and form both switch back',
     r.lang === 'en' && r.headings[0] === 'Resources and guides' &&
-    (await page.locator('.psz__title').textContent()) === 'Physical Security Zones Attestation', JSON.stringify(r.headings));
+    (await page.locator('.psz__title').textContent()) === 'Physical Security Work Zone Confirmation', JSON.stringify(r.headings));
   check('no page errors (resources, FR/EN)', page.__errors.length === 0, page.__errors.join(' | '));
   await ctx.close();
 
@@ -1011,14 +1001,270 @@ async function testResources(browser) {
   }
 }
 
+/* The form's notices (1.3.0): two info bars at the top (changes are
+   reviewed; a link to the access list, in a new tab), a "you changed a
+   zone" bar at the bottom only while some row differs from its current
+   zone, and the contact message that replaced the attestation checkbox. */
+const ACCESS = new URL('access.html', BASE).href;
+async function testNotices(browser) {
+  console.log('form notices:');
+  let { ctx, page } = await openZone(browser);
+  const bars = () => page.evaluate(() => [...document.querySelectorAll('[data-psz-form] .psz__body .msgbar--info')]
+    .filter(m => getComputedStyle(m).display !== 'none').map(m => m.textContent.trim()));
+  const top = await page.evaluate(() => {
+    const body = document.querySelector('[data-psz-form] .psz__body');
+    const first = [...body.querySelectorAll('.msgbar--info')].slice(0, 2);
+    const who = body.querySelector('.psz-who__card');
+    const a = first[1] && first[1].querySelector('a');
+    return { texts: first.map(m => m.textContent.trim()),
+      beforeWho: first.every(m => m.compareDocumentPosition(who) & Node.DOCUMENT_POSITION_FOLLOWING),
+      link: a && [a.textContent, a.getAttribute('href'), a.target, a.rel, a.getAttribute('data-interception')] };
+  });
+  check('top: "changes are reviewed" and the access-list link, above everything else',
+    /^Any change to a zone will be reviewed, and Physical Security will contact you\.$/.test(top.texts[0]) &&
+    /employee access list/.test(top.texts[1]) && top.beforeWho, JSON.stringify(top));
+  check('the access-list link: {var:accessListUrl}, new tab, noopener',
+    top.link && top.link[0] === 'employee access list' && top.link[1] === new URL(ACCESS).pathname &&
+    top.link[2] === '_blank' && /noopener/.test(top.link[3]), JSON.stringify(top.link));
+  // SharePoint's in-place navigation ignores target="_blank" unless a link
+  // opts out (found on the dev tenant); the harness can't reproduce that, so
+  // the attribute itself is checked, on every new-tab link the engine makes
+  const optOut = await page.evaluate(() => [...document.querySelectorAll('a[target="_blank"]')].map(a => a.getAttribute('data-interception')));
+  check('every new-tab link opts out of SharePoint\'s in-place navigation (data-interception="off")',
+    top.link && top.link[4] === 'off' && optOut.length > 0 && optOut.every(v => v === 'off'), JSON.stringify(optOut));
+  const contact = await page.evaluate(() => {
+    const m = [...document.querySelectorAll('[data-psz-form] .msgbar--info')].find(x => /questions or concerns/.test(x.textContent));
+    const zones = document.querySelector('[data-psz-field="zones"]');
+    return m && { shown: getComputedStyle(m).display !== 'none', mail: (m.querySelector('a[href^="mailto:"]') || {}).href || null,
+      last: !!(zones.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING) };
+  });
+  check('bottom: the contact message, always shown, with a mailto link', contact && contact.shown && contact.last &&
+    contact.mail === 'mailto:contact.name@example.com', JSON.stringify(contact));
+  const changed = async () => (await bars()).some(t => /^You changed at least one zone/.test(t));
+  check('no change yet → no "you changed" bar', !(await changed()));
+  await zoneConfirm(page, 0);
+  check('confirming a zone → still none', !(await changed()));
+  await zonePick(page, 1, L.std);
+  check('changing a zone → the "you changed" bar shows', await changed(), JSON.stringify(await bars()));
+  await page.locator('.psz-asg__row').nth(1).locator('.psz-asg__keep').click();
+  await page.waitForTimeout(150);
+  check('Keep current zone → it goes again', !(await changed()));
+  await zonePick(page, 2, L.sec);
+  check('a first zone for an area with none counts as a change (as ZoneChanged does)', await changed());
+  await zoneConfirm(page, 1);
+  await navClick(page, 'Submit confirmations'); await page.waitForTimeout(250);
+  check('the dialog: "Submit your confirmations?"',
+    (await page.locator('.psz-dialog .dialog__title').textContent()).trim() === 'Submit your confirmations?');
+  await navClick(page, 'Confirm');
+  await page.waitForSelector('.psz-done:not(.psz-done--empty):not(.psz-done--allDone)', { state: 'visible', timeout: 15000 });
+  const adds = await zoneAdds(page);
+  check('every row still saves Attestation = Confirmed (target.set)', adds.length === 3 && adds.every(p => p.Attestation === 'Confirmed'),
+    JSON.stringify(adds.map(p => p.Attestation)));
+  check('thank-you screen says confirmations', /your confirmations were submitted/.test(await page.locator('.psz-done__title:visible').textContent()));
+  check('no page errors (notices)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // the link opens the access list in a new tab; its Back closes that tab
+  ({ ctx, page } = await openZone(browser));
+  const [popup] = await Promise.all([
+    ctx.waitForEvent('page'),
+    page.locator('[data-psz-form] a', { hasText: 'employee access list' }).click()
+  ]);
+  await popup.waitForSelector('.psz-acc__area', { timeout: 15000 });
+  check('the link opened the access list in a new tab, the form tab untouched',
+    popup.url().split('?')[0] === ACCESS && page.url().startsWith(BASE) && (await page.locator('.psz-asg__row').count()) === 3, popup.url());
+  const closed = popup.waitForEvent('close', { timeout: 5000 }).then(() => true).catch(() => false);
+  await popup.locator('.psz-acc__back').click();
+  check('Back to confirmation form → closes that tab (back to the form\'s tab)', await closed);
+  await ctx.close();
+}
+
+/* The employee access list ([data-psz-access], dev/access.html). Mock rows
+   (mock-sp.js ACCESS): Tower 10 five people, the Podium two (one with its
+   area name in other case + outer spaces), Tower 37 none, and Hall B (not
+   the user's) one, "Not Yours". */
+async function openAccess(browser, opts) {
+  opts = opts || {};
+  const ctx = await browser.newContext({ viewport: opts.viewport || { width: 1100, height: 1400 } });
+  const page = await ctx.newPage();
+  page.__errors = [];
+  page.on('pageerror', e => page.__errors.push(e.message));
+  page.__urls = [];
+  page.on('request', r => page.__urls.push(r.url()));
+  await page.route('**/ps-zone-attestation.access.json', async route => {
+    const cfg = await (await route.fetch()).json();
+    if (opts.mutate) opts.mutate(cfg);
+    await route.fulfill({ json: cfg });
+  });
+  await page.addInitScript(o => {
+    if (o.fail) window.PSZ_MOCK_FAIL = o.fail;
+    if (o.rows) window.PSZ_MOCK_ASSIGNMENTS = o.rows;
+    if (o.access) window.PSZ_MOCK_ACCESS = o.access;
+    if (o.more) window.PSZ_MOCK_ACCESS_MORE = true;
+  }, { fail: opts.fail || null, rows: opts.rows || null, access: opts.access || null, more: !!opts.more });
+  if (opts.from) await page.goto(opts.from);
+  await page.goto(ACCESS + (opts.query || ''));
+  if (!opts.noWait) {
+    await page.waitForFunction(() => {
+      const m = document.querySelector('[data-psz-access]');
+      return m && /ready|error/.test(m.getAttribute('data-psz-state') || '');
+    }, null, { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(150);
+  }
+  return { ctx, page };
+}
+const accState = page => page.evaluate(() => {
+  const r = document.querySelector('.psz-acc');
+  if (!r) return null;
+  const areas = [...r.querySelectorAll('details.psz-acc__area')].map(d => ({
+    name: d.querySelector('.psz-acc__area-name').textContent, open: d.open,
+    count: d.querySelector('.psz-acc__count').textContent,
+    people: [...d.querySelectorAll('.psz-acc__person')].map(p => [p.querySelector('.psz-acc__name').textContent,
+      (p.querySelector('a.psz-acc__email') || { getAttribute: () => null }).getAttribute('href')]),
+    none: !!d.querySelector('.psz-acc__none'),
+    cols: (() => { const ul = d.querySelector('.psz-acc__people'); return ul ? getComputedStyle(ul).gridTemplateColumns.split(' ').length : 0; })()
+  }));
+  const back = r.querySelector('.psz-acc__back');
+  const introLink = r.querySelector('.psz-acc__intro a');
+  return {
+    lang: r.getAttribute('lang'), keep: r.classList.contains('lang-keep'),
+    title: (r.querySelector('.psz__title') || {}).textContent,
+    intro: (r.querySelector('.psz-acc__intro') || {}).textContent,
+    back: back && [back.textContent.trim(), back.getAttribute('href'), back.getAttribute('data-interception')],
+    introLink: introLink && [introLink.textContent, introLink.getAttribute('href'), introLink.target, introLink.hasAttribute('data-psz-back'),
+      introLink.getAttribute('data-interception')],
+    areas, text: r.textContent
+  };
+});
+async function testAccess(browser) {
+  console.log('access list:');
+  const formPath = new URL('page.html', BASE).pathname;
+  let { ctx, page } = await openAccess(browser);
+  let a = await accState(page);
+  check('title, intro and a back link at the top',
+    a && a.title === 'Employee access to your work zones' && a.back && a.back[0] === 'Back to confirmation form' && a.back[1] === formPath &&
+    a.back[2] === 'off' && a.introLink && a.introLink[4] === 'off' &&
+    /^This list is for your information only\. There is no need to confirm this employee access list\./.test(a.intro.trim()), JSON.stringify(a && [a.title, a.back, a.intro]));
+  check('the intro\'s "zone confirmation tool" link goes back to the form (same tab, a back link)',
+    a.introLink && a.introLink[0] === 'zone confirmation tool' && a.introLink[1] === formPath && a.introLink[2] === '' && a.introLink[3],
+    JSON.stringify(a.introLink));
+  check('one panel per assigned area, sorted, all expanded',
+    JSON.stringify(a.areas.map(x => x.name)) === '["FCP - Concourse Podium","FCP - Tower 10","FCP - Tower 37"]' && a.areas.every(x => x.open),
+    JSON.stringify(a.areas.map(x => [x.name, x.open])));
+  const t10 = a.areas[1];
+  check('Tower 10: its five employees by name, each with a mailto email, in two columns',
+    JSON.stringify(t10.people.map(p => p[0])) === '["Ana Diaz","Jordan Tremblay","Morgan Lee","Priya Natarajan","Sam Okafor"]' &&
+    t10.people.every(p => /^mailto:[a-z.]+@example\.com$/.test(p[1])) && t10.count === '5 employee(s)' && t10.cols === 2, JSON.stringify(t10));
+  check('an access row whose area differs only in case / outer spaces still counts (Podium: 2)',
+    JSON.stringify(a.areas[0].people.map(p => p[0])) === '["Alex Martin","Chris Wong"]', JSON.stringify(a.areas[0].people));
+  check('an area with nobody listed says so', a.areas[2].none && a.areas[2].people.length === 0 && a.areas[2].count === '0 employee(s)');
+  check('another user\'s area and its people never show', !/Not Yours|Hall B/.test(a.text));
+  const reads = await page.evaluate(() => window.__PSZ_MOCK_WRITES__.filter(w => w.op === 'getAccess'));
+  check('one access read, for exactly the user\'s areas',
+    reads.length === 1 && reads[0].list === 'PS_Zone-Attestation-Access' &&
+    JSON.stringify(reads[0].areas) === '["FCP - Concourse Podium","FCP - Tower 10","FCP - Tower 37"]', JSON.stringify(reads));
+  // accordion: collapse all / expand all / one panel by keyboard
+  await page.locator('[data-psz-acc-all="close"]').click();
+  check('Collapse all → every panel closed', (await accState(page)).areas.every(x => !x.open));
+  await page.locator('[data-psz-acc-all="open"]').click();
+  await page.locator('details.psz-acc__area').nth(1).locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(100);
+  a = await accState(page);
+  check('Expand all, then Enter on a panel\'s heading toggles just that one', a.areas.map(x => x.open).join() === 'true,false,true', a.areas.map(x => x.open).join());
+  // the page's own requests: all from src/ or the harness, every icon resolves
+  const out = page.__urls.filter(u => !(u.startsWith(SRC) || [ACCESS, new URL('mock-sp.js', BASE).href].includes(u.split(/[?#]/)[0]) || /^(data|about|blob):/.test(u)));
+  const icons = await page.evaluate(() => [...document.querySelectorAll('.psz-acc use')].map(u => u.getAttribute('href').slice(1)).filter(id => !document.getElementById(id)));
+  check('every request stays inside src/; every icon resolves', out.length === 0 && icons.length === 0, out.concat(icons).join(' '));
+  check('no page errors (access list)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // narrow: one column
+  ({ ctx, page } = await openAccess(browser, { viewport: { width: 420, height: 1200 } }));
+  a = await accState(page);
+  check('narrow page → employees in one column', a.areas[1].cols === 1, String(a.areas[1].cols));
+  await ctx.close();
+
+  // Back from a tab with history follows the link (to the form)
+  ({ ctx, page } = await openAccess(browser, { from: PAGE }));
+  await page.locator('.psz-acc__back').click();
+  await page.waitForURL(u => u.pathname === formPath, { timeout: 5000 }).catch(() => {});
+  check('Back in a tab with history → goes to the form page', new URL(page.url()).pathname === formPath, page.url());
+  await ctx.close();
+
+  // French, then a switch keeps a collapsed panel collapsed
+  ({ ctx, page } = await openAccess(browser, { query: '?lang=fr' }));
+  a = await accState(page);
+  check('?lang=fr → French title, back link, intro link and counts; lang="fr" + lang-keep',
+    a.lang === 'fr' && a.keep && a.title === 'Accès des employés à vos zones de travail' && a.back[0] === 'Retour au formulaire de confirmation' &&
+    a.introLink[0] === 'outil de confirmation des zones' && a.areas[1].count === '5 employé(s)', JSON.stringify([a.title, a.back, a.areas[1].count]));
+  await page.locator('details.psz-acc__area').nth(0).locator('summary').click();
+  await page.evaluate(() => window.intl.setLang('en'));
+  await page.waitForTimeout(400);
+  a = await accState(page);
+  check('intl.setLang("en") → English, the collapsed panel stays collapsed',
+    a.lang === 'en' && a.title === 'Employee access to your work zones' && a.areas.map(x => x.open).join() === 'false,true,true', JSON.stringify([a.lang, a.areas.map(x => x.open)]));
+  check('no page errors (access, FR/EN)', page.__errors.length === 0, page.__errors.join(' | '));
+  await ctx.close();
+
+  // a failed read: message, Try again, the email link, one "access" report
+  ({ ctx, page } = await openAccess(browser, { fail: { getAccess: true } }));
+  const err = await page.evaluate(() => {
+    const m = document.querySelector('.psz-acc__body .msgbar--danger');
+    return m && { text: m.textContent, retry: !!m.querySelector('[data-psz-acc-retry]'), mail: (m.querySelector('.psz-errmail') || {}).href || null };
+  });
+  let logs = await logWrites(page);
+  check('failed read → message, Try again, email link; one "access" error-log item',
+    err && /couldn’t be loaded/.test(err.text) && err.retry && /^mailto:form\.admin@example\.com\?subject=PS%20Work%20Zone%20access%20list/.test(err.mail) &&
+    logs.length === 1 && logs[0].item.ErrorKind === 'access' && /getAccess/.test(logs[0].item.Message), JSON.stringify([err, logs.map(l => l.item.Title)]));
+  await page.evaluate(() => { window.PSZ_MOCK_FAIL = {}; });
+  await page.locator('[data-psz-acc-retry]').click();
+  await page.waitForSelector('details.psz-acc__area', { timeout: 5000 }).catch(() => {});
+  check('Try again → the list loads', (await page.locator('details.psz-acc__area').count()) === 3);
+  await ctx.close();
+
+  // nothing assigned; a cut-off read; hostile text
+  ({ ctx, page } = await openAccess(browser, { rows: [] }));
+  check('no areas assigned → "No areas assigned", no panels',
+    await page.locator('.psz-acc .psz-done--empty:has-text("No areas assigned")').isVisible() && (await page.locator('details.psz-acc__area').count()) === 0);
+  await ctx.close();
+  ({ ctx, page } = await openAccess(browser, { more: true }));
+  check('a cut-off read → a warning above the panels', await page.locator('.psz-acc .msgbar--warning:has-text("Only part of the list")').isVisible());
+  await ctx.close();
+  const EVIL = '<img src=x onerror="window.__xss=1">Vault & "B"';
+  ({ ctx, page } = await openAccess(browser, {
+    rows: [{ ID: 41, UserEmail: 'dev.tester@example.com', AreaName: EVIL, CurrentZone: '' }],
+    access: [{ AreaName: EVIL, EmployeeName: '<b>Eve</b>', EmployeeEmail: 'eve@example.com?cc=x@evil.test' }]
+  }));
+  a = await accState(page);
+  check('hostile area / name shown as text; an email with ?/& isn\'t made a mailto',
+    a.areas.length === 1 && a.areas[0].name === EVIL && a.areas[0].people[0][0] === '<b>Eve</b>' && a.areas[0].people[0][1] === null &&
+    (await page.evaluate(() => window.__xss)) === undefined && page.__errors.length === 0, JSON.stringify(a.areas));
+  await ctx.close();
+
+  // edit mode; a broken config
+  ({ ctx, page } = await openAccess(browser, { query: '?Mode=Edit', noWait: true }));
+  await page.waitForTimeout(800);
+  check('edit mode: the placeholder, no list, no reads',
+    await page.locator('[data-psz-access] .psz-editnote').isVisible() && (await page.locator('.psz-acc').count()) === 0 &&
+    (await page.evaluate(() => window.__PSZ_MOCK_WRITES__.length)) === 0);
+  await ctx.close();
+  ({ ctx, page } = await openAccess(browser, { mutate: cfg => { delete cfg.access.nameColumn; } }));
+  check('access.nameColumn missing → error card',
+    (await page.getAttribute('[data-psz-access]', 'data-psz-state')) === 'error' && await page.locator('[data-psz-access] [data-psz-fatal]').isVisible());
+  await ctx.close();
+}
+
 (async () => {
   const browser = await launch();
   try {
     await testEditMode(browser);
     await testZoneAttestation(browser);
+    await testNotices(browser);
     await testErrorReporting(browser);
     await testStandalone(browser);
     await testResources(browser);
+    await testAccess(browser);
   } finally {
     await browser.close();
   }

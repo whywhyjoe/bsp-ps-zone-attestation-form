@@ -1,4 +1,4 @@
-// DEV ONLY: the two lists src/ps-zone-attestation.json uses, as a cross-site twin of prod — on
+// DEV ONLY: the lists src/ps-zone-attestation*.json use, as a cross-site twin of prod — on
 // the dev tenant's ROOT site, a different site collection from the test page (prod: the lists on
 // /teams/FCUWebDatastores, the page on /sites/FCUPortal). Runs through the sp-env Playwright
 // profile, because the cert app is scoped to the dev site only. Idempotent. Rows are seeded by
@@ -7,6 +7,8 @@
 //   PS_Zone-Attestation-Responses    LookupID · UserName · UserEmail (indexed) · UserDescription ·
 //                                    AreaName · ZoneSelection · PreviousZone · ZoneChanged ·
 //                                    Attestation · AttestationTime
+//   PS_Zone-Attestation-Errors       ErrorKind · Message · Detail · UserEmail · EngineVersion
+//   PS_Zone-Attestation-Access       AreaName (indexed) · EmployeeName · EmployeeEmail
 // Responses gets the prod item-level setting: users see only their own items. (Prod also gives
 // users Add + View without Edit there.)
 //
@@ -55,6 +57,14 @@ const LISTS = {
       Detail: '<Field Type="Note" Name="Detail" StaticName="Detail" DisplayName="Detail" NumLines="10" RichText="FALSE" />',
       UserEmail: text('UserEmail'),
       EngineVersion: text('EngineVersion')
+    }
+  },
+  // the employee access list page (ps-zone-attestation.access.json); rows seeded by live-zone.js
+  'PS_Zone-Attestation-Access': {
+    fields: {
+      AreaName: text('AreaName', 'Indexed="TRUE"'),
+      EmployeeName: text('EmployeeName'),
+      EmployeeEmail: text('EmployeeEmail')
     }
   }
 };

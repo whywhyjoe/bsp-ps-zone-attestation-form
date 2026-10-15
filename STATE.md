@@ -10,22 +10,30 @@ the `project-state` skill.
 
 | | |
 | --- | --- |
-| **Version** | engine 1.2.1 (fork of BSP Forms 0.5.1, plus the resources panel, error reporting, saving overlay) |
-| **Deployed** | **Dev** (2026-10-14, `?v=1.2.0`, form + resources panel + Errors list; live run 24/24, a forced load error logged to the Errors list for real): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, page `SitePages/ps-zone-attestation-test.aspx`, lists on the tenant root. **Prod:** not yet. |
-| **Last shipped** | — (repo created 2026-10-14; harness suite 132/132 green) |
+| **Version** | engine 1.3.0 (fork of BSP Forms 0.5.1, plus the resources panel, error reporting, saving overlay, and in 1.3.0 the "Work Zone Confirmation" wording, notices and the employee access list page) |
+| **Deployed** | **Dev** (2026-10-15, engine 1.3.0 as `?v=1.3.0b`, four lists; admin live run 31/31): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, pages `SitePages/ps-zone-attestation-test.aspx` and `ps-zone-attestation-access-test.aspx`, lists on the tenant root. **Prod:** not yet. |
+| **Last shipped** | — (repo created 2026-10-14; harness suite 171/171 green) |
 
 ## Next committed step
 
-Non-admin dev run: `node dev/live/live-zone.js --as <profile>` (the admin
-run passed 23/23 on 2026-10-14). Then try `deploy/dcspad-setup-lists.js` on
-dev before prod.
+Non-admin dev run: `node dev/live/live-zone-perms.js` (now includes the
+Access list), then `node dev/live/live-zone.js --as <profile>`. Then try
+`deploy/dcspad-setup-lists.js` on dev before prod.
 
 ## Blocking
 
 - [ ] Non-admin dev run green (above).
+- [ ] The contact in the form's bottom notice (`contactNotice` in the form
+      JSON: name and email, both languages; a placeholder today).
+- [ ] The real Access list rows, and the business owner's OK that everyone
+      with Read on that list can query all of it
+      (`docs/02-sharepoint-data.md`, *Permissions*).
+- [ ] The two prod page names, if not `PS-Work-Zone-Confirmation.aspx` and
+      `PS-Work-Zone-Access.aspx` (`vars` in the two configs).
+- [ ] French for the new 1.3.0 texts (title, notices, access list): drafts.
 - [ ] Real zone descriptions and the official French zone names (form JSON
       only; today they're `[Placeholder]` drafts).
-- [ ] The real admin address for `errorContact.email` in the form config
+- [ ] The real admin address for `errorContact.email` in the form and access configs
       (a placeholder, `form.admin@example.com`, today), the Errors list on
       prod, and its email rule (`docs/05-deploy-steps.md`, step 2b).
 - [ ] Resources panel content (`src/ps-zone-attestation.resources.json`): the
@@ -38,8 +46,10 @@ dev before prod.
       permissions, `CurrentZone` filled, folder uploaded, page built, the
       doctor all OK, Network shows nothing outside
       `Code/ps-zone-attestation/`.
-- [ ] One prod submit as an ordinary attester: one item per area, reload
-      says already submitted, and the attester can't see others' responses.
+- [ ] One prod submit as an ordinary user: one item per area, reload
+      says already submitted, and the user can't see others' responses.
+- [ ] On prod, the access list link opens a new tab (the form stays), and
+      Back closes it.
 - [ ] `?lang=fr` on prod renders French.
 
 ## Deferred by design

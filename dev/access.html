@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PS Zone Attestation · access list harness</title>
+  <!-- =================================================================
+    The employee access list page: the third web part on the same engine,
+    on a page of its own. The form's notice opens it in a new tab; its
+    back link closes that tab (or, opened any other way, goes to
+    page.html). Same rules as index.html: the real src/ folder,
+    SharePoint mocked, served over HTTP from the repo root:
+
+        python -m http.server 8646
+        → http://localhost:8646/dev/access.html   (?lang=fr, ?Mode=Edit)
+
+    Mock rows: PSZ_MOCK_ACCESS in mock-sp.js.
+  ================================================================== -->
+  <style>
+    /* Harness chrome only — the page around the web part. */
+    body { margin: 0; background: #f5f6f7; }
+    .harness-bar {
+      padding: 10px 24px; background: #001928; color: #fff;
+      font: 600 13px/1.4 "Segoe UI", sans-serif; letter-spacing: .02em;
+    }
+    .harness-bar small { font-weight: 400; opacity: .7; }
+    .harness-bar button { margin-left: 8px; font: inherit; padding: 1px 8px; cursor: pointer; }
+    .harness-canvas { max-width: 960px; margin: 24px auto; background: #fff; border-radius: 8px; padding: 32px; }
+  </style>
+</head>
+<body>
+  <div class="harness-bar">PS Zone Attestation · access list harness <small>— mock SharePoint, real src/ folder</small>
+    <button type="button" onclick="window.intl && intl.setLang('en')">EN</button><button type="button" onclick="window.intl && intl.setLang('fr')">FR</button></div>
+
+  <div class="harness-canvas">
+    <script src="mock-sp.js"></script>
+    <script>
+      // vars: back to the page harness beside this one
+      window.PSZ_FORM_SETTINGS = { mockSp: window.PSZ_MOCK_SP,
+        vars: { formUrl: location.pathname.replace(/[^/]*$/, '') + 'page.html' } };
+    </script>
+    <div data-psz-access data-config="../src/ps-zone-attestation.access.json"></div>
+    <script src="../src/ps-zone-attestation.js?v=dev"></script>
+  </div>
+</body>
+</html>

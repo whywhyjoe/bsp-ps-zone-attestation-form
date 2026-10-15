@@ -1,13 +1,14 @@
 {
-  "$comment": "Physical Security Zones Attestation. Rows come from PS_Zone-Attestation-Assignments (filtered to the signed-in user's email). Each row shows the area's current zone (CurrentZone) to confirm, or to change through the dropdown, and saves one item to PS_Zone-Attestation-Responses: ZoneSelection = the answer, PreviousZone = the current zone, ZoneChanged = whether they differ. An area with no CurrentZone gets the dropdown straight away. Both lists live on /teams/FCUWebDatastores (target.siteUrl and source.siteUrl); the page runs on /sites/FCUPortal. Users need read on the Assignments list and Add + View (own items only) on Responses. errorLog names the list a failed load, save or start-up writes one item to; a SharePoint list rule there emails the admin (docs/02-sharepoint-data.md). The job aid and other links live in the resources panel (ps-zone-attestation.resources.json), not here. Bilingual: every { en, fr } pair follows the language from bilingual/intl.js. Zone VALUES (Public, Public Plus, Standards, Secure Restricted, High Security) are saved in English whatever the language, and CurrentZone must hold them spelled exactly so; only the labels are translated. The French zone names and all the zone descriptions are drafts, to be replaced.",
+  "$comment": "Physical Security Work Zone Confirmation. Rows come from PS_Zone-Attestation-Assignments (filtered to the signed-in user's email). Each row shows the area's current zone (CurrentZone) to confirm, or to change through the dropdown, and saves one item to PS_Zone-Attestation-Responses: ZoneSelection = the answer, PreviousZone = the current zone, ZoneChanged = whether they differ, Attestation = Confirmed (submitting is the confirmation). An area with no CurrentZone gets the dropdown straight away. Both lists live on /teams/FCUWebDatastores (target.siteUrl and source.siteUrl); the page runs on /sites/FCUPortal. Users need read on the Assignments list and Add + View (own items only) on Responses. form.vars.accessListUrl is the employee access list page (ps-zone-attestation.access.json), linked from the notice at the top. errorLog names the list a failed load, save or start-up writes one item to; a SharePoint list rule there emails the admin (docs/02-sharepoint-data.md). The job aid and other links live in the resources panel (ps-zone-attestation.resources.json), not here. Bilingual: every { en, fr } pair follows the language from bilingual/intl.js. Zone VALUES (Public, Public Plus, Standards, Secure Restricted, High Security) are saved in English whatever the language, and CurrentZone must hold them spelled exactly so; only the labels are translated. The French texts, the zone descriptions and the contact are drafts, to be replaced.",
   "form": {
-    "title": { "en": "Physical Security Zones Attestation", "fr": "Attestation des zones de sécurité physique" },
+    "title": { "en": "Physical Security Work Zone Confirmation", "fr": "Confirmation des zones de travail — sécurité physique" },
     "intro": {
-      "en": "[Placeholder] A short description of this attestation goes here: what it is, why it matters, and when it's due.",
-      "fr": "[Texte provisoire] Une brève description de cette attestation : de quoi il s'agit, pourquoi c'est important et la date limite."
+      "en": "[Placeholder] A short description of this confirmation goes here: what it is, why it matters, and when it's due.",
+      "fr": "[Texte provisoire] Une brève description de cette confirmation : de quoi il s'agit, pourquoi c'est important et la date limite."
     },
     "languages": ["en", "fr"],
-    "appearance": { "frame": "card", "header": "band", "tint": "sky" }
+    "appearance": { "frame": "card", "header": "band", "tint": "sky" },
+    "vars": { "accessListUrl": "/sites/FCUPortal/SitePages/PS-Work-Zone-Access.aspx" }
   },
   "target": {
     "siteUrl": "/teams/FCUWebDatastores",
@@ -16,7 +17,8 @@
     "set": {
       "UserName": "{user:name}",
       "UserEmail": "{user:email}",
-      "AttestationTime": "{now}"
+      "AttestationTime": "{now}",
+      "Attestation": "Confirmed"
     }
   },
   "errorLog": {
@@ -25,29 +27,29 @@
   },
   "errorContact": {
     "email": "form.admin@example.com",
-    "subject": { "en": "PS Zone Attestation: problem report", "fr": "Attestation des zones de sécurité : signalement d'un problème" }
+    "subject": { "en": "PS Work Zone Confirmation: problem report", "fr": "Confirmation des zones de travail : signalement d'un problème" }
   },
   "submitConfirm": {
-    "title": { "en": "Submit your attestation?", "fr": "Soumettre votre attestation?" },
+    "title": { "en": "Submit your confirmations?", "fr": "Soumettre vos confirmations?" },
     "message": {
-      "en": "You are about to submit your security zone attestations. Once submitted you will not be able to return and change them. Please be sure they are correct.",
-      "fr": "Vous êtes sur le point de soumettre vos attestations de zones de sécurité. Une fois soumises, vous ne pourrez plus revenir les modifier. Assurez-vous qu'elles sont exactes."
+      "en": "You are about to submit your work zone confirmations. Once submitted you will not be able to return and change them. Please be sure they are correct.",
+      "fr": "Vous êtes sur le point de soumettre vos confirmations de zones de travail. Une fois soumises, vous ne pourrez plus revenir les modifier. Assurez-vous qu'elles sont exactes."
     },
     "confirm": { "en": "Confirm", "fr": "Confirmer" },
     "cancel": { "en": "Go back", "fr": "Revenir" }
   },
   "confirmation": {
-    "title": { "en": "Thank you — your attestation was submitted.", "fr": "Merci — votre attestation a été soumise." },
+    "title": { "en": "Thank you — your confirmations were submitted.", "fr": "Merci — vos confirmations ont été soumises." },
     "message": {
-      "en": "Your security zone selections have been recorded.",
-      "fr": "Vos choix de zones de sécurité ont été enregistrés."
+      "en": "Your work zone confirmations have been recorded.",
+      "fr": "Vos confirmations de zones de travail ont été enregistrées."
     },
     "allowAnother": false,
     "illustration": "spot-illustrations/shield-checkmark-xs.svg"
   },
   "strings": {
-    "submit": { "en": "Submit attestation", "fr": "Soumettre l'attestation" },
-    "savingTitle": { "en": "Submitting your attestation…", "fr": "Envoi de votre attestation…" },
+    "submit": { "en": "Submit confirmations", "fr": "Soumettre les confirmations" },
+    "savingTitle": { "en": "Submitting your confirmations…", "fr": "Envoi de vos confirmations…" },
     "assignLoading": { "en": "Loading your assigned areas…", "fr": "Chargement des zones qui vous sont attribuées…" },
     "assignLoadError": {
       "en": "Your assigned areas couldn't be loaded. Try again in a moment.",
@@ -66,8 +68,8 @@
     "assignSelected": { "en": "Selected", "fr": "Sélectionnée" },
     "assignProgress": { "en": "{n} of {total} areas complete", "fr": "{n} emplacement(s) sur {total} rempli(s)" },
     "assignSomeDone": {
-      "en": "{n} of your areas were already attested and aren't shown.",
-      "fr": "{n} de vos emplacements ont déjà fait l'objet d'une attestation et ne sont pas affichés."
+      "en": "{n} of your areas were already confirmed and aren't shown.",
+      "fr": "{n} de vos emplacements ont déjà été confirmés et ne sont pas affichés."
     },
     "rowsPartial": {
       "en": "{n} of {total} areas are confirmed saved; the rest may not be. Select {submit} to finish — areas already saved are checked first and skipped.",
@@ -76,16 +78,34 @@
     "rowsFailed": {
       "en": "Not every area could be saved. Select {submit} to try again — areas that did save are checked first and skipped.",
       "fr": "Certains emplacements n'ont pas pu être enregistrés. Sélectionnez {submit} pour réessayer — les emplacements déjà enregistrés sont vérifiés, puis ignorés."
-    },
-    "requiredField": { "en": "Check the box to confirm before you submit.", "fr": "Cochez la case pour confirmer avant de soumettre." }
+    }
   },
   "pages": [
     {
       "sections": [
         {
+          "id": "notices",
+          "fields": [
+            {
+              "id": "reviewNotice", "type": "note", "style": "info",
+              "text": {
+                "en": "Any change to a zone will be reviewed, and Physical Security will contact you.",
+                "fr": "Toute modification d'une zone sera examinée, et l'équipe de la sécurité physique communiquera avec vous."
+              }
+            },
+            {
+              "id": "accessNotice", "type": "note", "style": "info",
+              "text": {
+                "en": "To see which employees have access to each of your areas, open the [employee access list]({var:accessListUrl}) (it opens in a new tab).",
+                "fr": "Pour voir quels employés ont accès à chacun de vos emplacements, ouvrez la [liste des accès des employés]({var:accessListUrl}) (elle s'ouvre dans un nouvel onglet)."
+              }
+            }
+          ]
+        },
+        {
           "id": "who",
           "fields": [
-            { "id": "attestedBy", "type": "currentUser", "label": { "en": "Attestation by:", "fr": "Attestation faite par :" } }
+            { "id": "confirmedBy", "type": "currentUser", "label": { "en": "Confirmation by:", "fr": "Confirmation faite par :" } }
           ]
         },
         {
@@ -159,35 +179,37 @@
               "empty": {
                 "title": { "en": "No areas assigned", "fr": "Aucun emplacement attribué" },
                 "message": {
-                  "en": "There are no areas assigned to you for this attestation. If you think that's wrong, contact your Physical Security team.",
-                  "fr": "Aucun emplacement ne vous est attribué pour cette attestation. Si vous pensez qu'il s'agit d'une erreur, communiquez avec votre équipe de la sécurité physique."
+                  "en": "There are no areas assigned to you for this confirmation. If you think that's wrong, contact your Physical Security team.",
+                  "fr": "Aucun emplacement ne vous est attribué pour cette confirmation. Si vous pensez qu'il s'agit d'une erreur, communiquez avec votre équipe de la sécurité physique."
                 }
               },
               "allDone": {
-                "title": { "en": "Attestation already submitted", "fr": "Attestation déjà soumise" },
+                "title": { "en": "Confirmation already submitted", "fr": "Confirmation déjà soumise" },
                 "message": {
-                  "en": "You've already submitted your attestation for every area assigned to you. Thank you.",
-                  "fr": "Vous avez déjà soumis votre attestation pour tous les emplacements qui vous sont attribués. Merci."
+                  "en": "You've already submitted your confirmation for every area assigned to you. Thank you.",
+                  "fr": "Vous avez déjà soumis votre confirmation pour tous les emplacements qui vous sont attribués. Merci."
                 }
               }
             }
           ]
         },
         {
-          "id": "attestSection",
-          "tint": "blue",
+          "id": "closing",
           "fields": [
             {
-              "id": "attestation",
-              "type": "boolean",
-              "control": "checkbox",
-              "required": true,
-              "label": {
-                "en": "[Placeholder] I confirm that the security zones above are correct to the best of my knowledge.",
-                "fr": "[Texte provisoire] Je confirme qu'à ma connaissance, les zones de sécurité ci-dessus sont exactes."
-              },
-              "values": { "on": "Confirmed", "off": "" },
-              "column": "Attestation"
+              "id": "changeNotice", "type": "note", "style": "info",
+              "visibleWhen": { "field": "zones", "op": "anyChanged" },
+              "text": {
+                "en": "You changed at least one zone. Any change to a zone will be reviewed, and Physical Security will contact you.",
+                "fr": "Vous avez modifié au moins une zone. Toute modification d'une zone sera examinée, et l'équipe de la sécurité physique communiquera avec vous."
+              }
+            },
+            {
+              "id": "contactNotice", "type": "note", "style": "info",
+              "text": {
+                "en": "If you have questions or concerns, contact [Placeholder] Contact Name at [contact.name@example.com](mailto:contact.name@example.com).",
+                "fr": "Pour toute question ou préoccupation, communiquez avec [Texte provisoire] Nom de la personne-ressource à [contact.name@example.com](mailto:contact.name@example.com)."
+              }
             }
           ]
         }

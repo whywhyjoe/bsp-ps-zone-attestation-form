@@ -1,6 +1,6 @@
 # State — Standalone split from bsp-sp-parts
 
-Last touched: 2026-10-14
+Last touched: 2026-10-15
 Branch: `main`, pushed to private GitHub repo
 `whywhyjoe/bsp-ps-zone-attestation-form`. `crew/zone-split-review` was merged
 (`9a416c3`), then its branch and worktree were deleted.
@@ -59,9 +59,18 @@ Verified against an in-memory REST mock (dry run, setup, rerun, removal),
       23/23 on 2026-10-14. On the live page, all 11 form files loaded from
       `Code/ps-zone-attestation/` and none from the shared folders; no
       `BSPForms` on the page.
-- [ ] Non-admin live run: `node dev/live/live-zone.js --as <profile>`.
-- [ ] Content: real zone descriptions, official French names, and the
-      resources panel's links, information text and contact.
+- [x] 1.3.0 (2026-10-15): "Work Zone Confirmation" wording, no checkbox,
+      the notices, the employee access list page and its Access list.
+      Suite 171/171; dev admin run 31/31 (the access list opens in a new
+      tab only with `data-interception="off"`, found there).
+- [ ] Non-admin live run: `node dev/live/live-zone-perms.js` first (it now
+      grants Read on the Access list), then
+      `node dev/live/live-zone.js --as <profile>`.
+- [ ] Content: real zone descriptions, official French names, the
+      resources panel's links, information text and contact, the form's
+      contact notice, and the real Access list rows.
+- [ ] Business decision: everyone with Read on the Access list can query
+      all of it (`docs/02-sharepoint-data.md`, *Permissions*).
 - [ ] Prod install (`docs/01-hosting-and-deploy.md`).
 
 ## Landmines

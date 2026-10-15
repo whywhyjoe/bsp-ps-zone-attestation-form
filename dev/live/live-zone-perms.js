@@ -4,8 +4,8 @@
 // Mirrors, idempotently:
 //   - the custom permission level LEVEL (same rights: View + Add Items, Open, View Pages — no Edit)
 //   - the site group GROUP, with the same members as the dev site's group
-//   - both lists: unique permissions (copied first, so owners keep Full Control); Members and
-//     GROUP get Read on Assignments and LEVEL on Responses (no Contribute anywhere); Responses keeps
+//   - the lists: unique permissions (copied first, so owners keep Full Control); Members and
+//     GROUP get Read on Assignments and Access, LEVEL on Responses (no Contribute anywhere); Responses keeps
 //     "read own items" and gets "create/edit own items"
 // Members are read from the dev site's group at run time; no account is written here.
 'use strict';
@@ -17,7 +17,8 @@ const tenants = require(path.join(SPENV, 'tenants.local.json'));
 
 const LEVEL = 'View and Add';
 const GROUP = 'PSZoneTestGroup';
-const LISTS = { 'PS_Zone-Attestation-Assignments': 'Read', 'PS_Zone-Attestation-Responses': LEVEL };
+const LISTS = { 'PS_Zone-Attestation-Assignments': 'Read', 'PS_Zone-Attestation-Responses': LEVEL,
+  'PS_Zone-Attestation-Access': 'Read' };
 
 (async () => {
   const root = tenants.dev.tenantRoot.replace(/\/$/, '');

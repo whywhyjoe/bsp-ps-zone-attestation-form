@@ -60,12 +60,13 @@ is not `xo-handoff` and `.xo-handoffs/`; don't cross-file them.
 | `src/ps-zone-attestation.css` | The `.psz-*` layer (cards, combo, dialog, done screen, doctor). |
 | `src/ps-zone-attestation.json` | The form. Hand-formatted: `dev/live/live-deploy.ps1` swaps exact lines, so never re-serialize it. |
 | `src/ps-zone-attestation.resources.json` | The resources side panel (`data-psz-resources`, engine 1.1.0+): links, information text, contact. Same hand-formatting rule. |
+| `src/ps-zone-attestation.access.json` | The employee access list page (`data-psz-access`, engine 1.3.0+): the user's areas and who has access, from the Access list. Same hand-formatting rule. |
 | `src/design/` | Vendored BSP subset: tokens, components, sprite, one icon, one illustration. |
 | `src/lib/` | Vendored Alpine 3.15.2, pnpjs v2 bundle, intl.js 1.1.4. |
-| `webpart/` | The two snippets pasted into the page's Modern Script Editor web parts: the form (left column), the resources panel (right column). |
-| `deploy/dcspad-setup-lists.js` | Run in DCSPad: creates both lists and their columns, adds `TEST - ` placeholder rows for four attesters, removes them again (`MODE`). Plain REST, dry run by default, idempotent. Never deployed. Keep its columns in step with `docs/02` and `docs/05`. |
+| `webpart/` | The three snippets pasted into Modern Script Editor web parts: the form (left column) and the resources panel (right column) on the form page, the access list on its own page. |
+| `deploy/dcspad-setup-lists.js` | Run in DCSPad: creates the four lists and their columns, adds `TEST - ` placeholder rows for four test users (assignments and access), removes them again (`MODE`). Plain REST, dry run by default, idempotent. Never deployed. Keep its columns in step with `docs/02` and `docs/05`. |
 | `deploy/ps-zone-attestation-list-setup.dcspad.json` | The same script as a DCSPad project file (File → Load project). Its `docs.js` must equal the `.js` byte for byte: after editing the `.js`, rebuild it (`JSON.stringify` of `{app:"dcspad", kind:"project", v:1, name, docs:{html,css,js}, libraries:{enabled:[],dcsUrl:""}, jsAsModule:false}`). |
-| `dev/index.html` + `mock-sp.js` | Harness: the real `src/` folder, SharePoint mocked. `dev/page.html` is the whole page: form + resources panel in a ¾ + ¼ layout. |
+| `dev/index.html` + `mock-sp.js` | Harness: the real `src/` folder, SharePoint mocked. `dev/page.html` is the whole page: form + resources panel in a ¾ + ¼ layout. `dev/access.html` is the access list page. |
 | `dev/live/` | Dev-tenant live test (needs the `sp-env` skill). Never run on prod. |
 | `tests/smoke.cjs` | Playwright regression suite. See `tests/README.md`. |
 | `tests/fixtures/bsp-forms-0.5.1/` | The real shared BSP Forms engine + CSS, for the coexistence checks only. Never deployed, never edited. |
