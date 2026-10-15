@@ -109,5 +109,6 @@ module.exports = [
   ['a held value holding link or star markers stays plain text', V(0), '0*',
     ['\u00010\u0002\u0003*']],
   ['a refused link stays entirely as typed, its text unformatted', '[**x**](/' + V(0) + ')', '[**x**](//evil.example/)', ['/evil.example/']],
+  ['a refused link keeps a typed \\* as typed', '[a\\*b](/' + V(0) + ')', '[a\\*b](//h)', ['/h']],
   ['a refused link inside bold: the bold still formats around it', '**see [*x*](/' + V(0) + ')**', '<strong>see [*x*](//h)</strong>', ['/h']]
 ];

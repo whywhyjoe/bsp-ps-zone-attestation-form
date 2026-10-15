@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.4.3 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.4.4 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.3"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.4"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.3';
+  var VERSION = '1.4.4';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1578,7 +1578,8 @@
         MD_VAL_RE.lastIndex = 0;
         var full = href.replace(MD_VAL_RE, function (x, i) { return String(held[+i] == null ? '' : held[+i]); });
         if (!LINK_ADDR_RE.test(full)) {
-          links.push(m);
+          // as typed: a \* in it is put back as \*, not resolved to *
+          links.push(m.split(MD_STAR).join('\\*'));
           return '\u0001' + (links.length - 1) + '\u0002';
         }
         href = href.replace(MD_VAL_RE, function (x, i) { return esc(held[+i] == null ? '' : held[+i]); });

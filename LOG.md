@@ -7,6 +7,18 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.4.4: refused links keep a typed \*
+
+Codex's re-review of 1.4.3 (xo turn 10) closed the turn-9 security finding
+with no regressions and found one cosmetic gap: a link refused by the
+finished-address check turned a typed `\*` into `*`. It now keeps `\*` as
+typed. 68 cases; the new one fails with the fix reverted. Not re-reviewed
+(one line). Suite 257/257; dev admin run 33/33.
+
+The markdown subset went through four Codex rounds (xo turns 7–10); the case
+table `tests/markdown-cases.cjs` with its header's template contract is the
+spec to port to BSP Forms and intl.js.
+
 ## 2026-10-15 — engine 1.4.3: Codex turn-9 findings on the markdown subset
 
 - **High:** a list value containing the formatter's placeholder characters

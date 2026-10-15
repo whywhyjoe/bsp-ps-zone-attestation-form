@@ -44,7 +44,7 @@ only), `?lang=fr` for French or `?Mode=Edit` for the edit-mode placeholder.
 node tests/smoke.cjs
 ```
 
-This runs the regression suite (256 checks, Playwright). See
+This runs the regression suite (257 checks, Playwright). See
 [`tests/README.md`](tests/README.md).
 
 ## Deploying
