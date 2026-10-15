@@ -7,6 +7,29 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.3.3: Codex re-review follow-ups (xo turn 4)
+
+Codex's re-review closed two of turn 3's findings (cut-off warning,
+prototype-named areas) and kept two open, plus one new low:
+
+- **Back provenance:** 1.3.2's `pszFrom=form` URL flag proved nothing (any
+  page can put it in a link). Now the form's button keeps the new tab's
+  `window.opener` (`rel="opener"`, same-origin targets only; another origin
+  still gets `noopener`), and Back closes the tab only when that opener is
+  a same-origin page with a `[data-psz-form]` mount. Verified on the dev
+  tenant (Back still closes the form's tab).
+- **Area names with outer spaces:** the page can't fix bad data (SharePoint's
+  `eq` doesn't trim; a contains-search wouldn't survive 5,000 rows). The
+  DCSPad setup script gets a read-only `MODE = "audit-access"` listing every
+  access row that will never show (space at either end, blank, or not in
+  the Assignments list) and the assigned areas with nobody listed. The
+  deploy guide runs it in step 3.
+- **Partial empty screen:** a cut-off read with no usable area now says
+  "Your areas couldn't all be loaded" instead of "No areas assigned".
+
+Each new check fails with its fix reverted. Suite 180/180; dev admin run
+32/32.
+
 ## 2026-10-15 — engine 1.3.2: Codex review of the access list (xo turn 3)
 
 Codex reviewed 1.3.0's employee access list: no critical or high findings.

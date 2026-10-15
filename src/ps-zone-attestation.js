@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.3.2 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.3.3 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.2"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.3"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.3.2';
+  var VERSION = '1.3.3';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -323,7 +323,9 @@
     accessCount: '{n} employee(s)',
     accessExpandAll: 'Expand all',
     accessCollapseAll: 'Collapse all',
-    accessMore: 'Only part of the list could be shown. Contact Physical Security for the full list.'
+    accessMore: 'Only part of the list could be shown. Contact Physical Security for the full list.',
+    accessPartialTitle: 'Your areas couldn’t all be loaded',
+    accessPartialMessage: 'Only part of your assigned areas could be read, and none of them can be shown. Contact Physical Security for your access list.'
   };
 
   /* French defaults (form.languages includes "fr"). Same keys as above;
@@ -438,7 +440,9 @@
     accessCount: '{n} employé(s)',
     accessExpandAll: 'Tout développer',
     accessCollapseAll: 'Tout réduire',
-    accessMore: 'Seule une partie de la liste a pu être affichée. Communiquez avec la sécurité physique pour obtenir la liste complète.'
+    accessMore: 'Seule une partie de la liste a pu être affichée. Communiquez avec la sécurité physique pour obtenir la liste complète.',
+    accessPartialTitle: 'Vos emplacements n’ont pas tous pu être chargés',
+    accessPartialMessage: 'Seule une partie des emplacements qui vous sont attribués a pu être lue, et aucun ne peut être affiché. Communiquez avec la sécurité physique pour obtenir votre liste des accès.'
   };
 
   /* ------------------------------------------------------------------
@@ -1379,12 +1383,14 @@
         var b = f.button = Object.assign({}, f.button || {});
         b.url = safeHref(fillVars(b.url, cfg));
         if (!b.text || !b.url) errors.push('field "' + f.id + '": a feature note needs button.text and an http(s) or server-relative button.url');
-        // fromForm: mark the URL so the access list's Back may close the tab
-        // this button opens (and only that tab)
+        // fromForm: the tab this button opens keeps window.opener (no
+        // noopener), so the access list's Back can check that a form opened
+        // it and close it. Same-origin targets only: another origin never
+        // gets a handle on this window.
         else if (b.fromForm) {
-          var hash = b.url.indexOf('#');
-          var base = hash > -1 ? b.url.slice(0, hash) : b.url, frag = hash > -1 ? b.url.slice(hash) : '';
-          b.url = base + (base.indexOf('?') > -1 ? '&' : '?') + FROM_FORM + frag;
+          var to = null;
+          try { to = new URL(b.url, location.href); } catch (e) { /* safeHref passed it; stays noopener */ }
+          b._keepOpener = !!(to && to.origin === location.origin);
         }
       }
     });
@@ -1781,7 +1787,10 @@
         '<div class="psz-callout__copy">' +
         (f.title ? '<p class="psz-callout__title">' + esc(f.title) + '</p>' : '') +
         (f.text ? '<p class="psz-callout__text">' + prose(f.text) + '</p>' : '') + '</div>' +
-        '<a class="btn btn--primary psz-callout__btn" href="' + esc(b.url) + '" target="_blank" rel="noopener noreferrer" data-interception="off">' +
+        '<a class="btn btn--primary psz-callout__btn" href="' + esc(b.url) + '" target="_blank"' +
+        // target=_blank implies noopener in current browsers: keeping the
+        // opener needs rel="opener" said out loud
+        (b._keepOpener ? ' rel="opener"' : ' rel="noopener noreferrer"') + ' data-interception="off">' +
         '<span>' + esc(b.text) + '</span>' + icon('ic-fluent-open-24-regular', 16) +
         '<span class="psz-sr">' + esc(S.opensNewTab) + '</span></a></div>';
     }
@@ -3712,17 +3721,27 @@
      employees with access to it (the Access list). For information only:
      nothing is saved. Native <details> panels, no Alpine. Config:
      ps-zone-attestation.access.json (docs/03-config.md). "Back" closes
-     the tab when it was opened as a tab of its own, which returns the
-     user to the form with their answers intact.
+     the tab when the form opened it (formOpener), which returns the user
+     to the form with their answers intact.
      ------------------------------------------------------------------ */
   NS._acc = {};
   function normKey(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
   // maps keyed by area name: no prototype, so an area called "constructor"
   // or "toString" isn't already "there"
   function keyMap() { return Object.create(null); }
-  // The form's access-list button adds this to the URL (button.fromForm),
-  // so Back knows the form opened this tab and may close it.
-  var FROM_FORM = 'pszFrom=form';
+  // The tab that opened this one, when it's a page of ours with the form on
+  // it: the form's access-list button (button.fromForm) keeps window.opener
+  // for exactly this. Reading another origin's opener throws, so only a
+  // same-origin page with a [data-psz-form] mount counts. Not a URL flag:
+  // any page can put one of those in a link.
+  function formOpener() {
+    try {
+      var o = window.opener;
+      if (!o || o.closed || o === window) return null;
+      if (o.location.origin !== location.origin) return null;
+      return o.document.querySelector('[data-psz-form]') ? o : null;
+    } catch (e) { return null; }
+  }
   function normalizeAccess(raw, lang) {
     var errors = [];
     var cfg = localize(raw || {}, lang);
@@ -3785,20 +3804,22 @@
         (mail ? '<a class="psz-errmail" href="' + esc(mail) + '">' + esc(S.errorMailLink) + '</a>' : '') + '</div></div>';
     }
     var groups = accessGroups(def.data.areas, def.data.rows);
-    // a cut-off read is said out loud, even when what did arrive had no
-    // usable area (the empty screen alone would claim "nothing assigned")
+    if (!groups.length) {
+      // nothing to show. "No areas assigned" only when the read was
+      // complete; a cut-off read with no usable area says that instead
+      var partial = !!def.data.more, em = partial ? {} : (cfg.empty || {});
+      return '<div class="psz-done psz-done--' + (partial ? 'partial' : 'empty') + '">' +
+        '<svg class="icon icon--48 psz-done__icon ' + (partial ? 'psz-done__icon--warning' : 'psz-done__icon--info') + '" aria-hidden="true">' +
+        '<use href="#ic-fluent-' + (partial ? 'warning' : 'info') + '-24-regular"/></svg>' +
+        '<h3 class="psz-done__title">' + esc(em.title || (partial ? S.accessPartialTitle : S.accessEmptyTitle)) + '</h3>' +
+        '<p class="psz-done__msg">' + prose(em.message || (partial ? S.accessPartialMessage : S.accessEmptyMessage)) + '</p></div>';
+    }
+    // a cut-off read is said out loud above what did arrive
     var h = '';
     if (def.data.more) {
       h += '<div class="msgbar msgbar--warning" role="status">' +
         icon(ICONS.warning, 20).replace('class="icon', 'class="msgbar__icon icon') +
         '<div class="msgbar__body">' + esc(S.accessMore) + '</div></div>';
-    }
-    if (!groups.length) {
-      var em = cfg.empty || {};
-      return h + '<div class="psz-done psz-done--empty">' +
-        '<svg class="icon icon--48 psz-done__icon psz-done__icon--info" aria-hidden="true"><use href="#ic-fluent-info-24-regular"/></svg>' +
-        '<h3 class="psz-done__title">' + esc(em.title || S.accessEmptyTitle) + '</h3>' +
-        '<p class="psz-done__msg">' + prose(em.message || S.accessEmptyMessage) + '</p></div>';
     }
     if (groups.length > 1) {
       h += '<div class="psz-acc__tools">' +
@@ -3915,15 +3936,17 @@
       def.mount.setAttribute('data-psz-state', 'ready');
     });
   }
-  // Back: a tab the FORM opened (its button marks the URL with FROM_FORM)
-  // that is still on its first page closes, and the browser shows the
-  // form's tab again. Anything else — opened from elsewhere, navigated
-  // since, or a browser that won't let the script close it — follows the link.
+  // Back: a tab a FORM opened (formOpener) that is still on its first page
+  // closes, and the form's tab comes forward with its answers intact.
+  // Anything else — opened from elsewhere, navigated since, the form tab
+  // gone, or a browser that won't let the script close it — follows the link.
   function accessBack(ev, a) {
     if (ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;
-    if (history.length > 1 || !new RegExp('[?&]' + FROM_FORM + '(&|$)').test(location.search)) return;
+    var opener = history.length > 1 ? null : formOpener();
+    if (!opener) return;
     ev.preventDefault();
     var href = a.href;
+    try { opener.focus(); } catch (e) { /* focus is best effort */ }
     try { window.close(); } catch (e) { /* not closable */ }
     setTimeout(function () { location.href = href; }, 300);
   }

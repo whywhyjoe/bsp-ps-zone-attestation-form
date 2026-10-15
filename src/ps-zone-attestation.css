@@ -790,6 +790,7 @@ a.psz-acc__email { color: var(--accent-rest); }
 }
 /* the done/empty screens' info variant */
 .psz-done__icon--info { color: var(--accent-rest); }
+.psz-done__icon--warning { color: var(--fg-warning); }
 
 /* Narrow forms (one-third columns, mobile) — tighter card padding. Keyed
    to the form's own width (the psz container), not the viewport. */

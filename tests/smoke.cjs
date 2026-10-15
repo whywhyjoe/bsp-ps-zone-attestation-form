@@ -1040,9 +1040,17 @@ async function testNotices(browser) {
   });
   check('the access list: a feature callout first in the body, its button {var:accessListUrl} in a new tab',
     callout && callout.first && callout.title === 'Who has access to your areas?' && callout.btn &&
-    /^Employee access list/.test(callout.btn[0]) && callout.btn[1] === new URL(ACCESS).pathname + '?pszFrom=form' &&
-    callout.btn[2] === '_blank' && /noopener/.test(callout.btn[3]) && callout.btn[5], JSON.stringify(callout));
+    /^Employee access list/.test(callout.btn[0]) && callout.btn[1] === new URL(ACCESS).pathname &&
+    callout.btn[2] === '_blank' && callout.btn[3] === 'opener' && callout.btn[5], JSON.stringify(callout));
   const top = { link: callout && callout.btn };
+  // fromForm keeps the opener only for a same-origin target: another origin
+  // never gets a handle on the form's window
+  {
+    const o = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[0].fields[0].button.url = 'https://example.com/access'; } });
+    const offRel = await o.page.getAttribute('[data-psz-form] a.psz-callout__btn', 'rel');
+    check('fromForm to another origin → still rel="noopener noreferrer"', offRel === 'noopener noreferrer', String(offRel));
+    await o.ctx.close();
+  }
   // SharePoint's in-place navigation ignores target="_blank" unless a link
   // opts out (found on the dev tenant); the harness can't reproduce that, so
   // the attribute itself is checked, on every new-tab link the engine makes
@@ -1211,19 +1219,29 @@ async function testAccess(browser) {
   check('Back in a tab with history → goes to the form page', new URL(page.url()).pathname === formPath, page.url());
   await ctx.close();
 
-  // Back in a new tab some OTHER page opened (no pszFrom=form marker): it
-  // must go to the form, not close that tab
-  ctx = await browser.newContext({ viewport: { width: 1100, height: 1200 } });
-  page = await ctx.newPage();
-  await page.setContent('<a id="x" href="' + ACCESS + '" target="_blank" rel="noopener">elsewhere</a>');
-  const [stray] = await Promise.all([ctx.waitForEvent('page'), page.locator('#x').click()]);
-  await stray.waitForSelector('.psz-acc__back', { timeout: 15000 });
-  const strayClosed = stray.waitForEvent('close', { timeout: 2500 }).then(() => true).catch(() => false);
-  await stray.locator('.psz-acc__back').click();
-  await stray.waitForURL(u => u.pathname === formPath, { timeout: 5000 }).catch(() => {});
-  check('Back in a new tab another page opened → goes to the form, the tab stays',
-    !(await strayClosed) && !stray.isClosed() && new URL(stray.url()).pathname === formPath, stray.isClosed() ? 'closed' : stray.url());
-  await ctx.close();
+  // Back in a new tab some OTHER page opened must go to the form, not close
+  // that tab: one with no opener; one whose opener is a same-origin page
+  // without a form, and which also puts the old 1.3.2 URL flag in the link
+  // (any page can, so it proves nothing)
+  for (const [name, rel, spoof] of [['no opener', 'noopener', ''], ['a same-origin page without a form, URL flag spoofed', 'opener', '?pszFrom=form']]) {
+    ctx = await browser.newContext({ viewport: { width: 1100, height: 1200 } });
+    page = await ctx.newPage();
+    await page.goto(new URL('/', BASE).href); // the server's directory listing: same origin, no form
+    await page.evaluate(({ href, rel }) => {
+      document.body.insertAdjacentHTML('beforeend', '<a id="x" target="_blank">elsewhere</a>');
+      const x = document.getElementById('x'); x.href = href; x.rel = rel;
+    }, { href: ACCESS + spoof, rel });
+    const [stray] = await Promise.all([ctx.waitForEvent('page'), page.locator('#x').click()]);
+    await stray.waitForSelector('.psz-acc__back', { timeout: 15000 });
+    const hasOpener = await stray.evaluate(() => !!window.opener);
+    const strayClosed = stray.waitForEvent('close', { timeout: 2500 }).then(() => true).catch(() => false);
+    await stray.locator('.psz-acc__back').click();
+    await stray.waitForURL(u => u.pathname === formPath, { timeout: 5000 }).catch(() => {});
+    check('Back in a new tab opened by ' + name + ' → goes to the form, the tab stays',
+      hasOpener === (rel === 'opener') && !(await strayClosed) && !stray.isClosed() && new URL(stray.url()).pathname === formPath,
+      stray.isClosed() ? 'closed' : stray.url());
+    await ctx.close();
+  }
 
   // area names that are Object.prototype keys still get their panels
   ({ ctx, page } = await openAccess(browser, {
@@ -1235,15 +1253,16 @@ async function testAccess(browser) {
     JSON.stringify(a.areas.map(x => [x.name, x.open, x.people.length])) === '[["constructor",true,1],["toString",true,0]]', JSON.stringify(a.areas));
   await ctx.close();
 
-  // a cut-off assignments read whose rows had no usable area: the warning,
-  // not a bare "No areas assigned"
+  // a cut-off assignments read whose rows had no usable area: "couldn't all
+  // be loaded", never the untrue "No areas assigned"
   ({ ctx, page } = await openAccess(browser, {
     rows: [{ ID: 61, UserEmail: 'dev.tester@example.com', AreaName: '' }, { ID: 62, UserEmail: 'dev.tester@example.com', AreaName: 'Z wing' }],
     mutate: cfg => { cfg.assignments.top = 1; }
   }));
-  check('cut-off read with only blank area names → the cut-off warning above the empty screen',
-    await page.locator('.psz-acc .msgbar--warning:has-text("Only part of the list")').isVisible() &&
-    await page.locator('.psz-acc .psz-done--empty').isVisible());
+  const partialText = await page.locator('.psz-acc__body').textContent();
+  check('cut-off read with only blank area names → "couldn’t all be loaded", not "No areas assigned"',
+    await page.locator('.psz-acc .psz-done--partial').isVisible() && /couldn’t all be loaded/.test(partialText) &&
+    !/No areas assigned|no areas assigned/.test(partialText), partialText);
   await ctx.close();
 
   // French, then a switch keeps a collapsed panel collapsed

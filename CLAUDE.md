@@ -64,7 +64,7 @@ is not `xo-handoff` and `.xo-handoffs/`; don't cross-file them.
 | `src/design/` | Vendored BSP subset: tokens, components, sprite, one icon, one illustration. |
 | `src/lib/` | Vendored Alpine 3.15.2, pnpjs v2 bundle, intl.js 1.1.4. |
 | `webpart/` | The three snippets pasted into Modern Script Editor web parts: the form (left column) and the resources panel (right column) on the form page, the access list on its own page. |
-| `deploy/dcspad-setup-lists.js` | Run in DCSPad: creates the four lists and their columns, adds `TEST - ` placeholder rows for four test users (assignments and access), removes them again (`MODE`). Plain REST, dry run by default, idempotent. Never deployed. Keep its columns in step with `docs/02` and `docs/05`. |
+| `deploy/dcspad-setup-lists.js` | Run in DCSPad: creates the four lists and their columns, adds `TEST - ` placeholder rows for four test users (assignments and access), removes them again, and audits the access list's area names (`MODE`). Plain REST, dry run by default, idempotent. Never deployed. Keep its columns in step with `docs/02` and `docs/05`. |
 | `deploy/ps-zone-attestation-list-setup.dcspad.json` | The same script as a DCSPad project file (File → Load project). Its `docs.js` must equal the `.js` byte for byte: after editing the `.js`, rebuild it (`JSON.stringify` of `{app:"dcspad", kind:"project", v:1, name, docs:{html,css,js}, libraries:{enabled:[],dcsUrl:""}, jsAsModule:false}`). |
 | `dev/index.html` + `mock-sp.js` | Harness: the real `src/` folder, SharePoint mocked. `dev/page.html` is the whole page: form + resources panel in a ¾ + ¼ layout. `dev/access.html` is the access list page. |
 | `dev/live/` | Dev-tenant live test (needs the `sp-env` skill). Never run on prod. |

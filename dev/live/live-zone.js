@@ -206,7 +206,7 @@ async function submitAndConfirm(page, confirmText) {
   // the employee access list: the notice's link opens it in a new tab; Back closes that tab
   const accLink = page.locator('[data-psz-form] a.psz-callout__btn');
   check('notice: the access-list link points at the access page, new tab',
-    (await accLink.getAttribute('href')) === ACCESS_PAGE + '?pszFrom=form' && (await accLink.getAttribute('target')) === '_blank', await accLink.getAttribute('href'));
+    (await accLink.getAttribute('href')) === ACCESS_PAGE && (await accLink.getAttribute('target')) === '_blank' && (await accLink.getAttribute('rel')) === 'opener', await accLink.getAttribute('href'));
   const [acc] = await Promise.all([ctx.waitForEvent('page'), accLink.click()]);
   acc.__errors = [];
   acc.on('pageerror', e => { if (e.message && e.message !== 'undefined') acc.__errors.push(e.message); });

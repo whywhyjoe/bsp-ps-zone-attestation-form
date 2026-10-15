@@ -117,7 +117,8 @@ area name starts with `TEST - `, from the assignments, responses and access
 lists, including any test answers. Then add the real rows (step 3).
 
 If you use the script, skip to step 2, then come back to step 3 for the
-real rows.
+real rows. Step 3 also uses it once more, in its read-only
+`MODE = "audit-access"`, to check the access list's area names.
 
 ## Step 1 — Create the four lists
 
@@ -257,6 +258,14 @@ Add a row for yourself too, so you can test in step 7.
 
 An area with no rows shows "No employees are listed for this area".
 
+✅ **Check the area names:** run the DCSPad setup script with
+`MODE = "audit-access"` (it changes nothing). It lists every access row
+that will **never show**: a space at either end of `AreaName`, a blank
+`AreaName`, or an area that isn't in the Assignments list (a typo). Fix
+those rows in the list and run it again until it reports 0. It also lists
+the assigned areas with nobody listed, in case that's a gap. Run it again
+whenever the access list is reloaded.
+
 ## Step 4 — Fill in the wording, links and contacts
 
 Three files in `src/` hold everything you may need to fill in. They ship
@@ -334,7 +343,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-form data-validate data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.2"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.3"></script>
    ```
 
    It's the snippet in `webpart/ps-zone-attestation.webpart.html`, plus
@@ -344,7 +353,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.2"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.3"></script>
    ```
 
    It's `webpart/ps-zone-attestation-resources.webpart.html`. Both web parts
@@ -360,7 +369,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-access data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.access.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.2"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.3"></script>
    ```
 
    It's `webpart/ps-zone-attestation-access.webpart.html`.
@@ -421,7 +430,7 @@ the date and `?v=` you deployed in `STATE.md`.
   1. Download the two deployed files first (for rollback).
   2. Upload the new ones over them.
   3. In **all three** web parts (two on the form page, one on the access
-     list page), change `?v=1.3.2` to the new version (the `VERSION` line
+     list page), change `?v=1.3.3` to the new version (the `VERSION` line
      near the top of `ps-zone-attestation.js`). Without this, browsers may
      keep the old code.
   4. Repeat step 7's checks 2, 5, 6 and 7.
@@ -449,7 +458,7 @@ the date and `?v=` you deployed in `STATE.md`.
 | The *Employee access list* button goes to a missing page | The page name differs from `form.vars.accessListUrl` | Step 4 |
 | The access list replaces the form **in the same tab** | An engine older than 1.3.0 is still cached | Bump `?v=`; the link must carry `data-interception="off"` (F12 → Elements) |
 | "The access list couldn't be loaded" | No read access to the Access list, or it's missing a column | Steps 1 and 2 |
-| An area says "No employees are listed" but has rows | `AreaName` in the Access list doesn't match the Assignments list | Step 3 |
+| An area says "No employees are listed" but has rows | `AreaName` in the Access list doesn't match the Assignments list (a typo, or a space at either end) | Run the setup script with `MODE = "audit-access"` (step 3); fix the rows it lists |
 | *Back to confirmation form* goes to a missing page | The page name differs from `vars.formUrl` | Step 4 |
 
 Still stuck: don't change the code. Note what you see (screenshot, Console

@@ -16,6 +16,12 @@
    4. Before go-live, set MODE = "remove-test-data" and run it (dry run
       first) to delete every test row from the assignments, responses and
       access lists.
+   5. After filling in the real rows, and whenever they change, set
+      MODE = "audit-access" and run it. It changes nothing (DRY_RUN doesn't
+      matter) and lists every area name that won't match: a space at
+      either end, or an access row whose area isn't in the assignments.
+      SharePoint matches area names exactly (only capitals don't count), so
+      such a row silently never shows on the access list page.
 
    It does NOT set permissions or the error log's email rule. Do
    docs/05-deploy-steps.md step 2 by hand.
@@ -24,7 +30,7 @@
   // ------------------------------- SETTINGS -------------------------------
   const SITE = "/teams/FCUWebDatastores"; // the site the lists live on
   const DRY_RUN = true;                    // true = report only, change nothing
-  const MODE = "setup";                    // "setup" or "remove-test-data"
+  const MODE = "setup";                    // "setup", "remove-test-data" or "audit-access"
 
   // Four test attesters. "me" means whoever runs this script (so you can
   // test straight away). Replace the other three with real test accounts'
@@ -181,10 +187,48 @@
   }
 
   // ------------------------------- checks --------------------------------
-  if (MODE !== "setup" && MODE !== "remove-test-data") throw new Error(`MODE must be "setup" or "remove-test-data", not "${MODE}".`);
+  if (!["setup", "remove-test-data", "audit-access"].includes(MODE)) throw new Error(`MODE must be "setup", "remove-test-data" or "audit-access", not "${MODE}".`);
   const site = await call("GET", "/_api/web?$select=Title,Url");
   if (!site) throw new Error(`No site at ${web}. Check SITE.`);
-  console.log(`${DRY_RUN ? "DRY RUN on" : "Working on"} ${site.Url} (${site.Title}), mode: ${MODE}`);
+  console.log(`${DRY_RUN && MODE !== "audit-access" ? "DRY RUN on" : "Working on"} ${site.Url} (${site.Title}), mode: ${MODE}`);
+
+  // --------------------------- audit-access mode --------------------------
+  // Read-only. The access list page looks up each of a user's (trimmed)
+  // assignment area names with SharePoint's `eq`, which ignores capitals but
+  // nothing else. So an access row shows only if its AreaName equals an
+  // assignment's AreaName exactly, give or take capitals, with no space at
+  // either end. Lists every row that will never show, and why.
+  if (MODE === "audit-access") {
+    for (const title of [ASSIGNMENTS, ACCESS]) {
+      if (!(await call("GET", `${listPath(title)}?$select=Id`))) throw new Error(`${title} not found on ${web}. Run MODE = "setup" first.`);
+    }
+    const assigned = await allItems(ASSIGNMENTS, "Id,AreaName");
+    const access = await allItems(ACCESS, "Id,AreaName,EmployeeName");
+    const known = new Map(); // lower-cased trimmed name → the name as written
+    for (const a of assigned) {
+      const n = String(a.AreaName || "").trim();
+      if (n) known.set(n.toLowerCase(), n);
+    }
+    const covered = new Set();
+    let bad = 0;
+    for (const row of access) {
+      const raw = String(row.AreaName == null ? "" : row.AreaName);
+      const label = `${ACCESS} #${row.Id} "${raw}" ← ${row.EmployeeName || "(no name)"}`;
+      if (!raw.trim()) { note(label, "NEVER SHOWS: no AreaName"); bad++; }
+      else if (raw !== raw.trim()) {
+        note(label, `NEVER SHOWS: a space at the ${raw.startsWith(" ") ? (raw.endsWith(" ") ? "start and end" : "start") : "end"} of AreaName; remove it`);
+        bad++;
+      } else if (!known.has(raw.toLowerCase())) {
+        note(label, "NEVER SHOWS: no assignment has this AreaName (check the spelling against the Assignments list)");
+        bad++;
+      } else covered.add(raw.toLowerCase());
+    }
+    const empty = [...known.keys()].filter((k) => !covered.has(k)).map((k) => known.get(k));
+    if (bad) console.table(report);
+    console.log(`Audit: ${access.length} access rows, ${bad} will never show${bad ? " (listed above; fix them in " + ACCESS + ")" : ""}. ` +
+      `${known.size} assigned areas, ${empty.length} with nobody listed${empty.length ? ": " + empty.slice(0, 20).join(" | ") + (empty.length > 20 ? " …" : "") : ""}.`);
+    return;
+  }
 
   // ------------------------- remove-test-data mode ------------------------
   if (MODE === "remove-test-data") {

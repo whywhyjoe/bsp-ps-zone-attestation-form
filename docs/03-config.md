@@ -140,8 +140,10 @@ bar), `plain` (a hint line), and `feature` (1.3.1): the one message meant to
 be acted on, as a card with an accent edge, an icon tile (`icon`: a sprite
 name such as `person`), a `title`, the `text`, and a primary button
 `{ "text", "url", "fromForm" }` that opens `url` in a new tab. `fromForm: true`
-(1.3.2) adds `pszFrom=form` to the URL's query: the access list's Back closes
-only a tab carrying that marker. The validator refuses an
+(1.3.3) keeps the new tab's link to the form's tab (`rel="opener"`, which
+`target="_blank"` otherwise drops), so the access list's Back can check that
+a form opened it. Only for a same-origin `url`: another origin always gets
+`noopener`. The validator refuses an
 unknown style and a `feature` note without `button.text` or with a
 `button.url` that isn't http(s) or server-relative (after `{var:…}`).
 
@@ -289,10 +291,10 @@ when there's more than one area.
 | Key | Notes |
 | --- | --- |
 | `title`, `back`, `intro` | EN/FR pairs. `back` is the link above the card (default "Back"). `intro` is the info bar. |
-| `vars.formUrl` | The form page. The back link goes there, and so does any intro link to that same address. **Back** closes the tab only when the form opened it: the URL carries `pszFrom=form` (the form's button adds it, `button.fromForm`) and the tab is still on its first page. That returns the user to the form with their answers intact. Otherwise (opened from anywhere else, navigated since, or a browser that refuses) it follows the link. Must be http(s) or server-relative, or there's no back link. |
+| `vars.formUrl` | The form page. The back link goes there, and so does any intro link to that same address. **Back** closes the tab only when a form opened it: the tab is still on its first page and its `window.opener` is a same-origin page with a `[data-psz-form]` mount (the form's button keeps the opener, `button.fromForm`). It brings the form's tab forward and closes this one, so the answers stay intact. Otherwise (opened from anywhere else, navigated since, the form tab closed, or a browser that refuses) it follows the link. A URL flag can't do this: any page can put one in a link (Codex, xo turn 4). Must be http(s) or server-relative, or there's no back link. |
 | `assignments` | `listTitle` or `listUrl`, `userColumn`, `labelColumn` required; `top` (default 500). |
 | `access` | `listTitle` or `listUrl`, `areaColumn`, `nameColumn`, `emailColumn` required; `top` (default 2,000 per 20 areas, at most 4,999). A cut-off read shows a warning. Areas are matched by SharePoint's `eq`: case-blind, but a leading or trailing space in either list means no match; a row for an area that isn't the user's never shows. |
-| `empty` | The "no areas assigned" screen. |
+| `empty` | The "no areas assigned" screen, shown only when the read was complete. A cut-off read with no usable area shows "Your areas couldn’t all be loaded" instead (`accessPartialTitle`, `accessPartialMessage`). |
 | `strings` | Overrides for its engine messages (`accessLoading`, `accessLoadError`, `accessNoEmployees`, `accessCount`, `accessExpandAll`, …: `DEFAULT_STRINGS`). |
 | `errorLog`, `errorContact` | As on the form. A failed read logs kind `access` and offers the email link beside *Try again*. |
 
