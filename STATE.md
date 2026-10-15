@@ -10,9 +10,9 @@ the `project-state` skill.
 
 | | |
 | --- | --- |
-| **Version** | engine 1.4.2 (fork of BSP Forms 0.5.1, plus the resources panel, error reporting, saving overlay, and in 1.3.0 the "Work Zone Confirmation" wording, notices and the employee access list page; 1.3.1 the header who card + review callout and the access feature callout; 1.3.2–1.3.4 the Codex review fixes; 1.4.0–1.4.2 the inline markdown subset in prose: links, bold, italic, reviewed by Codex) |
-| **Deployed** | **Dev** (2026-10-15, `?v=1.4.2`, four lists; admin live run 33/33): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, pages `SitePages/ps-zone-attestation-test.aspx` and `ps-zone-attestation-access-test.aspx`, lists on the tenant root. **Prod:** not yet. |
-| **Last shipped** | — (repo created 2026-10-14; harness suite 252/252 green) |
+| **Version** | engine 1.4.3 (fork of BSP Forms 0.5.1, plus the resources panel, error reporting, saving overlay, and in 1.3.0 the "Work Zone Confirmation" wording, notices and the employee access list page; 1.3.1 the header who card + review callout and the access feature callout; 1.3.2–1.3.4 the Codex review fixes; 1.4.0–1.4.3 the inline markdown subset in prose: links, bold, italic, reviewed by Codex) |
+| **Deployed** | **Dev** (2026-10-15, `?v=1.4.3`, four lists; admin live run 33/33): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, pages `SitePages/ps-zone-attestation-test.aspx` and `ps-zone-attestation-access-test.aspx`, lists on the tenant root. **Prod:** not yet. |
+| **Last shipped** | — (repo created 2026-10-14; harness suite 256/256 green) |
 
 ## Next committed step
 

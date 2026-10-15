@@ -11,9 +11,12 @@
  * each value that comes from DATA (list rows, answers, the user) in the
  * held array and leaves \u0004n\u0005 in its place (n = its index), so the
  * value is never formatted: it goes back in as escaped text after the
- * author's markdown is rendered. Inside a link address the finished
- * address (values in) must still pass the address rule, or the link stays
- * as typed. A port must keep this contract, not just the plain cases.
+ * author's markdown is rendered. Values are cleaned of the placeholder
+ * characters (\u0001-\u0005) first, so a value can never stand for another
+ * value, a link or a star. Inside a link address the finished address
+ * (values in) must still pass the address rule, or the link stays entirely
+ * as typed, its text unformatted. A port must keep this contract, not just
+ * the plain cases.
  *
  * Written to be copied as-is to the other BSP parts that adopt the subset
  * (BSP Forms, intl.js), so they all agree on every case. Run by
@@ -100,5 +103,11 @@ module.exports = [
   ['a held value making "/\\host" leaves the link as typed', '[x](/' + V(0) + ')', '[x](/\\evil.example/)', ['\\evil.example/']],
   ['a held value adding a space leaves the link as typed', '[x](/a' + V(0) + ')', '[x](/a b)', [' b']],
   ['a held value as the whole address is never a link', '[x](' + V(0) + ')', '[x](https://example.com)', ['https://example.com']],
-  ['held markers an author typed lose their control characters', 'a' + V(0) + 'b', 'a0b']
+  ['held markers an author typed lose their control characters', 'a' + V(0) + 'b', 'a0b'],
+  ['a held value holding a marker can\'t pull in another value', '[x](/' + V(0) + ') ' + V(1), '<a href="/1" target="_blank" rel="noopener noreferrer" data-interception="off">x</a> /evil.example/',
+    [V(1), '/evil.example/']],
+  ['a held value holding link or star markers stays plain text', V(0), '0*',
+    ['\u00010\u0002\u0003*']],
+  ['a refused link stays entirely as typed, its text unformatted', '[**x**](/' + V(0) + ')', '[**x**](//evil.example/)', ['/evil.example/']],
+  ['a refused link inside bold: the bold still formats around it', '**see [*x*](/' + V(0) + ')**', '<strong>see [*x*](//h)</strong>', ['/h']]
 ];

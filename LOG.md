@@ -7,6 +7,18 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.4.3: Codex turn-9 findings on the markdown subset
+
+- **High:** a list value containing the formatter's placeholder characters
+  could stand for a second value filled in later, rebuilding an off-site
+  `//host` link after the address check passed. Values are now cleaned of
+  those characters before anything is checked or inserted.
+- A link refused by the finished-address check is set aside like an
+  accepted one, so it stays entirely as typed (its text unformatted).
+
+67 cases; each fix's two cases fail with it reverted (the first reproduces
+Codex's exploit exactly). Suite 256/256; dev admin run 33/33.
+
 ## 2026-10-15 — engine 1.4.2: Codex turn-8 findings on the markdown subset
 
 - **High:** a data value inside a link address could finish it as

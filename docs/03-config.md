@@ -74,8 +74,11 @@ text: list data like `**x**` or `[a](https://…)` is never formatted. Values
 the config author wrote (`{form:title}`, `{var:…}`) are formatted with the
 message. A data value inside a link's address is checked with the finished
 address: `[x](/{field:area})` with the value `/host` would make `//host`, so
-that link stays as typed (and so does one whose value adds a space). A
-data value as the whole address is never a link.
+that link stays entirely as typed, its text unformatted too (and so does one
+whose value adds a space). A data value as the whole address is never a
+link. Values are cleaned of the formatter's internal placeholder characters
+before anything else, so no value can stand for another value, a link or a
+star once it's inserted.
 
 The exact behaviour is the case table in `tests/markdown-cases.cjs`, which
 the suite runs against the engine's `prose()`. It's written to be copied

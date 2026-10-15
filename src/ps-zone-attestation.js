@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.4.2 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.4.3 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.2"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.4.3"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.4.2';
+  var VERSION = '1.4.3';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1557,6 +1557,10 @@
   function prose(s, held) {
     var links = [];
     s = String(s == null ? '' : s).replace(held ? /[\u0001-\u0003]/g : MD_HOLD_RE, '');
+    // a value is data, never markers: strip the placeholder characters from
+    // each (a copy), so no value can stand for a link, a star or another
+    // value once it's inserted ("\u00041\u0005" as a value filled in later)
+    if (held) held = held.map(function (v) { return String(v == null ? '' : v).replace(MD_HOLD_RE, ''); });
     var putBack = function (out) {
       return held ? out.replace(MD_VAL_RE, function (m, i) { return esc(held[+i] == null ? '' : held[+i]); }) : out;
     };
@@ -1568,11 +1572,15 @@
     h = h.replace(LINK_RE, function (m, text, href) {
       // a held value in the address: check the FINISHED address, values in,
       // against the same rule ("/" + "/host" must not pass as "//host").
-      // A failing link stays as typed; its values still go back in as text.
+      // A failing link stays entirely as typed: it's set aside like a link,
+      // so emphasis can't reach its text; its values still go back in as text.
       if (held && MD_VAL_RE.test(href)) {
         MD_VAL_RE.lastIndex = 0;
         var full = href.replace(MD_VAL_RE, function (x, i) { return String(held[+i] == null ? '' : held[+i]); });
-        if (!LINK_ADDR_RE.test(full)) return m;
+        if (!LINK_ADDR_RE.test(full)) {
+          links.push(m);
+          return '\u0001' + (links.length - 1) + '\u0002';
+        }
         href = href.replace(MD_VAL_RE, function (x, i) { return esc(held[+i] == null ? '' : held[+i]); });
       }
       MD_VAL_RE.lastIndex = 0;
