@@ -61,7 +61,8 @@ Verified against an in-memory REST mock (dry run, setup, rerun, removal),
       `BSPForms` on the page.
 - [x] 1.3.0 (2026-10-15): "Work Zone Confirmation" wording, no checkbox,
       the notices, the employee access list page and its Access list.
-      Suite 171/171; dev admin run 31/31 (the access list opens in a new
+      Suite 175/175 at 1.3.1 (header who card + review callout, access
+      feature callout); dev admin run 31/31 (the access list opens in a new
       tab only with `data-interception="off"`, found there).
 - [ ] Non-admin live run: `node dev/live/live-zone-perms.js` first (it now
       grants Read on the Access list), then

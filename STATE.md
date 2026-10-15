@@ -10,9 +10,9 @@ the `project-state` skill.
 
 | | |
 | --- | --- |
-| **Version** | engine 1.3.0 (fork of BSP Forms 0.5.1, plus the resources panel, error reporting, saving overlay, and in 1.3.0 the "Work Zone Confirmation" wording, notices and the employee access list page) |
-| **Deployed** | **Dev** (2026-10-15, engine 1.3.0 as `?v=1.3.0b`, four lists; admin live run 31/31): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, pages `SitePages/ps-zone-attestation-test.aspx` and `ps-zone-attestation-access-test.aspx`, lists on the tenant root. **Prod:** not yet. |
-| **Last shipped** | — (repo created 2026-10-14; harness suite 171/171 green) |
+| **Version** | engine 1.3.1 (fork of BSP Forms 0.5.1, plus the resources panel, error reporting, saving overlay, and in 1.3.0 the "Work Zone Confirmation" wording, notices and the employee access list page; 1.3.1 the header who card + review callout and the access feature callout) |
+| **Deployed** | **Dev** (2026-10-15, `?v=1.3.1`, four lists; admin live run 31/31): `/sites/NewNerve/FCUPortal/Code/ps-zone-attestation/`, pages `SitePages/ps-zone-attestation-test.aspx` and `ps-zone-attestation-access-test.aspx`, lists on the tenant root. **Prod:** not yet. |
+| **Last shipped** | — (repo created 2026-10-14; harness suite 175/175 green) |
 
 ## Next committed step
 

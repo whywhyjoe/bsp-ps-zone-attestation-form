@@ -584,6 +584,42 @@ a.psz-acc__email { color: var(--accent-rest); }
 .psz-who__mail { font: var(--type-caption1); color: var(--fg-secondary); overflow-wrap: anywhere; }
 .psz-who__spin { flex: none; }
 
+/* In the header (form.headerUser): the who card as the band's right
+   column, on a raised surface so it reads against the tint. */
+.psz__head-aside { flex: 0 1 340px; min-width: 0; }
+.psz__head-aside .psz-who { margin: 0; }
+.psz__head-aside .psz-who__card { background: var(--surface-raised); box-shadow: var(--shadow-4); max-width: none; }
+/* The header callout (form.headerNote): under the intro, on a raised
+   surface so it doesn't melt into the tinted band. */
+.psz__head-note { margin-top: var(--space-80); background: var(--surface-raised); }
+
+/* ---------------------------------------------------------------------
+   Feature callout (note style "feature") — the one message meant to be
+   acted on: accent edge, tinted ground, icon tile, title, text and a
+   primary button that opens its page in a new tab.
+   --------------------------------------------------------------------- */
+.psz-callout {
+  display: flex; align-items: center; gap: var(--space-160);
+  padding: var(--space-160) var(--space-200);
+  background: var(--surface-tint-blue);
+  border: var(--stroke-thin) solid var(--stroke-divider);
+  border-left: var(--space-60) solid var(--accent-rest);
+  border-radius: var(--radius-large);
+}
+.psz-callout__tile {
+  width: 48px; height: 48px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-large);
+  background: var(--surface-raised); color: var(--accent-rest);
+  box-shadow: var(--shadow-4);
+}
+.psz-callout__copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-20); }
+.psz-callout__title { margin: 0; font: var(--type-subtitle2); color: var(--fg-primary); }
+.psz-callout__text { margin: 0; font: var(--type-body1); color: var(--fg-secondary); }
+.psz-callout__text a { font-weight: var(--weight-semibold); }
+.psz-callout__btn { flex: none; display: inline-flex; align-items: center; gap: var(--space-80); text-decoration: none; }
+.psz-callout__btn:hover, .psz-callout__btn:focus-visible { text-decoration: none; color: var(--fg-on-accent); }
+
 /* ---------------------------------------------------------------------
    Color dots — a choice's hue as a small swatch (assignments rows). One
    custom property per hue (--psz-hue), shared with the row accent.
@@ -771,6 +807,11 @@ a.psz-acc__email { color: var(--accent-rest); }
 @container psz (max-width: 719px) {
   .psz__head.psz__head--hascard { flex-direction: column; align-items: stretch; gap: var(--space-200); }
   .psz-tipcard { flex: none; }
+  .psz__head-aside { flex: none; }
+}
+@container psz (max-width: 539px) {
+  .psz-callout { flex-wrap: wrap; }
+  .psz-callout__btn { flex-basis: 100%; justify-content: center; }
 }
 /* Narrow: assignment cards tighten up; the dropdown takes the full width */
 @container psz (max-width: 539px) {

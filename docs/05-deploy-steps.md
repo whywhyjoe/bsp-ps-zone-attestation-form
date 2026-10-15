@@ -48,7 +48,7 @@ stand-in (`dev/mock-sp.js`) and every other file is in the repo.
 
 What you'll see: "Dev Tester" with three sample areas, and the resources
 panel on the right. You can click through everything, including submitting.
-The *employee access list* link at the top opens `dev/access.html` in a new
+The *Employee access list* button near the top opens `dev/access.html` in a new
 tab. Answers go to the stand-in, not SharePoint, and a reload starts fresh.
 
 | Add to the address | To see |
@@ -334,7 +334,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-form data-validate data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.0"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.1"></script>
    ```
 
    It's the snippet in `webpart/ps-zone-attestation.webpart.html`, plus
@@ -344,7 +344,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-resources data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.resources.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.0"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.1"></script>
    ```
 
    It's `webpart/ps-zone-attestation-resources.webpart.html`. Both web parts
@@ -360,7 +360,7 @@ Upload nothing from outside `src/`.
 
    ```html
    <div data-psz-access data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.access.json"></div>
-   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.0"></script>
+   <script src="https://TENANT.sharepoint.com/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.1"></script>
    ```
 
    It's `webpart/ps-zone-attestation-access.webpart.html`.
@@ -383,11 +383,13 @@ Open the published form page.
    `Code/lib` or `Code/bsp-forms`. In the Console, no red `[PS Zone Form]`
    errors.
 3. Edit the page, **remove `data-validate`** from the snippet, republish.
-4. **The notices:** at the top, two blue boxes: changes will be reviewed,
-   and the link to the *employee access list*. At the bottom, the contact
-   message. Change one zone: a third box ("You changed at least one zone…")
-   appears at the bottom; *Keep current zone* hides it again.
-5. **The access list:** click *employee access list*. It opens **in a new
+4. **The header and notices:** in the blue header band, the "changes will
+   be reviewed" box under the intro, and *Confirmation by:* with your name on
+   the right. Below the header, the *Who has access to your areas?* box with
+   its *Employee access list* button. At the bottom, the contact message.
+   Change one zone: a "You changed at least one zone…" box appears at the
+   bottom; *Keep current zone* hides it again.
+5. **The access list:** click *Employee access list*. It opens **in a new
    tab**, and the form stays in its own tab with your answers. The new tab
    lists your areas, all expanded, with each area's employees. *Back to
    confirmation form* closes that tab.
@@ -419,7 +421,7 @@ the date and `?v=` you deployed in `STATE.md`.
   1. Download the two deployed files first (for rollback).
   2. Upload the new ones over them.
   3. In **all three** web parts (two on the form page, one on the access
-     list page), change `?v=1.3.0` to the new version (the `VERSION` line
+     list page), change `?v=1.3.1` to the new version (the `VERSION` line
      near the top of `ps-zone-attestation.js`). Without this, browsers may
      keep the old code.
   4. Repeat step 7's checks 2, 5, 6 and 7.
@@ -444,7 +446,7 @@ the date and `?v=` you deployed in `STATE.md`.
 | No email when an error is logged | The Errors list has no rule, or users can't add to it | Step 2b (the rule) and step 2 (Add rights on the Errors list) |
 | The error's email link goes to `form.admin@example.com` | `errorContact.email` still holds the placeholder | Step 2b |
 | A side panel item that isn't clickable | Its `url` is empty, or isn't an `https://…` or `/sites/…` address | Fix the `url` (step 4) |
-| The *employee access list* link goes to a missing page | The page name differs from `form.vars.accessListUrl` | Step 4 |
+| The *Employee access list* button goes to a missing page | The page name differs from `form.vars.accessListUrl` | Step 4 |
 | The access list replaces the form **in the same tab** | An engine older than 1.3.0 is still cached | Bump `?v=`; the link must carry `data-interception="off"` (F12 → Elements) |
 | "The access list couldn't be loaded" | No read access to the Access list, or it's missing a column | Steps 1 and 2 |
 | An area says "No employees are listed" but has rows | `AreaName` in the Access list doesn't match the Assignments list | Step 3 |

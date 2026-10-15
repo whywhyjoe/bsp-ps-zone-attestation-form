@@ -1,5 +1,5 @@
 {
-  "$comment": "Physical Security Work Zone Confirmation. Rows come from PS_Zone-Attestation-Assignments (filtered to the signed-in user's email). Each row shows the area's current zone (CurrentZone) to confirm, or to change through the dropdown, and saves one item to PS_Zone-Attestation-Responses: ZoneSelection = the answer, PreviousZone = the current zone, ZoneChanged = whether they differ, Attestation = Confirmed (submitting is the confirmation). An area with no CurrentZone gets the dropdown straight away. Both lists live on /teams/FCUWebDatastores (target.siteUrl and source.siteUrl); the page runs on /sites/FCUPortal. Users need read on the Assignments list and Add + View (own items only) on Responses. form.vars.accessListUrl is the employee access list page (ps-zone-attestation.access.json), linked from the notice at the top. errorLog names the list a failed load, save or start-up writes one item to; a SharePoint list rule there emails the admin (docs/02-sharepoint-data.md). The job aid and other links live in the resources panel (ps-zone-attestation.resources.json), not here. Bilingual: every { en, fr } pair follows the language from bilingual/intl.js. Zone VALUES (Public, Public Plus, Standards, Secure Restricted, High Security) are saved in English whatever the language, and CurrentZone must hold them spelled exactly so; only the labels are translated. The French texts, the zone descriptions and the contact are drafts, to be replaced.",
+  "$comment": "Physical Security Work Zone Confirmation. Rows come from PS_Zone-Attestation-Assignments (filtered to the signed-in user's email). Each row shows the area's current zone (CurrentZone) to confirm, or to change through the dropdown, and saves one item to PS_Zone-Attestation-Responses: ZoneSelection = the answer, PreviousZone = the current zone, ZoneChanged = whether they differ, Attestation = Confirmed (submitting is the confirmation). An area with no CurrentZone gets the dropdown straight away. Both lists live on /teams/FCUWebDatastores (target.siteUrl and source.siteUrl); the page runs on /sites/FCUPortal. Users need read on the Assignments list and Add + View (own items only) on Responses. form.headerNote (the review message) and form.headerUser (who is confirming) sit in the header band; form.vars.accessListUrl is the employee access list page (ps-zone-attestation.access.json), the button of the feature callout at the top. errorLog names the list a failed load, save or start-up writes one item to; a SharePoint list rule there emails the admin (docs/02-sharepoint-data.md). The job aid and other links live in the resources panel (ps-zone-attestation.resources.json), not here. Bilingual: every { en, fr } pair follows the language from bilingual/intl.js. Zone VALUES (Public, Public Plus, Standards, Secure Restricted, High Security) are saved in English whatever the language, and CurrentZone must hold them spelled exactly so; only the labels are translated. The French texts, the zone descriptions and the contact are drafts, to be replaced.",
   "form": {
     "title": { "en": "Physical Security Work Zone Confirmation", "fr": "Confirmation des zones de travail — sécurité physique" },
     "intro": {
@@ -8,6 +8,14 @@
     },
     "languages": ["en", "fr"],
     "appearance": { "frame": "card", "header": "band", "tint": "sky" },
+    "headerNote": {
+      "style": "info",
+      "text": {
+        "en": "Any change to a zone will be reviewed, and Physical Security will contact you.",
+        "fr": "Toute modification d'une zone sera examinée, et l'équipe de la sécurité physique communiquera avec vous."
+      }
+    },
+    "headerUser": { "label": { "en": "Confirmation by:", "fr": "Confirmation faite par :" } },
     "vars": { "accessListUrl": "/sites/FCUPortal/SitePages/PS-Work-Zone-Access.aspx" }
   },
   "target": {
@@ -87,25 +95,17 @@
           "id": "notices",
           "fields": [
             {
-              "id": "reviewNotice", "type": "note", "style": "info",
+              "id": "accessNotice", "type": "note", "style": "feature", "icon": "person",
+              "title": { "en": "Who has access to your areas?", "fr": "Qui a accès à vos emplacements?" },
               "text": {
-                "en": "Any change to a zone will be reviewed, and Physical Security will contact you.",
-                "fr": "Toute modification d'une zone sera examinée, et l'équipe de la sécurité physique communiquera avec vous."
-              }
-            },
-            {
-              "id": "accessNotice", "type": "note", "style": "info",
-              "text": {
-                "en": "To see which employees have access to each of your areas, open the [employee access list]({var:accessListUrl}) (it opens in a new tab).",
-                "fr": "Pour voir quels employés ont accès à chacun de vos emplacements, ouvrez la [liste des accès des employés]({var:accessListUrl}) (elle s'ouvre dans un nouvel onglet)."
+                "en": "See the employees with access to each of your areas. It opens in a new tab, so your answers here stay as they are.",
+                "fr": "Consultez la liste des employés qui ont accès à chacun de vos emplacements. Elle s'ouvre dans un nouvel onglet; vos réponses ici restent telles quelles."
+              },
+              "button": {
+                "text": { "en": "Employee access list", "fr": "Liste des accès des employés" },
+                "url": "{var:accessListUrl}"
               }
             }
-          ]
-        },
-        {
-          "id": "who",
-          "fields": [
-            { "id": "confirmedBy", "type": "currentUser", "label": { "en": "Confirmation by:", "fr": "Confirmation faite par :" } }
           ]
         },
         {

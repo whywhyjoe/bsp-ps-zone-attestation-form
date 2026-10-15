@@ -7,6 +7,20 @@ Newest first.
 
 ---
 
+## 2026-10-15 — engine 1.3.1: header who card and callout, access callout
+
+- `form.headerUser` puts the who card ("Confirmation by:") in the header
+  band as its right column (it drops under the intro below ~720px); the
+  body's `currentUser` field is gone.
+- `form.headerNote` puts the "changes will be reviewed" callout in the
+  header band, under the intro.
+- New note style `feature`: an accent-edged card with an icon tile, a
+  title, text and a primary button opening `button.url` in a new tab. The
+  access list notice uses it ("Who has access to your areas?" + an
+  *Employee access list* button). The validator now refuses unknown note
+  styles and a feature note without a safe button url.
+- Suite 175/175; dev admin run 31/31.
+
 ## 2026-10-15 — engine 1.3.0: Work Zone Confirmation, notices, employee access list
 
 - **Wording:** the form is now the *Physical Security Work Zone

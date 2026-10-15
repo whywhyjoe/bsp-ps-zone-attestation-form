@@ -1,4 +1,4 @@
-/*! PS Zone Attestation · v1.3.0 · ps-zone-attestation.js */
+/*! PS Zone Attestation · v1.3.1 · ps-zone-attestation.js */
 /* =====================================================================
    Physical Security Zones Attestation — standalone form engine.
 
@@ -18,7 +18,7 @@
    The web part insert (see webpart/ps-zone-attestation.webpart.html):
 
      <div data-psz-form data-config="/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.json"></div>
-     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.0"></script>
+     <script src="https://…/sites/FCUPortal/Code/ps-zone-attestation/ps-zone-attestation.js?v=1.3.1"></script>
 
    The same engine also mounts the resources side panel (1.1.0), a second
    web part with `data-psz-resources` in place of `data-psz-form` and the
@@ -56,7 +56,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.3.0';
+  var VERSION = '1.3.1';
   var NS = window.PSZoneForm = window.PSZoneForm || {};
   if (NS.__engineLoaded) { if (NS.scan) NS.scan(); return; }
   NS.__engineLoaded = true;
@@ -1367,8 +1367,31 @@
     });
     cfg._sharedColumns = shared; cfg._colFields = colFields;
 
-    // a note's text may carry {var:name} (e.g. a link to another page)
-    ordered.forEach(function (f) { if (f.type === 'note' && f.text) f.text = fillVars(f.text, cfg); });
+    // a note's text may carry {var:name} (e.g. a link to another page), and
+    // so may a feature note's button url
+    ordered.forEach(function (f) {
+      if (f.type !== 'note') return;
+      if (f.style && f.style !== 'plain' && f.style !== 'feature' && !ICONS[f.style]) {
+        errors.push('field "' + f.id + '": style must be info, warning, success, danger, plain or feature');
+      }
+      if (f.text) f.text = fillVars(f.text, cfg);
+      if (f.style === 'feature') {
+        var b = f.button = Object.assign({}, f.button || {});
+        b.url = safeHref(fillVars(b.url, cfg));
+        if (!b.text || !b.url) errors.push('field "' + f.id + '": a feature note needs button.text and an http(s) or server-relative button.url');
+      }
+    });
+    var hn = cfg.form.headerNote;
+    if (hn != null) {
+      if (typeof hn !== 'object' || !hn.text) errors.push('form.headerNote needs text');
+      else {
+        if (hn.style && !ICONS[hn.style]) errors.push('form.headerNote.style must be info, warning, success or danger');
+        hn.text = fillVars(hn.text, cfg);
+      }
+    }
+    if (cfg.form.headerUser != null && typeof cfg.form.headerUser !== 'object') {
+      errors.push('form.headerUser must be an object, e.g. { "label": "Confirmation by:" }');
+    }
     cfg._byKey = byKey; cfg._ordered = ordered; cfg._keyOfId = keyOfId;
     cfg._sectionsById = sectionsById;
     return { cfg: cfg, errors: errors };
@@ -1735,11 +1758,25 @@
     if (f.description) h += '<p class="psz-section__desc">' + prose(f.description) + '</p>';
     return h + '</div>';
   }
-  function renderNote(f) {
+  function renderNote(f, S) {
     var style = f.style || 'info';
     var vis = f.visibleWhen ? ' x-show="vis(' + esc(jstr(f.k)) + ')" x-cloak' : '';
     if (style === 'plain') {
       return '<p class="field__hint"' + vis + '>' + prose(f.text || '') + '</p>';
+    }
+    // feature: a callout that stands out from the info bars: an icon tile,
+    // a title, the text and a button opening button.url in a new tab
+    // (same-tenant safe: data-interception="off", see prose)
+    if (style === 'feature') {
+      var b = f.button;
+      return '<div class="psz-callout" role="note"' + vis + '>' +
+        '<span class="psz-callout__tile">' + icon('ic-fluent-' + esc(f.icon || 'info') + '-24-regular', 24) + '</span>' +
+        '<div class="psz-callout__copy">' +
+        (f.title ? '<p class="psz-callout__title">' + esc(f.title) + '</p>' : '') +
+        (f.text ? '<p class="psz-callout__text">' + prose(f.text) + '</p>' : '') + '</div>' +
+        '<a class="btn btn--primary psz-callout__btn" href="' + esc(b.url) + '" target="_blank" rel="noopener noreferrer" data-interception="off">' +
+        '<span>' + esc(b.text) + '</span>' + icon('ic-fluent-open-24-regular', 16) +
+        '<span class="psz-sr">' + esc(S.opensNewTab) + '</span></a></div>';
     }
     return '<div class="msgbar msgbar--' + esc(style) + '" role="status"' + vis + '>' +
       icon(ICONS[style] || ICONS.info, 20).replace('class="icon', 'class="msgbar__icon icon') +
@@ -1963,7 +2000,7 @@
       case 'lookup': return renderLookup(f, S);
       case 'person': return renderPerson(f, S);
       case 'heading': return renderHeading(f);
-      case 'note': return renderNote(f);
+      case 'note': return renderNote(f, S);
       case 'assignments': return renderAssignments(f, S);
       case 'currentUser': return renderCurrentUser(f, S);
       case 'hidden': return ''; // carried in state + submitted, never rendered
@@ -1989,14 +2026,24 @@
     var hc = cfg.form.headerCard;
     var hcHref = hc ? safeHref(fillVars(hc.url, cfg)) : '';
     if (hc && !hcHref) console.warn('[PS Zone Form] form.headerCard not shown: its url is empty or not http(s)/server-relative');
-    if ((cfg.form.title && cfg.form.showTitle !== false) || cfg.form.intro || ap.icon || hcHref) {
+    // form.headerUser: the who card as the header's right column;
+    // form.headerNote: a callout under the intro, in the band
+    var hu = cfg.form.headerUser, hn = cfg.form.headerNote;
+    if ((cfg.form.title && cfg.form.showTitle !== false) || cfg.form.intro || ap.icon || hcHref || hu || hn) {
       var headCls = 'psz__head' + (ap.header === 'band' ? ' psz__head--band psz__head--' + esc(ap.tint || 'sky') : '') +
-        (hcHref ? ' psz__head--hascard' : '');
+        (hcHref || hu ? ' psz__head--hascard' : '');
       h += '<header class="' + headCls + '">';
       h += '<div class="psz__head-copy">';
       if (cfg.form.title && cfg.form.showTitle !== false) h += '<h2 class="psz__title">' + esc(cfg.form.title) + '</h2>';
       if (cfg.form.intro) h += '<p class="psz__intro">' + prose(cfg.form.intro) + '</p>';
+      if (hn) {
+        var hs = hn.style || 'info';
+        h += '<div class="msgbar msgbar--' + esc(hs) + ' psz__head-note" role="note">' +
+          icon(ICONS[hs], 20).replace('class="icon', 'class="msgbar__icon icon') +
+          '<div class="msgbar__body">' + prose(hn.text) + '</div></div>';
+      }
       h += '</div>';
+      if (hu) h += '<div class="psz__head-aside">' + renderCurrentUser({ k: 'headerUser', label: hu.label || '' }, S) + '</div>';
       if (hcHref) {
         // an asset path (abacus-icons/x.svg) or a sprite name (shield)
         var hcIcon = !hc.icon ? icon('ic-fluent-info-24-regular', 24)
@@ -2260,7 +2307,7 @@
         if (!adapter.isMock) adapter.ready().catch(function () { /* surfaced on use */ });
         if (cfg._asg) {
           if (this.asg.state === 'idle' || this.asg.state === 'loading') this.loadAssignments();
-        } else if (!this.me.ready && cfg._ordered.some(function (f) { return f.type === 'currentUser'; })) {
+        } else if (!this.me.ready && (cfg.form.headerUser || cfg._ordered.some(function (f) { return f.type === 'currentUser'; }))) {
           this.loadMe();
         }
         if (carry) return;

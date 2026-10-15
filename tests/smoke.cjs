@@ -125,15 +125,16 @@ async function testZoneAttestation(browser) {
   check('current user card shows name + email',
     (await page.locator('.psz-who__name').textContent()) === 'Dev Tester' &&
     (await page.locator('.psz-who__mail').textContent()) === 'dev.tester@example.com');
-  // the job aid moved to the resources panel (1.1.0): no header card, and
-  // the intro takes the whole header width
+  // the job aid moved to the resources panel (1.1.0): no header card. Since
+  // 1.3.1 the header's right column is the who card, so the intro and its
+  // callout take the rest of the band (more than half of it)
   const head = await page.evaluate(() => {
-    const intro = document.querySelector('.psz__intro'), headEl = document.querySelector('.psz__head');
-    return { cards: document.querySelectorAll('[data-psz-form] .psz-tipcard').length, maxW: getComputedStyle(intro).maxWidth,
-      introW: intro.getBoundingClientRect().width, headW: headEl.getBoundingClientRect().width };
+    const copy = document.querySelector('.psz__head-copy'), headEl = document.querySelector('.psz__head');
+    return { cards: document.querySelectorAll('[data-psz-form] .psz-tipcard').length,
+      copyW: copy.getBoundingClientRect().width, headW: headEl.getBoundingClientRect().width };
   });
-  check('no job aid card on the form; the intro spans the header',
-    head.cards === 0 && head.maxW === 'none' && head.introW > head.headW * 0.8, JSON.stringify(head));
+  check('no job aid card on the form; the intro takes most of the header beside the who card',
+    head.cards === 0 && head.copyW > head.headW * 0.5, JSON.stringify(head));
   await page.waitForFunction(() => document.querySelector('.psz-doctor tbody tr'), null, { timeout: 15000 });
   const doctor = await page.$$eval('.psz-doctor tbody tr', trs => trs.map(tr => [...tr.children].map(td => td.innerText.trim())));
   check('doctor: every target + source column OK', doctor.length >= 12 && doctor.every(r => r[4] === 'OK'),
@@ -281,7 +282,7 @@ async function testZoneAttestation(browser) {
   check('no page errors (confirm / change)', page.__errors.length === 0, page.__errors.join(' | '));
   await ctx.close();
   // previousColumn named Title wins over target.titleTemplate (it isn't overwritten)
-  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[2].fields[0].previousColumn = 'Title'; } }));
+  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[1].fields[0].previousColumn = 'Title'; } }));
   await zoneConfirm(page, 0); await zoneConfirm(page, 1); await zonePick(page, 2, L.sec);
   await navClick(page, 'Submit confirmations'); await page.waitForTimeout(250);
   await navClick(page, 'Confirm');
@@ -465,7 +466,7 @@ async function testZoneAttestation(browser) {
   const EVIL_ZONE = 'O"Brien\'s <b>zone</b> {{x}}';
   ({ ctx, page } = await openZone(browser, {
     rows: [{ ID: 21, UserEmail: 'dev.tester@example.com', UserDescription: '<script>window.__xss=2</script>', AreaName: EVIL_AREA }],
-    mutate: cfg => { cfg.pages[0].sections[2].fields[0].choices.push({ value: EVIL_ZONE, label: EVIL_ZONE, color: 'blue' }); }
+    mutate: cfg => { cfg.pages[0].sections[1].fields[0].choices.push({ value: EVIL_ZONE, label: EVIL_ZONE, color: 'blue' }); }
   }));
   check('hostile area name shown as text', (await page.locator('.psz-asg__label').textContent()) === EVIL_AREA);
   await zonePick(page, 0, EVIL_ZONE);
@@ -481,11 +482,11 @@ async function testZoneAttestation(browser) {
   await ctx.close();
 
   // cut-off reads are said out loud
-  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[2].fields[0].source.top = 2; } }));
+  ({ ctx, page } = await openZone(browser, { mutate: cfg => { cfg.pages[0].sections[1].fields[0].source.top = 2; } }));
   check('more rows than source.top → 2 rows + "Only the first 2" warning',
     (await page.locator('.psz-asg__row').count()) === 2 && await page.locator('.psz-asg__warn:has-text("Only the first 2")').isVisible());
   await ctx.close();
-  ({ ctx, page } = await openZone(browser, { done: ['12', '11'], mutate: cfg => { cfg.pages[0].sections[2].fields[0].source.top = 2; } }));
+  ({ ctx, page } = await openZone(browser, { done: ['12', '11'], mutate: cfg => { cfg.pages[0].sections[1].fields[0].source.top = 2; } }));
   check('first page all done but more exist → a warning, not "already submitted"',
     !(await page.locator('.psz-done--allDone').isVisible()) &&
     await page.locator('[data-psz-field="zones"] .msgbar--danger:has-text("Only the first 2")').isVisible());
@@ -502,16 +503,19 @@ async function testZoneAttestation(browser) {
 
   // config errors
   for (const [name, mutate] of [
-    ['assignments without source.userColumn → error card', cfg => { delete cfg.pages[0].sections[2].fields[0].source.userColumn; }],
-    ['responses.keyColumn not in rowColumns → error card', cfg => { cfg.pages[0].sections[2].fields[0].responses.keyColumn = 'Nope'; }],
+    ['assignments without source.userColumn → error card', cfg => { delete cfg.pages[0].sections[1].fields[0].source.userColumn; }],
+    ['responses.keyColumn not in rowColumns → error card', cfg => { cfg.pages[0].sections[1].fields[0].responses.keyColumn = 'Nope'; }],
     ['two assignments fields → error card', cfg => {
-      const f = JSON.parse(JSON.stringify(cfg.pages[0].sections[2].fields[0])); f.id = 'zones2';
-      cfg.pages[0].sections[2].fields.push(f);
+      const f = JSON.parse(JSON.stringify(cfg.pages[0].sections[1].fields[0])); f.id = 'zones2';
+      cfg.pages[0].sections[1].fields.push(f);
     }],
     ['form.languages ["de"] → error card', cfg => { cfg.form.languages = ['de']; }],
-    ['previousColumn without source.currentColumn → error card', cfg => { delete cfg.pages[0].sections[2].fields[0].source.currentColumn; }],
-    ['previousColumn = column → error card', cfg => { cfg.pages[0].sections[2].fields[0].previousColumn = 'ZoneSelection'; }],
-    ['changedColumn = a rowColumns target → error card', cfg => { cfg.pages[0].sections[2].fields[0].changedColumn = 'AreaName'; }]
+    ['previousColumn without source.currentColumn → error card', cfg => { delete cfg.pages[0].sections[1].fields[0].source.currentColumn; }],
+    ['previousColumn = column → error card', cfg => { cfg.pages[0].sections[1].fields[0].previousColumn = 'ZoneSelection'; }],
+    ['changedColumn = a rowColumns target → error card', cfg => { cfg.pages[0].sections[1].fields[0].changedColumn = 'AreaName'; }],
+    ['feature note whose button url is javascript: → error card', cfg => { cfg.pages[0].sections[0].fields[0].button.url = 'javascript:alert(1)'; }],
+    ['note with an unknown style → error card', cfg => { cfg.pages[0].sections[0].fields[0].style = 'shout'; }],
+    ['form.headerNote without text → error card', cfg => { cfg.form.headerNote = { style: 'info' }; }]
   ]) {
     ({ ctx, page } = await openZone(browser, { mutate }));
     const state = await page.getAttribute('[data-psz-form]', 'data-psz-state');
@@ -1001,8 +1005,10 @@ async function testResources(browser) {
   }
 }
 
-/* The form's notices (1.3.0): two info bars at the top (changes are
-   reviewed; a link to the access list, in a new tab), a "you changed a
+/* The form's notices (1.3.x): in the header band, the "changes are
+   reviewed" callout under the intro (form.headerNote) and the who card as
+   the right column (form.headerUser); at the top of the body, the access
+   list as a feature callout with a button (new tab); a "you changed a
    zone" bar at the bottom only while some row differs from its current
    zone, and the contact message that replaced the attestation checkbox. */
 const ACCESS = new URL('access.html', BASE).href;
@@ -1011,21 +1017,32 @@ async function testNotices(browser) {
   let { ctx, page } = await openZone(browser);
   const bars = () => page.evaluate(() => [...document.querySelectorAll('[data-psz-form] .psz__body .msgbar--info')]
     .filter(m => getComputedStyle(m).display !== 'none').map(m => m.textContent.trim()));
-  const top = await page.evaluate(() => {
-    const body = document.querySelector('[data-psz-form] .psz__body');
-    const first = [...body.querySelectorAll('.msgbar--info')].slice(0, 2);
-    const who = body.querySelector('.psz-who__card');
-    const a = first[1] && first[1].querySelector('a');
-    return { texts: first.map(m => m.textContent.trim()),
-      beforeWho: first.every(m => m.compareDocumentPosition(who) & Node.DOCUMENT_POSITION_FOLLOWING),
-      link: a && [a.textContent, a.getAttribute('href'), a.target, a.rel, a.getAttribute('data-interception')] };
+  const head = await page.evaluate(() => {
+    const hd = document.querySelector('[data-psz-form] .psz__head');
+    const note = hd.querySelector('.psz__head-copy .psz__head-note');
+    const aside = hd.querySelector('.psz__head-aside');
+    const r = el => el && el.getBoundingClientRect();
+    return { note: note && note.textContent.trim(), afterIntro: !!(note && hd.querySelector('.psz__intro').compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING),
+      label: aside && (aside.querySelector('.field__label') || {}).textContent, name: aside && (aside.querySelector('.psz-who__name') || {}).textContent,
+      rightOfCopy: !!(aside && r(aside).left > r(hd.querySelector('.psz__head-copy')).right - 1),
+      whoInBody: document.querySelectorAll('[data-psz-form] .psz__body .psz-who').length };
   });
-  check('top: "changes are reviewed" and the access-list link, above everything else',
-    /^Any change to a zone will be reviewed, and Physical Security will contact you\.$/.test(top.texts[0]) &&
-    /employee access list/.test(top.texts[1]) && top.beforeWho, JSON.stringify(top));
-  check('the access-list link: {var:accessListUrl}, new tab, noopener',
-    top.link && top.link[0] === 'employee access list' && top.link[1] === new URL(ACCESS).pathname &&
-    top.link[2] === '_blank' && /noopener/.test(top.link[3]), JSON.stringify(top.link));
+  check('header: the "changes are reviewed" callout under the intro',
+    /^Any change to a zone will be reviewed, and Physical Security will contact you\.$/.test(head.note) && head.afterIntro, JSON.stringify(head));
+  check('header: "Confirmation by:" + the user as its right column; no who card in the body',
+    head.label === 'Confirmation by:' && head.name === 'Dev Tester' && head.rightOfCopy && head.whoInBody === 0, JSON.stringify(head));
+  const callout = await page.evaluate(() => {
+    const c = document.querySelector('[data-psz-form] .psz__body .psz-callout');
+    const a = c && c.querySelector('a.psz-callout__btn');
+    const firstField = document.querySelector('[data-psz-form] .psz__body .psz-section');
+    return c && { title: c.querySelector('.psz-callout__title').textContent, first: firstField.contains(c),
+      btn: a && [a.textContent.trim(), a.getAttribute('href'), a.target, a.rel, a.getAttribute('data-interception'), a.classList.contains('btn--primary')] };
+  });
+  check('the access list: a feature callout first in the body, its button {var:accessListUrl} in a new tab',
+    callout && callout.first && callout.title === 'Who has access to your areas?' && callout.btn &&
+    /^Employee access list/.test(callout.btn[0]) && callout.btn[1] === new URL(ACCESS).pathname &&
+    callout.btn[2] === '_blank' && /noopener/.test(callout.btn[3]) && callout.btn[5], JSON.stringify(callout));
+  const top = { link: callout && callout.btn };
   // SharePoint's in-place navigation ignores target="_blank" unless a link
   // opts out (found on the dev tenant); the harness can't reproduce that, so
   // the attribute itself is checked, on every new-tab link the engine makes
@@ -1068,7 +1085,7 @@ async function testNotices(browser) {
   ({ ctx, page } = await openZone(browser));
   const [popup] = await Promise.all([
     ctx.waitForEvent('page'),
-    page.locator('[data-psz-form] a', { hasText: 'employee access list' }).click()
+    page.locator('[data-psz-form] a.psz-callout__btn').click()
   ]);
   await popup.waitForSelector('.psz-acc__area', { timeout: 15000 });
   check('the link opened the access list in a new tab, the form tab untouched',

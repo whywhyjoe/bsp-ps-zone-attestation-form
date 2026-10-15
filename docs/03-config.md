@@ -45,7 +45,9 @@ hold values spelled exactly as in `choices`.
 | --- | --- | --- |
 | `title`, `intro` | EN/FR pairs | Title "Physical Security Work Zone Confirmation" (1.3.0). `intro` takes `[text](url)` links (http(s), mailto, `/…`, `#…`; anything else stays literal). |
 | `appearance` | card · band · sky | Frame, header band, band tint (`sky` `blue` `neutral`). |
-| `vars` | `accessListUrl` | Values for `{var:name}`. `accessListUrl` is the access list page, used by the notice link. `PSZ_FORM_SETTINGS.vars` on the page overrides them (the dev harness does). |
+| `headerNote` | `{ style: "info", text }` | 1.3.1. A callout in the header band, under the intro: "Any change to a zone will be reviewed…". `style` is `info` (default), `warning`, `success` or `danger`; `text` takes links and `{var:…}`. |
+| `headerUser` | `{ label: "Confirmation by:" }` | 1.3.1. The who card (photo or initials, name, email) as the header's right column. It replaces a `currentUser` field in the body; below ~720px it drops under the intro. |
+| `vars` | `accessListUrl` | Values for `{var:name}`. `accessListUrl` is the access list page, the access callout's button. `PSZ_FORM_SETTINGS.vars` on the page overrides them (the dev harness does). |
 
 Links in config text that leave the page (`http(s)`, `mailto:`, `/…`) open in
 a new tab and carry `data-interception="off"`. Without that attribute a
@@ -122,19 +124,27 @@ equal to a `rowColumns` target, and a language other than `en`/`fr`.
 
 ## The notices (`type: "note"`)
 
-Since 1.3.0 there's no attestation checkbox. Four info bars (`style: "info"`)
-carry the messages instead, in the `notices` section (first) and the
-`closing` section (last):
+Since 1.3.0 there's no attestation checkbox. Notes carry the messages
+instead: the review message is the header's `form.headerNote` (1.3.1), and
+three notes sit in the `notices` section (first) and the `closing` section
+(last):
 
-| `id` | Where | Says |
-| --- | --- | --- |
-| `reviewNotice` | top | Any change to a zone will be reviewed, and Physical Security will contact you. |
-| `accessNotice` | top | A link to the employee access list, `[employee access list]({var:accessListUrl})`. |
-| `changeNotice` | bottom | The review message again, **only while some row is changed**: `visibleWhen: { "field": "zones", "op": "anyChanged" }`. |
-| `contactNotice` | bottom | "If you have questions or concerns, contact … at …", with a `mailto:` link. **Placeholder: set before go-live.** |
+| `id` | Where | Style | Says |
+| --- | --- | --- | --- |
+| `accessNotice` | top of the body | `feature` | "Who has access to your areas?", a line of text, and an *Employee access list* button to `{var:accessListUrl}` (new tab). |
+| `changeNotice` | bottom | `info` | The review message again, **only while some row is changed**: `visibleWhen: { "field": "zones", "op": "anyChanged" }`. |
+| `contactNotice` | bottom | `info` | "If you have questions or concerns, contact … at …", with a `mailto:` link. **Placeholder: set before go-live.** |
 
-`{var:name}` in a note's text is filled from `form.vars` when the config is
-read. `anyChanged` (1.3.0) is a rule op for an `assignments` field: true when
+Note `style`s: `info` (default), `warning`, `success`, `danger` (a message
+bar), `plain` (a hint line), and `feature` (1.3.1): the one message meant to
+be acted on, as a card with an accent edge, an icon tile (`icon`: a sprite
+name such as `person`), a `title`, the `text`, and a primary button
+`{ "text", "url" }` that opens `url` in a new tab. The validator refuses an
+unknown style and a `feature` note without `button.text` or with a
+`button.url` that isn't http(s) or server-relative (after `{var:…}`).
+
+`{var:name}` in a note's text (and a feature note's `button.url`) is filled
+from `form.vars` when the config is read. `anyChanged` (1.3.0) is a rule op for an `assignments` field: true when
 some row's answer differs from its current zone, counting a first zone on a
 row that had none (the same test as `ZoneChanged`). Confirming a zone or
 *Keep current zone* doesn't count. The validator refuses `anyChanged` on any

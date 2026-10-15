@@ -198,7 +198,7 @@ async function submitAndConfirm(page, confirmText) {
   check('row 1: its current zone with confirm + Change', (await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__zone:visible').textContent()) === 'High Security' &&
     await page.locator('.psz-asg__row').nth(0).locator('.psz-asg__confirm input').isVisible());
   // the employee access list: the notice's link opens it in a new tab; Back closes that tab
-  const accLink = page.locator('[data-psz-form] a', { hasText: 'employee access list' });
+  const accLink = page.locator('[data-psz-form] a.psz-callout__btn');
   check('notice: the access-list link points at the access page, new tab',
     (await accLink.getAttribute('href')) === ACCESS_PAGE && (await accLink.getAttribute('target')) === '_blank', await accLink.getAttribute('href'));
   const [acc] = await Promise.all([ctx.waitForEvent('page'), accLink.click()]);
